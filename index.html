@@ -575,7 +575,7 @@
               <th>Tipo</th>
               <th>Status OS</th>
               <th>Associado</th>
-              <th>Abertura</th>
+              <th id="thAbertura" style="cursor:pointer; user-select:none;" onclick="alternarOrdenacaoAbertura()">Abertura <span id="setaAbertura">▾</span></th>
               <th>Dias</th>
               <th>Status</th>
               <th>Tratamento</th>
@@ -1283,6 +1283,16 @@ function populateFilterOptions(list){
   document.getElementById(id).addEventListener('change', applyFilters);
 });
 
+let ordenacaoAbertura = null; // null = padrão (mais atrasado primeiro), 'desc' = mais novo primeiro, 'asc' = mais velho primeiro
+function alternarOrdenacaoAbertura(){
+  if(ordenacaoAbertura === null || ordenacaoAbertura === 'asc') ordenacaoAbertura = 'desc';
+  else ordenacaoAbertura = 'asc';
+  const seta = document.getElementById('setaAbertura');
+  seta.textContent = ordenacaoAbertura === 'desc' ? '▾' : '▴';
+  document.getElementById('thAbertura').style.color = 'var(--blue)';
+  applyFilters();
+}
+
 function applyFilters(){
   const list = computeStats();
   const search = document.getElementById('fSearch').value.trim().toLowerCase();
@@ -1302,7 +1312,13 @@ function applyFilters(){
     return true;
   });
 
-  filtered.sort((a,b)=> b.dias - a.dias);
+  if(ordenacaoAbertura === 'desc'){
+    filtered.sort((a,b)=> new Date(b.aberturaISO) - new Date(a.aberturaISO));
+  } else if(ordenacaoAbertura === 'asc'){
+    filtered.sort((a,b)=> new Date(a.aberturaISO) - new Date(b.aberturaISO));
+  } else {
+    filtered.sort((a,b)=> b.dias - a.dias);
+  }
 
   document.getElementById('ordensMeta').textContent = `${filtered.length} de ${list.length} ordens`;
 
