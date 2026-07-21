@@ -124,6 +124,7 @@
   .avatar{ width:26px;height:26px;border-radius:50%; background:var(--panel-3); display:flex;align-items:center;justify-content:center; font-size:10.5px; font-weight:800; color:var(--text-dim); flex-shrink:0;}
   .badge{ display:inline-block; font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:20px; white-space:nowrap;}
   .badge.atraso{ background:var(--red-bg); color:var(--red); border:1px solid var(--red-line);}
+  .badge.critico{ background:var(--red); color:#fff; border:1px solid var(--red); box-shadow:0 0 0 3px var(--red-bg); font-weight:900;}
   .badge.ok{ background:var(--green-bg); color:var(--green); border:1px solid var(--green-line);}
   .bar-wrap{ display:flex; align-items:center; gap:8px;}
   .bar-bg{ flex:1; height:6px; background:var(--panel-2); border-radius:4px; overflow:hidden; min-width:60px;}
@@ -169,6 +170,14 @@
   .row-treat.t-verde{ border-left-color:var(--green); }
   .row-treat.t-azul{ border-left-color:var(--blue); }
   .row-treat.t-none{ border-left-color:#2a3547; }
+  .row-treat.critico{ background:rgba(227,99,79,.06); }
+  .dias-num.super-crit{ color:#fff; background:var(--red); padding:2px 7px; border-radius:5px; }
+  .hist-btn{ background:none; border:none; color:var(--blue); cursor:pointer; font-size:11px; font-weight:700; padding:2px 0; }
+  .hist-btn:hover{ text-decoration:underline; }
+  .hist-entry{ padding:10px 12px; border-left:2px solid var(--line); margin-left:6px; position:relative; }
+  .hist-entry::before{ content:''; position:absolute; left:-5px; top:14px; width:8px; height:8px; border-radius:50%; background:var(--blue); }
+  .hist-entry .hd{ font-size:11px; color:var(--text-mute); font-weight:700; margin-bottom:3px;}
+  .hist-entry .bd{ font-size:12.5px; }
 
   .treat-select{
     width:100%; min-width:170px; font-size:11.5px; padding:6px 8px; border-radius:6px;
@@ -295,6 +304,11 @@
             <div class="value" id="kpiAtraso">0</div>
             <div class="sub" id="kpiAtrasoSub">Requer ação</div>
           </div>
+          <div class="kpi crit" style="border-color:var(--red); background:linear-gradient(180deg, rgba(227,99,79,.22), var(--panel) 65%);">
+            <div class="label">🔥 Críticas (&gt;= 20 dias)</div>
+            <div class="value" id="kpiCritico" style="color:#fff;">0</div>
+            <div class="sub" id="kpiCriticoSub">Prioridade máxima</div>
+          </div>
           <div class="kpi ok">
             <div class="label">Dentro do prazo</div>
             <div class="value" id="kpiOk">0</div>
@@ -392,6 +406,7 @@
               <th>Tratamento</th>
               <th>Últ. contato</th>
               <th>Observação</th>
+              <th>Histórico</th>
             </tr>
           </thead>
           <tbody id="ordensBody"></tbody>
@@ -492,6 +507,23 @@
     </div>
     <div class="modal-foot">
       <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="fazerLogin()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL DE HISTÓRICO ===== -->
+<div class="modal-overlay" id="histModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-head">
+      <div class="ic" style="background:var(--blue-bg); border-color:var(--blue-line);">🕓</div>
+      <div>
+        <h3 id="histTitle">Histórico da ordem</h3>
+        <p id="histSub">Linha do tempo de tratamento</p>
+      </div>
+    </div>
+    <div class="modal-body" id="histBody" style="padding:16px 20px;"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="document.getElementById('histModal').classList.remove('show')">Fechar</button>
     </div>
   </div>
 </div>
@@ -623,6 +655,37 @@ async function updateOrdemRemote(id, fields){
   if(error) console.error('Erro ao atualizar ordem', error);
 }
 
+async function registrarHistorico(ordemId, treat, obs){
+  const treatLabels = {none:'Sem tratamento',amarelo:'Mensagem enviada ao técnico',vermelho:'Sem retorno do técnico',verde:'Retorno recebido',azul:'Sem retorno do associado'};
+  const { error } = await sb.from('ordens_historico').insert({
+    ordem_id: ordemId,
+    treat: treatLabels[treat] || treat,
+    obs: obs || null,
+    usuario: USUARIO_ATUAL.nome || 'Não identificado'
+  });
+  if(error) console.error('Erro ao registrar histórico', error);
+}
+
+async function verHistorico(ordemId, placa){
+  document.getElementById('histTitle').textContent = `Histórico — ${placa}`;
+  document.getElementById('histBody').innerHTML = '<div style="color:var(--text-mute); font-size:12.5px;">Carregando...</div>';
+  document.getElementById('histModal').classList.add('show');
+
+  const { data, error } = await sb.from('ordens_historico').select('*').eq('ordem_id', ordemId).order('criado_em', {ascending:false});
+  if(error || !data || data.length === 0){
+    document.getElementById('histBody').innerHTML = '<div style="color:var(--text-mute); font-size:12.5px; text-align:center; padding:20px 0;">Nenhum histórico registrado ainda para esta ordem.</div>';
+    return;
+  }
+  document.getElementById('histBody').innerHTML = data.map(h=>{
+    const dt = new Date(h.criado_em);
+    const dataFmt = dt.toLocaleDateString('pt-BR') + ' às ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    return `<div class="hist-entry">
+      <div class="hd">${dataFmt} — ${h.usuario||'—'}</div>
+      <div class="bd"><b>${h.treat||''}</b>${h.obs ? ` · ${h.obs}` : ''}</div>
+    </div>`;
+  }).join('');
+}
+
 /* =========================================================
    NAVEGAÇÃO
 ========================================================= */
@@ -737,7 +800,7 @@ function computeStats(){
   const list = ORDENS.map(o=>{
     const dt = new Date(o.aberturaISO);
     const dias = diasEmAberto(dt);
-    return {...o, dias, atrasada: dias > PRAZO_DIAS};
+    return {...o, dias, atrasada: dias > PRAZO_DIAS, critica: dias >= 20};
   });
   return list;
 }
@@ -765,6 +828,9 @@ function renderAll(){
     document.getElementById('kpiTotal').textContent = total;
     document.getElementById('kpiAtraso').textContent = atrasadas.length;
     document.getElementById('kpiAtrasoSub').textContent = total ? Math.round(atrasadas.length/total*100)+'% do total' : '—';
+    const criticas = list.filter(o=>o.critica);
+    document.getElementById('kpiCritico').textContent = criticas.length;
+    document.getElementById('kpiCriticoSub').textContent = criticas.length ? 'Requer ação imediata' : 'Nenhuma no momento';
     document.getElementById('kpiOk').textContent = noPrazo.length;
     document.getElementById('kpiOkSub').textContent = total ? Math.round(noPrazo.length/total*100)+'% do total' : '—';
     document.getElementById('kpiTecnicos').textContent = tecnicosSet.size;
@@ -922,17 +988,21 @@ function applyFilters(){
   };
 
   document.getElementById('ordensBody').innerHTML = filtered.map(o=>{
-    const diasClass = o.dias > PRAZO_DIAS ? 'crit' : (o.dias >= PRAZO_DIAS-2 ? 'warn' : '');
+    const diasClass = o.critica ? 'super-crit' : (o.dias > PRAZO_DIAS ? 'crit' : (o.dias >= PRAZO_DIAS-2 ? 'warn' : ''));
     const treatVal = o.treat || 'none';
     const dt = new Date(o.aberturaISO);
-    return `<tr class="row-treat t-${treatVal}">
+    let statusBadge;
+    if(o.critica) statusBadge = '<span class="badge critico">🔥 Crítico</span>';
+    else if(o.atrasada) statusBadge = '<span class="badge atraso">Atrasada</span>';
+    else statusBadge = '<span class="badge ok">No prazo</span>';
+    return `<tr class="row-treat t-${treatVal} ${o.critica?'critico':''}">
       <td><span class="placa-chip">${o.placa}</span></td>
       <td>${o.tecnico}</td>
       <td>${o.tipo}</td>
       <td>${o.associado}</td>
       <td>${formatDateBR(dt)}</td>
       <td><span class="dias-num ${diasClass}">${o.dias}d</span></td>
-      <td>${o.atrasada ? '<span class="badge atraso">Atrasada</span>' : '<span class="badge ok">No prazo</span>'}</td>
+      <td>${statusBadge}</td>
       <td>
         <select class="treat-select t-${treatVal}" data-id="${o.id}" onchange="updateTreat(this)">
           <option value="none" ${treatVal==='none'?'selected':''}>Sem tratamento</option>
@@ -947,6 +1017,9 @@ function applyFilters(){
       </td>
       <td>
         <input type="text" class="obs-input" data-id="${o.id}" value="${(o.obs||'').replace(/"/g,'&quot;')}" placeholder="Observação..." onchange="updateObs(this)">
+      </td>
+      <td>
+        <button class="hist-btn" onclick="verHistorico('${o.id}','${o.placa}')">Ver histórico</button>
       </td>
     </tr>`;
   }).join('');
@@ -963,6 +1036,7 @@ function updateTreat(sel){
   sel.className = 'treat-select t-'+sel.value;
   sel.closest('tr').className = 'row-treat t-'+sel.value;
   updateOrdemRemote(id, {treat: sel.value, atualizado_por: ordem.atualizadoPor, data_ultimo_contato: hojeISO});
+  registrarHistorico(id, sel.value, ordem.obs);
   renderAll();
 }
 function updateObs(input){
