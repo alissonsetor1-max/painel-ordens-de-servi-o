@@ -155,6 +155,7 @@
     padding:4px; border-radius:6px; flex-shrink:0; transition:.12s;
   }
   .user-swap:hover{ background:var(--panel-3); color:var(--blue); }
+  .form-label{ font-size:11.5px; font-weight:700; color:var(--text-dim); display:block; margin-bottom:6px; }
 
   /* ===== MAIN ===== */
   .main{ flex:1; min-width:0; padding:24px 20px 60px; max-width:1600px; }
@@ -529,6 +530,7 @@
         <div style="display:flex; gap:8px; align-items:center;">
           <span id="selCount" style="font-size:11.5px; color:var(--text-dim); font-weight:700; display:none;"></span>
           <button class="btn btn-ghost btn-sm" id="btnExcluir" style="display:none; color:var(--red); border-color:var(--red-line);" onclick="confirmarExclusao()">🗑️ Excluir selecionadas</button>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalNovaOrdem()">➕ Nova ordem manual</button>
           <button class="btn btn-primary btn-sm" onclick="checkOverdueAndAlert(true)">⚠️ Ver ordens em atraso</button>
           <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⤓ Exportar relatório</button>
         </div>
@@ -684,6 +686,50 @@
   </div>
 </div>
 
+<!-- ===== MODAL DE NOVA ORDEM MANUAL ===== -->
+<div class="modal-overlay" id="novaOrdemModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-head">
+      <div class="ic" style="background:var(--blue-bg); border-color:var(--blue-line);">➕</div>
+      <div>
+        <h3>Nova ordem manual</h3>
+        <p>Cadastro avulso, sem precisar do Excel</p>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:18px 20px; display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label class="form-label">Placa do veículo *</label>
+        <input type="text" id="novaPlaca" placeholder="Ex: ABC1D23" style="width:100%; padding:9px 12px; text-transform:uppercase;">
+      </div>
+      <div>
+        <label class="form-label">Técnico *</label>
+        <input type="text" id="novaTecnico" placeholder="Nome do técnico" style="width:100%; padding:9px 12px;">
+      </div>
+      <div>
+        <label class="form-label">Tipo de serviço *</label>
+        <select id="novaTipo" style="width:100%; padding:9px 12px;">
+          <option value="Instalação">Instalação</option>
+          <option value="Manutenção">Manutenção</option>
+          <option value="Retirada">Retirada</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Associado *</label>
+        <input type="text" id="novaAssociado" placeholder="Nome do cliente/associado" style="width:100%; padding:9px 12px;">
+      </div>
+      <div>
+        <label class="form-label">Data de abertura *</label>
+        <input type="date" id="novaAbertura" style="width:100%; padding:9px 12px;">
+      </div>
+      <div id="novaOrdemErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="fecharModalNovaOrdem()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarNovaOrdem()">Criar ordem</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL DE HISTÓRICO ===== -->
 <div class="modal-overlay" id="histModal">
   <div class="modal" style="max-width:480px;">
@@ -826,9 +872,20 @@ function tipoNormalizado(t){
 
 async function loadData(){
   try{
-    const { data, error } = await sb.from('ordens_servico').select('*').order('abertura_iso', {ascending:false});
-    if(error){ console.error(error); ORDENS = []; return; }
-    ORDENS = (data||[]).map(r=>({
+    const TAMANHO_PAGINA = 1000;
+    let todosDados = [];
+    let pagina = 0;
+    while(true){
+      const inicio = pagina * TAMANHO_PAGINA;
+      const fim = inicio + TAMANHO_PAGINA - 1;
+      const { data, error } = await sb.from('ordens_servico').select('*').order('abertura_iso', {ascending:false}).range(inicio, fim);
+      if(error){ console.error(error); break; }
+      if(!data || data.length === 0) break;
+      todosDados = todosDados.concat(data);
+      if(data.length < TAMANHO_PAGINA) break;
+      pagina++;
+    }
+    ORDENS = todosDados.map(r=>({
       id: r.id, placa: r.placa, tecnico: r.tecnico, tipo: r.tipo,
       associado: r.associado, aberturaISO: r.abertura_iso, treat: r.treat || 'none', obs: r.obs || '',
       atualizadoPor: r.atualizado_por || '', dataUltimoContato: r.data_ultimo_contato || '',
@@ -846,6 +903,58 @@ async function insertOrdens(novasOrdens){
   }));
   const { error } = await sb.from('ordens_servico').insert(rows);
   if(error) console.error('Erro ao inserir ordens', error);
+}
+
+/* =========================================================
+   NOVA ORDEM MANUAL
+========================================================= */
+function abrirModalNovaOrdem(){
+  document.getElementById('novaPlaca').value = '';
+  document.getElementById('novaTecnico').value = '';
+  document.getElementById('novaTipo').value = 'Instalação';
+  document.getElementById('novaAssociado').value = '';
+  document.getElementById('novaAbertura').value = new Date().toISOString().slice(0,10);
+  document.getElementById('novaOrdemErro').style.display = 'none';
+  document.getElementById('novaOrdemModal').classList.add('show');
+}
+function fecharModalNovaOrdem(){
+  document.getElementById('novaOrdemModal').classList.remove('show');
+}
+async function salvarNovaOrdem(){
+  const placa = document.getElementById('novaPlaca').value.trim().toUpperCase();
+  const tecnico = document.getElementById('novaTecnico').value.trim();
+  const tipo = document.getElementById('novaTipo').value;
+  const associado = document.getElementById('novaAssociado').value.trim();
+  const abertura = document.getElementById('novaAbertura').value;
+  const erroBox = document.getElementById('novaOrdemErro');
+
+  if(!placa || !tecnico || !associado || !abertura){
+    erroBox.textContent = 'Preencha todos os campos obrigatórios (*).';
+    erroBox.style.display = 'block';
+    return;
+  }
+
+  const key = `${placa}|${abertura}|${tecnico}`;
+  const id = 'manual_' + key.replace(/[^a-zA-Z0-9]/g,'_') + '_' + Date.now();
+
+  const novaOrdem = {
+    id, placa, tecnico, tipo, associado,
+    aberturaISO: abertura, treat: 'none', obs: '', statusOs: 'Aberta'
+  };
+
+  const { error } = await sb.from('ordens_servico').insert({
+    id, placa, tecnico, tipo, associado, abertura_iso: abertura, treat: 'none', obs: '', status_os: 'Aberta'
+  });
+
+  if(error){
+    erroBox.textContent = 'Erro ao salvar: ' + error.message;
+    erroBox.style.display = 'block';
+    return;
+  }
+
+  ORDENS.unshift(novaOrdem);
+  fecharModalNovaOrdem();
+  renderAll();
 }
 
 async function updateOrdemRemote(id, fields){
