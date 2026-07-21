@@ -240,6 +240,45 @@
   .modal-foot{ padding:16px 24px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px;}
 
   .footnote{ font-size:11px; color:var(--text-mute); margin-top:24px; }
+
+  /* ===== NOVO DASHBOARD ===== */
+  .dash-kpis{ display:flex; gap:14px; margin-bottom:20px; flex-wrap:wrap; }
+  .dash-kpi{ flex:1; min-width:150px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px; display:flex; align-items:center; gap:12px; }
+  .dash-kpi .ic{ width:38px; height:38px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .dash-kpi .txt .n{ font-size:21px; font-weight:800; line-height:1.1; }
+  .dash-kpi .txt .l{ font-size:11px; color:var(--text-dim); font-weight:600; margin-top:2px; }
+
+  .dash-row{ display:flex; gap:16px; margin-bottom:16px; align-items:stretch; flex-wrap:wrap; }
+  .dash-row > .card{ flex:1; min-width:280px; }
+
+  .donut-wrap{ display:flex; align-items:center; gap:24px; flex-wrap:wrap; justify-content:center; padding:10px 0; }
+  .donut-legend{ display:flex; flex-direction:column; gap:8px; }
+  .donut-legend-item{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; }
+  .donut-legend-item .sw{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+
+  .barchart-wrap{ display:flex; align-items:flex-end; gap:16px; height:170px; padding:14px 8px 0; }
+  .barchart-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end; }
+  .barchart-track{ width:100%; max-width:56px; height:130px; display:flex; align-items:flex-end; }
+  .barchart-fill{ width:100%; border-radius:6px 6px 0 0; background:var(--blue); min-height:3px; transition:height .3s; }
+  .barchart-label{ font-size:11px; color:var(--text-dim); font-weight:700; text-align:center; }
+  .barchart-value{ font-size:10.5px; color:var(--text-mute); font-weight:700; }
+
+  .rank-list-item{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #1c2634; }
+  .rank-list-item:last-child{ border-bottom:none; }
+  .rank-num{ width:22px; height:22px; border-radius:50%; background:var(--panel-2); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:var(--text-dim); flex-shrink:0; }
+  .rank-num.top1{ background:var(--amber); color:#000; }
+  .rank-list-item .nome{ flex:1; font-size:12.5px; font-weight:700; }
+  .rank-list-item .qtd{ font-size:11.5px; color:var(--text-dim); font-weight:700; }
+
+  .recent-item{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #1c2634; }
+  .recent-item:last-child{ border-bottom:none; }
+  .recent-item .placa-chip{ margin-bottom:3px; display:inline-block; }
+  .recent-item .sub{ font-size:11px; color:var(--text-mute); }
+  .status-badge{ font-size:10px; font-weight:800; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+  .status-select{ font-size:11px; font-weight:700; padding:5px 7px; border-radius:6px; border:1px solid var(--line); background:var(--panel-2); color:var(--text); }
+
+  .see-all{ font-size:11.5px; color:var(--blue); font-weight:700; cursor:pointer; }
+  .see-all:hover{ text-decoration:underline; }
 </style>
 </head>
 <body>
@@ -293,58 +332,51 @@
       </div>
 
       <div id="dashContent" style="display:none;">
-        <div class="kpis">
-          <div class="kpi">
-            <div class="label">Ordens ativas</div>
-            <div class="value" id="kpiTotal">0</div>
-            <div class="sub" id="kpiTotalSub">Base atual</div>
+        <div class="dash-kpis">
+          <div class="dash-kpi">
+            <div class="ic" style="background:var(--blue-bg); color:var(--blue);">📋</div>
+            <div class="txt"><div class="n" id="kpiTotal">0</div><div class="l">Total de OS</div></div>
           </div>
-          <div class="kpi crit">
-            <div class="label">Em atraso (&gt; 10 dias)</div>
-            <div class="value" id="kpiAtraso">0</div>
-            <div class="sub" id="kpiAtrasoSub">Requer ação</div>
+          <div class="dash-kpi">
+            <div class="ic" style="background:var(--blue-bg); color:var(--blue);">🕐</div>
+            <div class="txt"><div class="n" id="kpiAbertas">0</div><div class="l">Abertas</div></div>
           </div>
-          <div class="kpi crit" style="border-color:var(--red); background:linear-gradient(180deg, rgba(227,99,79,.22), var(--panel) 65%);">
-            <div class="label">🔥 Críticas (&gt;= 20 dias)</div>
-            <div class="value" id="kpiCritico" style="color:#fff;">0</div>
-            <div class="sub" id="kpiCriticoSub">Prioridade máxima</div>
+          <div class="dash-kpi">
+            <div class="ic" style="background:var(--amber-bg); color:var(--amber);">📈</div>
+            <div class="txt"><div class="n" id="kpiAndamento">0</div><div class="l">Em Andamento</div></div>
           </div>
-          <div class="kpi ok">
-            <div class="label">Dentro do prazo</div>
-            <div class="value" id="kpiOk">0</div>
-            <div class="sub" id="kpiOkSub">—</div>
+          <div class="dash-kpi">
+            <div class="ic" style="background:var(--green-bg); color:var(--green);">✔️</div>
+            <div class="txt"><div class="n" id="kpiConcluidas">0</div><div class="l">Concluídas</div></div>
           </div>
-          <div class="kpi">
-            <div class="label">Técnicos ativos</div>
-            <div class="value" id="kpiTecnicos">0</div>
-            <div class="sub">Com ordens em aberto</div>
+          <div class="dash-kpi">
+            <div class="ic" style="background:var(--red-bg); color:var(--red);">⚠️</div>
+            <div class="txt"><div class="n" id="kpiAtraso">0</div><div class="l">Em Atraso</div></div>
           </div>
         </div>
 
-        <div class="grid-2">
+        <div class="dash-row">
           <div class="card">
-            <div class="card-head">
-              <h2>Ranking — Ordens por Técnico</h2>
-              <span class="tag">Top 6 · ordenado por atraso</span>
+            <div class="card-head"><h2>Distribuição por Status</h2></div>
+            <div class="donut-wrap">
+              <svg id="donutChart" width="180" height="180" viewBox="0 0 180 180"></svg>
+              <div class="donut-legend" id="donutLegend"></div>
             </div>
-            <table id="rankMiniTable"><tbody></tbody></table>
           </div>
           <div class="card">
-            <div class="card-head">
-              <h2>Por Tipo de Serviço</h2>
-              <span class="tag">Total / atraso</span>
-            </div>
-            <div id="tipoBreakdown"></div>
+            <div class="card-head"><h2>OS por Tipo de Serviço</h2></div>
+            <div class="barchart-wrap" id="barChart"></div>
           </div>
         </div>
 
-        <div class="grid-2">
-          <div class="card" style="flex:1;">
-            <div class="card-head">
-              <h2>Tratamento das Ordens em Atraso</h2>
-              <span class="tag">Status de contato</span>
-            </div>
-            <div id="treatBreakdown"></div>
+        <div class="dash-row">
+          <div class="card">
+            <div class="card-head"><h2>Ranking de Técnicos</h2><span class="see-all" onclick="goTo('ranking')">Ver todos →</span></div>
+            <div id="rankList"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Ordens Recentes</h2><span class="see-all" onclick="goTo('ordens')">Ver todas →</span></div>
+            <div id="recentList"></div>
           </div>
         </div>
       </div>
@@ -357,7 +389,9 @@
           <h1>Ordens de Serviço</h1>
           <div class="meta"><span id="ordensMeta">0 ordens</span></div>
         </div>
-        <div style="display:flex; gap:8px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span id="selCount" style="font-size:11.5px; color:var(--text-dim); font-weight:700; display:none;"></span>
+          <button class="btn btn-ghost btn-sm" id="btnExcluir" style="display:none; color:var(--red); border-color:var(--red-line);" onclick="confirmarExclusao()">🗑️ Excluir selecionadas</button>
           <button class="btn btn-primary btn-sm" onclick="checkOverdueAndAlert(true)">⚠️ Ver ordens em atraso</button>
           <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⤓ Exportar relatório</button>
         </div>
@@ -396,9 +430,11 @@
         <table>
           <thead>
             <tr>
+              <th style="width:32px;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
               <th>Placa</th>
               <th>Técnico</th>
               <th>Tipo</th>
+              <th>Status OS</th>
               <th>Associado</th>
               <th>Abertura</th>
               <th>Dias</th>
@@ -633,7 +669,8 @@ async function loadData(){
     ORDENS = (data||[]).map(r=>({
       id: r.id, placa: r.placa, tecnico: r.tecnico, tipo: r.tipo,
       associado: r.associado, aberturaISO: r.abertura_iso, treat: r.treat || 'none', obs: r.obs || '',
-      atualizadoPor: r.atualizado_por || '', dataUltimoContato: r.data_ultimo_contato || ''
+      atualizadoPor: r.atualizado_por || '', dataUltimoContato: r.data_ultimo_contato || '',
+      statusOs: r.status_os || 'Aberta'
     }));
   }catch(e){ console.error('Erro ao carregar', e); ORDENS = []; }
 }
@@ -643,7 +680,7 @@ async function insertOrdens(novasOrdens){
   if(novasOrdens.length === 0) return;
   const rows = novasOrdens.map(o=>({
     id:o.id, placa:o.placa, tecnico:o.tecnico, tipo:o.tipo,
-    associado:o.associado, abertura_iso:o.aberturaISO, treat:o.treat, obs:o.obs
+    associado:o.associado, abertura_iso:o.aberturaISO, treat:o.treat, obs:o.obs, status_os: o.statusOs || 'Aberta'
   }));
   const { error } = await sb.from('ordens_servico').insert(rows);
   if(error) console.error('Erro ao inserir ordens', error);
@@ -765,7 +802,8 @@ function handleFile(file){
             associado: associado || 'Não informado',
             aberturaISO: aberturaISO,
             treat: 'none',
-            obs: ''
+            obs: '',
+            statusOs: 'Aberta'
           };
           ORDENS.push(novaOrdem);
           novasOrdens.push(novaOrdem);
@@ -825,69 +863,85 @@ function renderAll(){
     document.getElementById('dashContent').style.display = 'block';
     document.getElementById('dashMeta').innerHTML = `<span><b>${total}</b> ordens na base</span><span><b>${tecnicosSet.size}</b> técnicos ativos</span><span>Prazo padrão: <b>${PRAZO_DIAS} dias</b></span>`;
 
-    document.getElementById('kpiTotal').textContent = total;
-    document.getElementById('kpiAtraso').textContent = atrasadas.length;
-    document.getElementById('kpiAtrasoSub').textContent = total ? Math.round(atrasadas.length/total*100)+'% do total' : '—';
-    const criticas = list.filter(o=>o.critica);
-    document.getElementById('kpiCritico').textContent = criticas.length;
-    document.getElementById('kpiCriticoSub').textContent = criticas.length ? 'Requer ação imediata' : 'Nenhuma no momento';
-    document.getElementById('kpiOk').textContent = noPrazo.length;
-    document.getElementById('kpiOkSub').textContent = total ? Math.round(noPrazo.length/total*100)+'% do total' : '—';
-    document.getElementById('kpiTecnicos').textContent = tecnicosSet.size;
+    const statusCount = {'Aberta':0,'Em Andamento':0,'Aguardando Peça':0,'Concluída':0,'Cancelada':0};
+    list.forEach(o=>{ const s = o.statusOs || 'Aberta'; if(statusCount[s]===undefined) statusCount[s]=0; statusCount[s]++; });
 
-    // ranking mini
+    document.getElementById('kpiTotal').textContent = total;
+    document.getElementById('kpiAbertas').textContent = statusCount['Aberta'];
+    document.getElementById('kpiAndamento').textContent = statusCount['Em Andamento'];
+    document.getElementById('kpiConcluidas').textContent = statusCount['Concluída'];
+    document.getElementById('kpiAtraso').textContent = atrasadas.length;
+
+    // ---- DONUT CHART: Distribuição por Status ----
+    const statusCores = {'Aberta':'var(--blue)','Em Andamento':'var(--amber)','Aguardando Peça':'#8b5cf6','Concluída':'var(--green)','Cancelada':'var(--text-mute)'};
+    const statusColoresHex = {'Aberta':'#5b8def','Em Andamento':'#e8a33d','Aguardando Peça':'#8b5cf6','Concluída':'#4caf7d','Cancelada':'#5b6a80'};
+    const statusAtivos = Object.entries(statusCount).filter(([,v])=>v>0);
+    const svg = document.getElementById('donutChart');
+    const R = 70, CX = 90, CY = 90, STROKE = 26;
+    const circunf = 2 * Math.PI * R;
+    let acc = 0;
+    let donutSvg = '';
+    if(total === 0){
+      donutSvg = `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#26313f" stroke-width="${STROKE}"/>`;
+    } else {
+      statusAtivos.forEach(([status, qtd])=>{
+        const frac = qtd/total;
+        const dash = frac * circunf;
+        const gap = circunf - dash;
+        const rotate = (acc/total) * 360 - 90;
+        donutSvg += `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${statusColoresHex[status]||'#5b6a80'}" stroke-width="${STROKE}" stroke-dasharray="${dash} ${gap}" transform="rotate(${rotate} ${CX} ${CY})"/>`;
+        acc += qtd;
+      });
+    }
+    svg.innerHTML = donutSvg + `<text x="${CX}" y="${CY-4}" text-anchor="middle" font-size="22" font-weight="800" fill="#eaeef4">${total}</text><text x="${CX}" y="${CY+16}" text-anchor="middle" font-size="10" fill="#8c99ac">total</text>`;
+
+    document.getElementById('donutLegend').innerHTML = statusAtivos.map(([status,qtd])=>`
+      <div class="donut-legend-item"><span class="sw" style="background:${statusCores[status]}"></span>${status} (${qtd})</div>
+    `).join('') || '<div style="color:var(--text-mute); font-size:12px;">Sem dados</div>';
+
+    // ---- BAR CHART: OS por Tipo de Serviço ----
+    const porTipoCount = {};
+    list.forEach(o=>{ porTipoCount[o.tipo] = (porTipoCount[o.tipo]||0) + 1; });
+    const maxTipo = Math.max(...Object.values(porTipoCount), 1);
+    const coresBar = {'Instalação':'#5b8def','Manutenção':'#9b7ee8','Retirada':'#e8a33d'};
+    document.getElementById('barChart').innerHTML = Object.entries(porTipoCount).map(([tipo,qtd])=>`
+      <div class="barchart-col">
+        <div class="barchart-value">${qtd}</div>
+        <div class="barchart-track"><div class="barchart-fill" style="height:${Math.round(qtd/maxTipo*100)}%; background:${coresBar[tipo]||'var(--blue)'}"></div></div>
+        <div class="barchart-label">${tipo}</div>
+      </div>
+    `).join('') || '<div style="color:var(--text-mute); font-size:12px; margin:auto;">Sem dados</div>';
+
+    // ---- RANKING DE TÉCNICOS (top 4) ----
     const porTecnico = {};
     list.forEach(o=>{
       porTecnico[o.tecnico] = porTecnico[o.tecnico] || {total:0, atraso:0};
       porTecnico[o.tecnico].total++;
       if(o.atrasada) porTecnico[o.tecnico].atraso++;
     });
-    const rankArr = Object.entries(porTecnico).sort((a,b)=> b[1].atraso - a[1].atraso || b[1].total - a[1].total);
-    const maxTotal = Math.max(...rankArr.map(r=>r[1].total), 1);
-    const miniBody = document.getElementById('rankMiniTable').querySelector('tbody');
-    miniBody.innerHTML = rankArr.slice(0,6).map(([nome,d])=>{
-      const iniciais = nome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
-      const pct = Math.round(d.total/maxTotal*100);
-      const barClass = d.atraso > 0 ? 'danger' : '';
-      return `<tr>
-        <td><div class="tech-cell"><div class="avatar">${iniciais}</div>${nome}</div></td>
-        <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${barClass}" style="width:${pct}%"></div></div><span class="count-num">${d.total}</span></div></td>
-        <td>${d.atraso}</td>
-        <td>${d.atraso>0 ? '<span class="badge atraso">Atenção</span>' : '<span class="badge ok">Em dia</span>'}</td>
-      </tr>`;
-    }).join('') || '<tr><td colspan="4" style="color:var(--text-mute)">Sem dados</td></tr>';
-
-    // tipo breakdown
-    const porTipo = {};
-    list.forEach(o=>{
-      porTipo[o.tipo] = porTipo[o.tipo] || {total:0, atraso:0};
-      porTipo[o.tipo].total++;
-      if(o.atrasada) porTipo[o.tipo].atraso++;
-    });
-    const cores = {'Instalação':'var(--blue)','Manutenção':'var(--violet)','Retirada':'var(--amber)'};
-    document.getElementById('tipoBreakdown').innerHTML = Object.entries(porTipo).map(([tipo,d])=>`
-      <div class="type-row">
-        <div class="type-name"><span class="type-swatch" style="background:${cores[tipo]||'var(--text-mute)'}"></span>${tipo}</div>
-        <div class="type-count"><span class="n">${d.total}</span>${d.atraso>0?`<span class="of-which">${d.atraso} atrasadas</span>`:''}</div>
+    const rankArr = Object.entries(porTecnico).sort((a,b)=> b[1].total - a[1].total);
+    document.getElementById('rankList').innerHTML = rankArr.slice(0,4).map(([nome,d],i)=>`
+      <div class="rank-list-item">
+        <div class="rank-num ${i===0?'top1':''}">${i+1}</div>
+        <div class="nome">${nome}</div>
+        <div class="qtd">${d.total} OS</div>
       </div>
-    `).join('');
+    `).join('') || '<div style="color:var(--text-mute); font-size:12px;">Sem dados</div>';
 
-    // tratamento breakdown (das atrasadas)
-    const treatLabels = {
-      none: ['Sem tratamento', 'var(--text-mute)'],
-      amarelo: ['Mensagem enviada ao técnico', 'var(--amber)'],
-      vermelho: ['Sem retorno do técnico', 'var(--red)'],
-      verde: ['Retorno recebido', 'var(--green)'],
-      azul: ['Sem retorno do associado', 'var(--blue)']
-    };
-    const porTreat = {none:0,amarelo:0,vermelho:0,verde:0,azul:0};
-    atrasadas.forEach(o=> porTreat[o.treat||'none']++ );
-    document.getElementById('treatBreakdown').innerHTML = Object.entries(porTreat).map(([k,v])=>`
-      <div class="type-row">
-        <div class="type-name"><span class="type-swatch" style="background:${treatLabels[k][1]}"></span>${treatLabels[k][0]}</div>
-        <div class="type-count"><span class="n">${v}</span></div>
-      </div>
-    `).join('');
+    // ---- ORDENS RECENTES ----
+    const statusBadgeCores = {'Aberta':'blue','Em Andamento':'amber','Aguardando Peça':'violet','Concluída':'green','Cancelada':'mute'};
+    const recentes = [...list].sort((a,b)=> new Date(b.aberturaISO) - new Date(a.aberturaISO)).slice(0,4);
+    document.getElementById('recentList').innerHTML = recentes.map(o=>{
+      const dt = new Date(o.aberturaISO);
+      const cor = statusColoresHex[o.statusOs] || '#5b6a80';
+      return `<div class="recent-item">
+        <div>
+          <span class="placa-chip">${o.placa}</span>
+          <div class="sub">${o.associado} · ${formatDateBR(dt)}</div>
+        </div>
+        <span class="status-badge" style="background:${cor}22; color:${cor}; border:1px solid ${cor}55;">${o.statusOs||'Aberta'}</span>
+      </div>`;
+    }).join('') || '<div style="color:var(--text-mute); font-size:12px;">Sem dados</div>';
   }
 
   // ---- ORDENS TABLE ----
@@ -996,9 +1050,19 @@ function applyFilters(){
     else if(o.atrasada) statusBadge = '<span class="badge atraso">Atrasada</span>';
     else statusBadge = '<span class="badge ok">No prazo</span>';
     return `<tr class="row-treat t-${treatVal} ${o.critica?'critico':''}">
+      <td><input type="checkbox" class="row-check" data-id="${o.id}" onchange="atualizarSelecao()"></td>
       <td><span class="placa-chip">${o.placa}</span></td>
       <td>${o.tecnico}</td>
       <td>${o.tipo}</td>
+      <td>
+        <select class="status-select" data-id="${o.id}" onchange="updateStatusOs(this)">
+          <option value="Aberta" ${o.statusOs==='Aberta'?'selected':''}>Aberta</option>
+          <option value="Em Andamento" ${o.statusOs==='Em Andamento'?'selected':''}>Em Andamento</option>
+          <option value="Aguardando Peça" ${o.statusOs==='Aguardando Peça'?'selected':''}>Aguardando Peça</option>
+          <option value="Concluída" ${o.statusOs==='Concluída'?'selected':''}>Concluída</option>
+          <option value="Cancelada" ${o.statusOs==='Cancelada'?'selected':''}>Cancelada</option>
+        </select>
+      </td>
       <td>${o.associado}</td>
       <td>${formatDateBR(dt)}</td>
       <td><span class="dias-num ${diasClass}">${o.dias}d</span></td>
@@ -1023,6 +1087,7 @@ function applyFilters(){
       </td>
     </tr>`;
   }).join('');
+  atualizarSelecao();
 }
 
 function updateTreat(sel){
@@ -1045,6 +1110,66 @@ function updateObs(input){
   if(!ordem) return;
   ordem.obs = input.value;
   updateOrdemRemote(id, {obs: input.value});
+}
+function updateStatusOs(sel){
+  const id = sel.dataset.id;
+  const ordem = ORDENS.find(o=>o.id===id);
+  if(!ordem) return;
+  ordem.statusOs = sel.value;
+  updateOrdemRemote(id, {status_os: sel.value});
+  renderAll();
+}
+
+/* =========================================================
+   SELEÇÃO E EXCLUSÃO EM MASSA
+========================================================= */
+function toggleSelectAll(checkbox){
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = checkbox.checked);
+  atualizarSelecao();
+}
+function getSelecionados(){
+  return Array.from(document.querySelectorAll('.row-check:checked')).map(cb => cb.dataset.id);
+}
+function atualizarSelecao(){
+  const selecionados = getSelecionados();
+  const btn = document.getElementById('btnExcluir');
+  const count = document.getElementById('selCount');
+  if(selecionados.length > 0){
+    btn.style.display = 'inline-flex';
+    count.style.display = 'inline';
+    count.textContent = `${selecionados.length} selecionada(s)`;
+  } else {
+    btn.style.display = 'none';
+    count.style.display = 'none';
+  }
+  const total = document.querySelectorAll('.row-check').length;
+  const selectAllBox = document.getElementById('selectAll');
+  if(selectAllBox) selectAllBox.checked = total > 0 && selecionados.length === total;
+}
+function confirmarExclusao(){
+  const selecionados = getSelecionados();
+  if(selecionados.length === 0) return;
+  const placas = selecionados.map(id => {
+    const o = ORDENS.find(x=>x.id===id);
+    return o ? o.placa : id;
+  });
+  const msg = selecionados.length === 1
+    ? `Excluir a ordem da placa ${placas[0]}? Essa ação não pode ser desfeita.`
+    : `Excluir ${selecionados.length} ordens selecionadas (${placas.slice(0,5).join(', ')}${placas.length>5?'...':''})? Essa ação não pode ser desfeita.`;
+  if(confirm(msg)){
+    excluirOrdens(selecionados);
+  }
+}
+async function excluirOrdens(ids){
+  const { error } = await sb.from('ordens_servico').delete().in('id', ids);
+  if(error){
+    alert('Erro ao excluir: ' + error.message);
+    return;
+  }
+  ORDENS = ORDENS.filter(o => !ids.includes(o.id));
+  const selectAllBox = document.getElementById('selectAll');
+  if(selectAllBox) selectAllBox.checked = false;
+  renderAll();
 }
 
 /* =========================================================
