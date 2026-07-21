@@ -86,39 +86,75 @@
 
   /* ===== SIDEBAR ===== */
   .sidebar{
-    width:190px; flex-shrink:0;
+    width:200px; flex-shrink:0;
     background:var(--panel);
     border-right:1px solid var(--line);
-    padding:22px 14px;
+    padding:20px 12px;
     display:flex; flex-direction:column;
     position:sticky; top:0; height:100vh;
   }
-  .brand{ display:flex; align-items:center; gap:10px; padding:0 6px 24px; }
+  .brand{ display:flex; align-items:center; gap:11px; padding:4px 6px 22px; border-bottom:1px solid var(--line); margin-bottom:16px; }
   .brand-mark{
-    width:32px;height:32px;border-radius:9px;
-    background:linear-gradient(135deg, var(--blue), #3a6fe0);
+    width:38px;height:38px;border-radius:11px;
+    background:linear-gradient(145deg, #5b8def 0%, #3a5fd0 55%, #2d4bb0 100%);
     display:flex;align-items:center;justify-content:center;
-    font-size:15px; font-weight:800; color:#08101f;
-    box-shadow:0 4px 14px rgba(91,141,239,.35);
+    flex-shrink:0; position:relative;
+    box-shadow:0 4px 16px rgba(59,100,220,.4), inset 0 1px 0 rgba(255,255,255,.25);
   }
-  .brand-txt{ line-height:1.15; }
-  .brand-txt b{ font-size:14px; display:block; color:var(--text);}
-  .brand-txt span{ font-size:10.5px; color:var(--text-mute); font-weight:600; letter-spacing:.03em;}
+  .brand-mark::after{
+    content:''; position:absolute; inset:0; border-radius:11px;
+    background:linear-gradient(145deg, rgba(255,255,255,.18), transparent 55%);
+    pointer-events:none;
+  }
+  .brand-txt{ line-height:1.2; }
+  .brand-txt b{ font-size:14.5px; display:block; color:var(--text); letter-spacing:.02em; font-weight:800;}
+  .brand-txt span{ font-size:9.5px; color:var(--text-mute); font-weight:700; letter-spacing:.08em;}
 
-  .nav-label{ font-size:10px; text-transform:uppercase; letter-spacing:.09em; color:var(--text-mute); font-weight:700; margin:18px 8px 8px;}
+  .nav-label{ font-size:10px; text-transform:uppercase; letter-spacing:.09em; color:var(--text-mute); font-weight:700; margin:20px 10px 9px;}
   .nav-item{
-    padding:9px 12px; border-radius:8px; font-size:13px; color:var(--text-dim);
-    font-weight:600; cursor:pointer; display:flex; align-items:center; gap:10px;
-    border:1px solid transparent; transition:.12s;
+    padding:10px 10px; border-radius:9px; font-size:13px; color:var(--text-dim);
+    font-weight:600; cursor:pointer; display:flex; align-items:center; gap:11px;
+    border:1px solid transparent; transition:.14s; position:relative; margin-bottom:2px;
   }
+  .nav-ic{ width:19px; height:19px; display:flex; align-items:center; justify-content:center; font-size:14.5px; flex-shrink:0; line-height:1; }
+  .nav-txt{ flex:1; min-width:0; }
   .nav-item:hover{ background:var(--panel-2); color:var(--text); }
-  .nav-item.active{ background:var(--panel-3); color:var(--text); border-color:var(--line);}
-  .nav-item svg{ width:15px; height:15px; opacity:.85; flex-shrink:0;}
-  .nav-badge{
-    margin-left:auto; font-size:10px; font-weight:800; padding:1px 6px; border-radius:20px;
-    background:var(--red-bg); color:var(--red);
+  .nav-item.active{
+    background:linear-gradient(90deg, var(--blue-bg), transparent);
+    color:var(--text); font-weight:700;
   }
-  .sidebar-foot{ margin-top:auto; padding:10px 8px 0; border-top:1px solid var(--line); font-size:10.5px; color:var(--text-mute);}
+  .nav-item.active::before{
+    content:''; position:absolute; left:-12px; top:50%; transform:translateY(-50%);
+    width:3px; height:20px; border-radius:0 3px 3px 0; background:var(--blue);
+  }
+  .nav-item.active .nav-ic{ filter:none; }
+  .nav-badge{
+    margin-left:auto; font-size:10px; font-weight:800; padding:2px 7px; border-radius:20px;
+    background:var(--red-bg); color:var(--red); flex-shrink:0;
+  }
+  .sidebar-foot{ margin-top:auto; padding:12px 10px 0; border-top:1px solid var(--line); font-size:10.5px; color:var(--text-mute);}
+  .sidebar-foot-block{ margin-top:auto; padding-top:14px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:6px; }
+  .status-line{ display:flex; align-items:center; gap:7px; font-size:10.5px; font-weight:600; color:var(--text-mute); padding:0 6px; }
+  .status-dot{ width:6px; height:6px; border-radius:50%; background:var(--text-mute); flex-shrink:0; }
+
+  .user-card{
+    margin-top:12px; padding:9px 10px; background:var(--panel-2); border:1px solid var(--line);
+    border-radius:10px; display:flex; align-items:center; gap:9px;
+  }
+  .user-avatar{
+    width:30px; height:30px; border-radius:9px; flex-shrink:0;
+    background:linear-gradient(145deg, var(--blue), #3a5fd0);
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:800; color:#fff;
+  }
+  .user-info{ flex:1; min-width:0; }
+  .user-name{ font-size:12px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .user-role{ font-size:10px; color:var(--text-mute); font-weight:600; }
+  .user-swap{
+    background:none; border:none; color:var(--text-mute); font-size:14px; cursor:pointer;
+    padding:4px; border-radius:6px; flex-shrink:0; transition:.12s;
+  }
+  .user-swap:hover{ background:var(--panel-3); color:var(--blue); }
 
   /* ===== MAIN ===== */
   .main{ flex:1; min-width:0; padding:24px 20px 60px; max-width:1600px; }
@@ -355,25 +391,46 @@
   <!-- ===== SIDEBAR ===== -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">PS</div>
+      <div class="brand-mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" fill="white" fill-opacity="0.16"/>
+          <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" stroke="white" stroke-width="1.4"/>
+          <circle cx="12" cy="10" r="3.1" fill="white"/>
+          <path d="M12 5.2v-2M12 5.2a4.8 4.8 0 0 1 0 0" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity="0"/>
+          <path d="M6.4 7.6a5.6 5.6 0 0 1 0 4.8M17.6 7.6a5.6 5.6 0 0 1 0 4.8" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity=".55"/>
+        </svg>
+      </div>
       <div class="brand-txt"><b>PROSULSAT</b><span>SISTEMA DE ORDENS</span></div>
     </div>
 
     <div class="nav-label">Geral</div>
-    <div class="nav-item active" data-view="dashboard">📊 Dashboard</div>
-    <div class="nav-item" data-view="ordens">🚗 Ordens de Serviço <span class="nav-badge" id="navBadgeOrdens">0</span></div>
-    <div class="nav-item" data-view="ranking">🏆 Ranking de Técnicos</div>
+    <div class="nav-item active" data-view="dashboard"><span class="nav-ic">📊</span><span class="nav-txt">Dashboard</span></div>
+    <div class="nav-item" data-view="ordens"><span class="nav-ic">🚗</span><span class="nav-txt">Ordens de Serviço</span><span class="nav-badge" id="navBadgeOrdens">0</span></div>
+    <div class="nav-item" data-view="ranking"><span class="nav-ic">🏆</span><span class="nav-txt">Ranking de Técnicos</span></div>
 
     <div class="nav-label">Dados</div>
-    <div class="nav-item" data-view="importar">⤒ Importar Excel</div>
+    <div class="nav-item" data-view="importar"><span class="nav-ic">⤒</span><span class="nav-txt">Importar Excel</span></div>
 
-    <div class="sidebar-foot" id="sidebarFoot">Nenhuma base importada</div>
-    <div style="margin-top:8px; font-size:10px; color:var(--green); font-weight:700; padding:0 8px; line-height:1.4;">● Conectado ao banco compartilhado (Supabase)</div>
-    <div id="userBadge" style="margin-top:10px; padding:8px; background:var(--panel-2); border-radius:8px; font-size:11px;">
-      <div style="font-weight:700; color:var(--text);" id="userName">—</div>
-      <div style="color:var(--text-mute); font-size:10px;" id="userRole">—</div>
-      <div style="color:var(--blue); font-size:10px; font-weight:700; cursor:pointer; margin-top:4px;" onclick="trocarUsuario()">Trocar usuário</div>
+    <div class="sidebar-foot-block">
+      <div class="status-line">
+        <span class="status-dot"></span>
+        <span id="sidebarFoot">Nenhuma base importada</span>
+      </div>
+      <div class="status-line" style="color:var(--green);">
+        <span class="status-dot" style="background:var(--green);"></span>
+        <span>Banco compartilhado</span>
+      </div>
     </div>
+
+    <div id="userBadge" class="user-card">
+      <div class="user-avatar" id="userAvatar">—</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">—</div>
+        <div class="user-role" id="userRole">—</div>
+      </div>
+      <button class="user-swap" onclick="trocarUsuario()" title="Trocar usuário">⇄</button>
+    </div>
+
     <div class="theme-toggle-wrap">
       <span class="theme-ic">☀️</span>
       <label class="theme-switch">
@@ -382,7 +439,7 @@
       </label>
       <span class="theme-ic">🌙</span>
     </div>
-    <div class="nav-item" style="margin-top:6px; font-size:12px;" onclick="refreshData()">🔄 Atualizar dados</div>
+    <div class="nav-item" style="margin-top:4px;" onclick="refreshData()"><span class="nav-ic">🔄</span><span class="nav-txt">Atualizar dados</span></div>
   </aside>
 
   <!-- ===== MAIN ===== -->
@@ -729,6 +786,8 @@ function trocarUsuario(){
 function atualizarBadgeUsuario(){
   document.getElementById('userName').textContent = USUARIO_ATUAL.nome;
   document.getElementById('userRole').textContent = USUARIO_ATUAL.papel;
+  const iniciais = (USUARIO_ATUAL.nome||'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  document.getElementById('userAvatar').textContent = iniciais || '—';
 }
 
 function parseDataBR(str){
@@ -1217,15 +1276,19 @@ function updateObs(input){
   const id = input.dataset.id;
   const ordem = ORDENS.find(o=>o.id===id);
   if(!ordem) return;
-  const valorAnterior = ordem.obs;
-  ordem.obs = input.value;
-  updateOrdemRemote(id, {obs: input.value});
-  if(input.value.trim() !== '' && input.value !== valorAnterior){
-    registrarHistoricoObs(id, input.value);
-    input.style.transition = 'background-color .2s';
-    input.style.backgroundColor = 'var(--green-bg)';
-    setTimeout(()=>{ input.style.backgroundColor = ''; }, 500);
+  const texto = input.value.trim();
+  if(texto === ''){
+    ordem.obs = '';
+    updateOrdemRemote(id, {obs: ''});
+    return;
   }
+  registrarHistoricoObs(id, texto);
+  ordem.obs = '';
+  updateOrdemRemote(id, {obs: ''});
+  input.value = '';
+  input.style.transition = 'background-color .2s';
+  input.style.backgroundColor = 'var(--green-bg)';
+  setTimeout(()=>{ input.style.backgroundColor = ''; }, 500);
 }
 function updateStatusOs(sel){
   const id = sel.dataset.id;
