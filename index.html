@@ -556,6 +556,10 @@
           <option value="verde">🟢 Retorno recebido</option>
           <option value="azul">🔵 Sem retorno do associado</option>
         </select>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <input type="date" id="fData" style="padding:8px 10px;" title="Filtrar por data de abertura">
+          <button class="btn btn-ghost btn-sm" id="btnLimparData" style="display:none;" onclick="limparFiltroData()">✕ Limpar data</button>
+        </div>
       </div>
 
       <div id="ordensEmpty" class="empty">
@@ -1278,10 +1282,15 @@ function populateFilterOptions(list){
   });
 }
 
-['fSearch','fTipo','fTecnico','fStatus','fTreat'].forEach(id=>{
+['fSearch','fTipo','fTecnico','fStatus','fTreat','fData'].forEach(id=>{
   document.getElementById(id).addEventListener('input', applyFilters);
   document.getElementById(id).addEventListener('change', applyFilters);
 });
+
+function limparFiltroData(){
+  document.getElementById('fData').value = '';
+  applyFilters();
+}
 
 let ordenacaoAbertura = null; // null = padrão (mais atrasado primeiro), 'desc' = mais novo primeiro, 'asc' = mais velho primeiro
 function alternarOrdenacaoAbertura(){
@@ -1300,6 +1309,9 @@ function applyFilters(){
   const tecnico = document.getElementById('fTecnico').value;
   const status = document.getElementById('fStatus').value;
   const treat = document.getElementById('fTreat').value;
+  const dataFiltro = document.getElementById('fData').value;
+
+  document.getElementById('btnLimparData').style.display = dataFiltro ? 'inline-flex' : 'none';
 
   let filtered = list.filter(o=>{
     if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
@@ -1309,6 +1321,7 @@ function applyFilters(){
     if(status === 'ok' && o.atrasada) return false;
     if(treat === 'none' && o.treat && o.treat !== 'none') return false;
     if(treat && treat !== 'none' && o.treat !== treat) return false;
+    if(dataFiltro && o.aberturaISO !== dataFiltro) return false;
     return true;
   });
 
