@@ -802,6 +802,16 @@ async function registrarHistorico(ordemId, treat, obs){
   if(error) console.error('Erro ao registrar histórico', error);
 }
 
+async function registrarHistoricoObs(ordemId, obs){
+  const { error } = await sb.from('ordens_historico').insert({
+    ordem_id: ordemId,
+    treat: 'Observação adicionada',
+    obs: obs,
+    usuario: USUARIO_ATUAL.nome || 'Não identificado'
+  });
+  if(error) console.error('Erro ao registrar histórico de observação', error);
+}
+
 async function verHistorico(ordemId, placa){
   document.getElementById('histTitle').textContent = `Histórico — ${placa}`;
   document.getElementById('histBody').innerHTML = '<div style="color:var(--text-mute); font-size:12.5px;">Carregando...</div>';
@@ -1179,7 +1189,7 @@ function applyFilters(){
         ${o.dataUltimoContato ? `<div style="font-weight:700; font-size:11.5px;">${formatDateBR(new Date(o.dataUltimoContato+'T00:00:00'))}</div><div style="font-size:10px; color:var(--text-mute);">${o.atualizadoPor||''}</div>` : '<span style="color:var(--text-mute); font-size:11px;">—</span>'}
       </td>
       <td>
-        <input type="text" class="obs-input" data-id="${o.id}" value="${(o.obs||'').replace(/"/g,'&quot;')}" placeholder="Observação..." onchange="updateObs(this)">
+        <input type="text" class="obs-input" data-id="${o.id}" value="${(o.obs||'').replace(/"/g,'&quot;')}" placeholder="Observação..." onchange="updateObs(this)" onkeydown="if(event.key==='Enter'){ event.preventDefault(); this.blur(); }">
       </td>
       <td>
         <button class="hist-btn" onclick="verHistorico('${o.id}','${o.placa}')">Ver histórico</button>
@@ -1207,8 +1217,15 @@ function updateObs(input){
   const id = input.dataset.id;
   const ordem = ORDENS.find(o=>o.id===id);
   if(!ordem) return;
+  const valorAnterior = ordem.obs;
   ordem.obs = input.value;
   updateOrdemRemote(id, {obs: input.value});
+  if(input.value.trim() !== '' && input.value !== valorAnterior){
+    registrarHistoricoObs(id, input.value);
+    input.style.transition = 'background-color .2s';
+    input.style.backgroundColor = 'var(--green-bg)';
+    setTimeout(()=>{ input.style.backgroundColor = ''; }, 500);
+  }
 }
 function updateStatusOs(sel){
   const id = sel.dataset.id;
