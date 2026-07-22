@@ -234,7 +234,8 @@
   td{ padding:7px 6px; font-size:11.5px; border-bottom:1px solid #1c2634; vertical-align:middle; text-align:center; }
   tr:last-child td{ border-bottom:none;}
   .table-wrap tbody tr{ transition:background .12s ease; }
-  .table-wrap tbody tr:hover{ background:var(--panel-2); }
+  .table-wrap tbody tr:nth-child(even){ background:var(--panel-2); }
+  .table-wrap tbody tr:hover{ background:var(--blue-bg) !important; }
   #ordensTableWrap th:nth-child(2), #ordensTableWrap td:nth-child(2),
   #ordensTableWrap th:nth-child(3), #ordensTableWrap td:nth-child(3),
   #ordensTableWrap th:nth-child(6), #ordensTableWrap td:nth-child(6){ text-align:left; }
@@ -267,15 +268,16 @@
   .empty p{ font-size:12.5px; max-width:360px; margin:0 auto 18px; line-height:1.5;}
 
   /* ===== ORDENS TABLE VIEW ===== */
-  .filters{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;}
-  select, input[type=text], input[type=search]{
+  .filters{ display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; align-items:center; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:var(--shadow-card); }
+  select, input[type=text], input[type=search], input[type=date]{
     background:var(--panel-2); border:1px solid var(--line); color:var(--text);
-    padding:8px 12px; border-radius:8px; font-size:12.5px; font-weight:600;
+    padding:9px 12px; border-radius:9px; font-size:12.5px; font-weight:600;
+    transition:border-color .12s;
   }
   select:focus, input:focus{ outline:none; border-color:var(--blue); }
-  .search-box{ position:relative; flex:1; min-width:180px;}
-  .search-box input{ width:100%; padding-left:32px;}
-  .search-box .ic{ position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:.5; font-size:12px;}
+  .search-box{ position:relative; flex:2; min-width:220px;}
+  .search-box input{ width:100%; padding-left:34px;}
+  .search-box .ic{ position:absolute; left:11px; top:50%; transform:translateY(-50%); opacity:.5; font-size:12px;}
 
   .table-wrap{ background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow-card);}
   .table-wrap table{ font-size:12.5px;}
@@ -291,7 +293,7 @@
   .row-treat.t-azul{ border-left-color:var(--blue); }
   .row-treat.t-acesso{ border-left-color:var(--teal); }
   .row-treat.t-none{ border-left-color:#2a3547; }
-  .row-treat.critico{ background:rgba(227,99,79,.06); }
+  .row-treat.critico{ border-left-width:3px; }
   .dias-num.super-crit{ color:#fff; background:var(--red); padding:1px 5px; border-radius:5px; font-size:10.5px; }
   .hist-btn{ background:none; border:none; color:var(--blue); cursor:pointer; font-size:10px; font-weight:700; padding:2px 0; }
   .hist-btn:hover{ text-decoration:underline; }
@@ -600,7 +602,7 @@
       <div class="filters">
         <div class="search-box">
           <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
-          <input type="search" id="fSearch" autocomplete="off" placeholder="Buscar por placa, técnico ou associado...">
+          <input type="search" id="fSearch" autocomplete="off" placeholder="Buscar placa, técnico ou associado...">
         </div>
         <select id="fTipo" autocomplete="off"><option value="">Tipo de serviço (todos)</option></select>
         <select id="fTecnico" autocomplete="off"><option value="">Técnico (todos)</option></select>
