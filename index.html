@@ -15,6 +15,9 @@
 <title>PROSULSAT — Ordens de Serviço</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
   :root{
     --bg: #0c1118;
@@ -555,7 +558,8 @@
           <button class="btn btn-ghost btn-sm" id="btnExcluir" style="display:none; color:var(--red); border-color:var(--red-line);" onclick="confirmarExclusao()">🗑️ Excluir selecionadas</button>
           <button class="btn btn-primary btn-sm" onclick="abrirModalNovaOrdem()">➕ Nova ordem manual</button>
           <button class="btn btn-primary btn-sm" onclick="checkOverdueAndAlert(true)">⚠️ Ver ordens em atraso</button>
-          <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⤓ Exportar relatório</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportExcelPro()">📊 Exportar Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportPDF()">📄 Exportar PDF</button>
         </div>
       </div>
 
@@ -781,10 +785,11 @@
               <th>Perfil</th>
               <th style="text-align:left;">E-mail</th>
               <th>Criado em</th>
+              <th>Ação</th>
             </tr>
           </thead>
           <tbody id="usuariosBody">
-            <tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Carregando...</td></tr>
+            <tr><td colspan="5" style="color:var(--text-mute); text-align:center; padding:20px;">Carregando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -916,6 +921,28 @@
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="document.getElementById('placaDuplicadaModal').classList.remove('show')">Cancelar</button>
       <button class="btn btn-primary" style="background:var(--amber); color:#1a1000;" onclick="confirmarCadastroDuplicado()">Continuar mesmo assim</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL DE REDEFINIR SENHA ===== -->
+<div class="modal-overlay" id="redefinirSenhaModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-head">
+      <div class="ic" style="background:var(--blue-bg); border-color:var(--blue-line);">🔑</div>
+      <div>
+        <h3>Redefinir senha</h3>
+        <p id="redefinirSenhaNome">Definir nova senha para o usuário</p>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:18px 20px;">
+      <label class="form-label">Nova senha</label>
+      <input type="password" id="novaSenhaInput" placeholder="Mínimo 6 caracteres" style="width:100%; padding:10px 12px;">
+      <div id="redefinirSenhaErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700; margin-top:10px;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="document.getElementById('redefinirSenhaModal').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarRedefinirSenha()">Salvar nova senha</button>
     </div>
   </div>
 </div>
@@ -1483,11 +1510,11 @@ document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
 
 async function carregarUsuarios(){
   const tbody = document.getElementById('usuariosBody');
-  tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Carregando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-mute); text-align:center; padding:20px;">Carregando...</td></tr>';
 
   const { data, error } = await sb.from('perfis_usuarios').select('*').order('criado_em', {ascending:false});
   if(error || !data || data.length === 0){
-    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhum usuário encontrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhum usuário encontrado.</td></tr>';
     return;
   }
 
@@ -1504,8 +1531,49 @@ async function carregarUsuarios(){
       <td><span class="badge role-badge ${classe}">${u.papel||'—'}</span></td>
       <td style="text-align:left; color:var(--text-dim);">${u.email||'—'}</td>
       <td>${dataFmt}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="abrirRedefinirSenha('${u.id}','${(u.nome||'').replace(/'/g,"\\'")}')">🔑 Redefinir senha</button></td>
     </tr>`;
   }).join('');
+}
+
+let USUARIO_ID_REDEFINIR = null;
+function abrirRedefinirSenha(userId, nome){
+  USUARIO_ID_REDEFINIR = userId;
+  document.getElementById('redefinirSenhaNome').textContent = `Definir nova senha para ${nome}`;
+  document.getElementById('novaSenhaInput').value = '';
+  document.getElementById('redefinirSenhaErro').style.display = 'none';
+  document.getElementById('redefinirSenhaModal').classList.add('show');
+}
+
+async function confirmarRedefinirSenha(){
+  const novaSenha = document.getElementById('novaSenhaInput').value;
+  const erroBox = document.getElementById('redefinirSenhaErro');
+  erroBox.style.display = 'none';
+
+  if(!novaSenha || novaSenha.length < 6){
+    erroBox.textContent = 'A senha precisa ter no mínimo 6 caracteres.';
+    erroBox.style.display = 'block';
+    return;
+  }
+
+  try{
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/resetar-senha`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: USUARIO_ID_REDEFINIR, novaSenha })
+    });
+    const result = await resp.json();
+    if(!resp.ok || result.error){
+      erroBox.textContent = result.error || 'Erro ao redefinir senha.';
+      erroBox.style.display = 'block';
+      return;
+    }
+    document.getElementById('redefinirSenhaModal').classList.remove('show');
+    mostrarResultadoImportacao(true, 'Senha redefinida com sucesso. Informe a nova senha para o usuário.');
+  }catch(e){
+    erroBox.textContent = 'Erro de conexão: ' + e.message;
+    erroBox.style.display = 'block';
+  }
 }
 
 /* =========================================================
@@ -2224,20 +2292,261 @@ function closeModal(){ document.getElementById('alertModal').classList.remove('s
 /* =========================================================
    EXPORTAÇÃO CSV
 ========================================================= */
-function exportCSV(){
+function obterListaParaExportacao(){
   const list = computeStats();
-  const treatLabels = {none:'Sem tratamento',amarelo:'Mensagem enviada ao técnico',vermelho:'Sem retorno do técnico',verde:'Retorno recebido',azul:'Sem retorno do associado',acesso:'Acesso enviado ao associado'};
-  let csv = 'Placa;Tecnico;Tipo de Servico;Associado;Data Abertura;Dias em Aberto;Status;Tratamento;Observacao\n';
-  list.sort((a,b)=>b.dias-a.dias).forEach(o=>{
-    const dt = new Date(o.aberturaISO+'T00:00:00');
-    csv += [o.placa, o.tecnico, o.tipo, o.associado, formatDateBR(dt), o.dias, o.atrasada?'Atrasada':'No prazo', treatLabels[o.treat||'none'], (o.obs||'').replace(/;/g,',')].join(';') + '\n';
+  const search = document.getElementById('fSearch').value.trim().toLowerCase();
+  const tipo = document.getElementById('fTipo').value;
+  const tecnico = document.getElementById('fTecnico').value;
+  const status = document.getElementById('fStatus').value;
+  const treat = document.getElementById('fTreat').value;
+  const dataInicio = document.getElementById('fDataInicio').value;
+  const dataFim = document.getElementById('fDataFim').value;
+
+  let filtered = list.filter(o=>{
+    if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
+    if(tipo && o.tipo !== tipo) return false;
+    if(tecnico && o.tecnico !== tecnico) return false;
+    if(status === 'atraso' && !o.atrasada) return false;
+    if(status === 'ok' && o.atrasada) return false;
+    if(treat === 'none' && o.treat && o.treat !== 'none') return false;
+    if(treat && treat !== 'none' && o.treat !== treat) return false;
+    if(dataInicio && o.aberturaISO < dataInicio) return false;
+    if(dataFim && o.aberturaISO > dataFim) return false;
+    return true;
   });
-  const blob = new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'});
+
+  if(ordenacaoAbertura === 'desc') filtered.sort((a,b)=> b.aberturaISO.localeCompare(a.aberturaISO));
+  else if(ordenacaoAbertura === 'asc') filtered.sort((a,b)=> a.aberturaISO.localeCompare(b.aberturaISO));
+  else filtered.sort((a,b)=> b.dias - a.dias);
+
+  return filtered;
+}
+
+const TREAT_LABELS_EXPORT = {none:'Sem tratamento', amarelo:'Msg. enviada ao técnico', vermelho:'Sem retorno técnico', verde:'Retorno recebido', azul:'Sem retorno associado', acesso:'Acesso enviado'};
+
+/* =========================================================
+   EXPORTAÇÃO EM EXCEL PROFISSIONAL (ExcelJS)
+========================================================= */
+async function exportExcelPro(){
+  const list = obterListaParaExportacao();
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'PROSULSAT';
+  workbook.created = new Date();
+
+  const sheet = workbook.addWorksheet('Ordens de Serviço', {
+    views: [{ state: 'frozen', ySplit: 4 }]
+  });
+
+  const AZUL = 'FF16202E';
+  const AZUL_CLARO = 'FF3568D4';
+  const CINZA_CLARO = 'FFF3F5F8';
+  const BRANCO = 'FFFFFFFF';
+  const VERMELHO = 'FFD64C39';
+  const AMBAR = 'FFC9840F';
+  const VERDE = 'FF2F9160';
+
+  // ---- Cabeçalho / título ----
+  sheet.mergeCells('A1:I1');
+  const tituloCell = sheet.getCell('A1');
+  tituloCell.value = 'PROSULSAT — Relatório de Ordens de Serviço';
+  tituloCell.font = { size: 16, bold: true, color: { argb: BRANCO } };
+  tituloCell.alignment = { vertical: 'middle', horizontal: 'left' };
+  tituloCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL } };
+  sheet.getRow(1).height = 30;
+
+  sheet.mergeCells('A2:I2');
+  const agora = new Date();
+  const dataGeracao = `${String(agora.getDate()).padStart(2,'0')}/${String(agora.getMonth()+1).padStart(2,'0')}/${agora.getFullYear()} às ${String(agora.getHours()).padStart(2,'0')}:${String(agora.getMinutes()).padStart(2,'0')}`;
+  const subCell = sheet.getCell('A2');
+  subCell.value = `Gerado em ${dataGeracao} por ${USUARIO_ATUAL.nome || 'Usuário'} · ${list.length} ordem(ns) neste relatório`;
+  subCell.font = { size: 10, italic: true, color: { argb: 'FF5C6A80' } };
+  sheet.getRow(2).height = 20;
+
+  sheet.getRow(3).height = 6; // respiro
+
+  // ---- Cabeçalho da tabela ----
+  const headerRow = sheet.getRow(4);
+  const headers = ['Placa','Técnico','Tipo','Associado','Abertura','Dias','Status','Tratamento','Observação'];
+  headerRow.values = headers;
+  headerRow.eachCell(cell=>{
+    cell.font = { bold: true, color: { argb: BRANCO }, size: 10.5 };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL } };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.border = { bottom: { style: 'thin', color: { argb: AZUL } } };
+  });
+  headerRow.height = 22;
+
+  sheet.columns = [
+    { key:'placa', width: 14 },
+    { key:'tecnico', width: 26 },
+    { key:'tipo', width: 14 },
+    { key:'associado', width: 30 },
+    { key:'abertura', width: 13 },
+    { key:'dias', width: 8 },
+    { key:'status', width: 12 },
+    { key:'tratamento', width: 20 },
+    { key:'obs', width: 34 },
+  ];
+
+  // ---- Linhas de dados ----
+  list.forEach((o, i)=>{
+    const dt = new Date(o.aberturaISO+'T00:00:00');
+    const rowIdx = 5 + i;
+    const row = sheet.getRow(rowIdx);
+    row.values = [
+      o.placa, o.tecnico, o.tipo, o.associado, formatDateBR(dt), o.dias,
+      o.critica ? 'Crítico' : (o.atrasada ? 'Atrasada' : 'No prazo'),
+      TREAT_LABELS_EXPORT[o.treat||'none'], o.obs || ''
+    ];
+    row.eachCell((cell, colNum)=>{
+      cell.font = { size: 10, color: { argb: 'FF16202E' } };
+      cell.alignment = { vertical: 'middle', horizontal: colNum===2||colNum===4||colNum===9 ? 'left' : 'center' };
+      cell.border = { bottom: { style: 'thin', color: { argb: 'FFE1E6ED' } } };
+      if(i % 2 === 1){
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: CINZA_CLARO } };
+      }
+    });
+    // Placa em monoespaçada e negrito
+    row.getCell(1).font = { name: 'Consolas', bold: true, size: 10 };
+    // Cor do status
+    const statusCell = row.getCell(7);
+    if(o.critica){ statusCell.font = { bold: true, size: 10, color: { argb: VERMELHO } }; }
+    else if(o.atrasada){ statusCell.font = { bold: true, size: 10, color: { argb: AMBAR } }; }
+    else { statusCell.font = { bold: true, size: 10, color: { argb: VERDE } }; }
+    row.height = 18;
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `ordens-servico-${new Date().toISOString().slice(0,10)}.csv`;
+  a.href = url;
+  a.download = `relatorio-os-prosulsat-${paraISOLocal(new Date())}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/* =========================================================
+   EXPORTAÇÃO EM PDF PROFISSIONAL
+========================================================= */
+function exportPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const list = obterListaParaExportacao();
+
+  const pageW = doc.internal.pageSize.getWidth();
+  const azul = [53, 104, 212];
+  const azulEscuro = [22, 32, 46];
+  const cinza = [92, 106, 128];
+  const vermelho = [214, 76, 57];
+  const verde = [47, 145, 96];
+  const amber = [201, 84, 15];
+
+  // ---- CABEÇALHO ----
+  doc.setFillColor(...azulEscuro);
+  doc.rect(0, 0, pageW, 24, 'F');
+  doc.setFillColor(...azul);
+  doc.roundedRect(10, 6, 12, 12, 3, 3, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('PS', 16, 13.5, {align:'center'});
+
+  doc.setFontSize(14);
+  doc.text('PROSULSAT', 27, 11);
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(180,190,205);
+  doc.text('Relatório de Ordens de Serviço', 27, 16.5);
+
+  doc.setFontSize(8);
+  doc.setTextColor(200,208,220);
+  const agora = new Date();
+  const dataGeracao = `${String(agora.getDate()).padStart(2,'0')}/${String(agora.getMonth()+1).padStart(2,'0')}/${agora.getFullYear()} às ${String(agora.getHours()).padStart(2,'0')}:${String(agora.getMinutes()).padStart(2,'0')}`;
+  doc.text(`Gerado em ${dataGeracao} · por ${USUARIO_ATUAL.nome || 'Usuário'}`, pageW - 10, 11, {align:'right'});
+  doc.text(`${list.length} ordem(ns) neste relatório`, pageW - 10, 16.5, {align:'right'});
+
+  // ---- RESUMO EXECUTIVO ----
+  const total = list.length;
+  const atrasadas = list.filter(o=>o.atrasada).length;
+  const criticas = list.filter(o=>o.critica).length;
+  const noPrazo = total - atrasadas;
+
+  let y = 32;
+  const kpis = [
+    {label:'Total de ordens', valor: total, cor: azulEscuro},
+    {label:'Em atraso', valor: atrasadas, cor: vermelho},
+    {label:'Críticas (20+ dias)', valor: criticas, cor: amber},
+    {label:'No prazo', valor: noPrazo, cor: verde},
+  ];
+  const kpiW = (pageW - 20 - 3*4) / 4;
+  kpis.forEach((k, i)=>{
+    const x = 10 + i*(kpiW+4);
+    doc.setDrawColor(225,230,237);
+    doc.setFillColor(248,249,251);
+    doc.roundedRect(x, y, kpiW, 16, 2, 2, 'FD');
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...k.cor);
+    doc.text(String(k.valor), x + 5, y + 10);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...cinza);
+    doc.text(k.label, x + 5, y + 14);
+  });
+
+  y += 24;
+
+  // ---- TABELA ----
+  const body = list.map(o=>{
+    const dt = new Date(o.aberturaISO+'T00:00:00');
+    return [
+      o.placa, o.tecnico, o.tipo, o.associado, formatDateBR(dt), `${o.dias}d`,
+      o.critica ? 'Crítico' : (o.atrasada ? 'Atrasada' : 'No prazo'),
+      TREAT_LABELS_EXPORT[o.treat||'none'],
+      o.obs || '—'
+    ];
+  });
+
+  doc.autoTable({
+    startY: y,
+    head: [['Placa','Técnico','Tipo','Associado','Abertura','Dias','Status','Tratamento','Observação']],
+    body: body,
+    theme: 'grid',
+    styles: { fontSize: 7.5, cellPadding: 2, textColor: [22,32,46], lineColor: [225,230,237], lineWidth: 0.1 },
+    headStyles: { fillColor: azulEscuro, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
+    alternateRowStyles: { fillColor: [248,249,251] },
+    columnStyles: {
+      0: { cellWidth: 20, font: 'courier', fontStyle: 'bold' },
+      4: { cellWidth: 20 },
+      5: { cellWidth: 12, halign: 'center' },
+      6: { cellWidth: 20 },
+    },
+    didParseCell: function(data){
+      if(data.section === 'body' && data.column.index === 6){
+        const val = data.cell.raw;
+        if(val === 'Crítico'){ data.cell.styles.textColor = vermelho; data.cell.styles.fontStyle = 'bold'; }
+        else if(val === 'Atrasada'){ data.cell.styles.textColor = amber; data.cell.styles.fontStyle = 'bold'; }
+        else if(val === 'No prazo'){ data.cell.styles.textColor = verde; }
+      }
+    },
+    margin: { left: 10, right: 10 },
+  });
+
+  // ---- RODAPÉ ----
+  const totalPaginas = doc.internal.getNumberOfPages();
+  for(let p = 1; p <= totalPaginas; p++){
+    doc.setPage(p);
+    const pageH = doc.internal.pageSize.getHeight();
+    doc.setDrawColor(225,230,237);
+    doc.line(10, pageH - 10, pageW - 10, pageH - 10);
+    doc.setFontSize(7.5);
+    doc.setTextColor(...cinza);
+    doc.text('PROSULSAT · Sistema de Ordens de Serviço', 10, pageH - 6);
+    doc.text(`Página ${p} de ${totalPaginas}`, pageW - 10, pageH - 6, {align:'right'});
+  }
+
+  doc.save(`relatorio-os-prosulsat-${paraISOLocal(new Date())}.pdf`);
 }
 
 /* =========================================================
