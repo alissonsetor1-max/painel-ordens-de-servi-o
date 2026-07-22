@@ -672,27 +672,47 @@
       <div class="topbar">
         <div>
           <h1>🔑 Acesso Enviado</h1>
-          <div class="meta"><span id="acessosMeta">Ordens marcadas como "Acesso enviado ao associado"</span></div>
+          <div class="meta"><span id="acessosMeta">Ordens executadas pelos técnicos, aguardando confirmação de envio de acesso</span></div>
         </div>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('dropZoneAcessos').scrollIntoView({behavior:'smooth'})">⤒ Importar ordens concluídas</button>
+      </div>
+
+      <div class="card" style="padding-bottom:20px; margin-bottom:16px;">
+        <div class="card-head"><h2>Importar ordens concluídas do dia</h2><span class="tag">.xlsx</span></div>
+        <div class="upload-zone" id="dropZoneAcessos">
+          <div class="icon">🔑</div>
+          <div class="main-txt">Arraste aqui o Excel das ordens já executadas pelos técnicos</div>
+          <div>Elas entram nesta fila separada, sem tratamento definido — você decide manualmente, uma por uma, se o acesso já foi enviado ao associado</div>
+          <input type="file" id="fileInputAcessos" accept=".xlsx,.xls" style="display:none;">
+        </div>
+        <div class="import-log" id="importLogAcessos"></div>
+      </div>
+
+      <div class="filters">
+        <select id="fAcessoTratamento" onchange="renderAcessos()">
+          <option value="">Tratamento (todos)</option>
+          <option value="pendente">Ainda não enviado</option>
+          <option value="acesso">🔑 Acesso enviado</option>
+        </select>
       </div>
 
       <div id="acessosEmpty" class="empty">
         <div class="icon">🔑</div>
-        <h3>Nenhum acesso enviado ainda</h3>
-        <p>Quando uma ordem for marcada com o tratamento "Acesso enviado ao associado", ela aparece aqui automaticamente.</p>
+        <h3>Nenhuma ordem nesta fila ainda</h3>
+        <p>Importe o Excel das ordens executadas pelos técnicos acima para começar a controlar manualmente o envio de acesso.</p>
       </div>
 
       <div class="table-wrap" id="acessosTableWrap" style="display:none; overflow-x:auto;">
         <table>
           <colgroup>
             <col style="width:90px;">
-            <col style="width:130px;">
-            <col style="width:90px;">
+            <col style="width:120px;">
+            <col style="width:80px;">
+            <col style="width:140px;">
+            <col style="width:80px;">
+            <col style="width:150px;">
             <col style="width:150px;">
             <col style="width:90px;">
-            <col style="width:90px;">
-            <col style="width:200px;">
-            <col style="width:100px;">
           </colgroup>
           <thead>
             <tr>
@@ -701,7 +721,7 @@
               <th>Tipo</th>
               <th>Associado</th>
               <th>Abertura</th>
-              <th>Marcado em</th>
+              <th>Tratamento</th>
               <th>Observação</th>
               <th>Ação</th>
             </tr>
@@ -1138,7 +1158,8 @@ async function loadData(){
       id: r.id, placa: r.placa, tecnico: r.tecnico, tipo: r.tipo,
       associado: r.associado, aberturaISO: r.abertura_iso, treat: r.treat || 'none', obs: r.obs || '',
       atualizadoPor: r.atualizado_por || '', dataUltimoContato: r.data_ultimo_contato || '',
-      statusOs: r.status_os || 'Aberta'
+      statusOs: r.status_os || 'Aberta',
+      filaAcesso: r.fila_acesso || false
     }));
   }catch(e){ console.error('Erro ao carregar', e); ORDENS = []; }
 }
@@ -1148,7 +1169,8 @@ async function insertOrdens(novasOrdens){
   if(novasOrdens.length === 0) return;
   const rows = novasOrdens.map(o=>({
     id:o.id, placa:o.placa, tecnico:o.tecnico, tipo:o.tipo,
-    associado:o.associado, abertura_iso:o.aberturaISO, treat:o.treat, obs:o.obs, status_os: o.statusOs || 'Aberta'
+    associado:o.associado, abertura_iso:o.aberturaISO, treat:o.treat, obs:o.obs, status_os: o.statusOs || 'Aberta',
+    fila_acesso: o.filaAcesso || false
   }));
   const { error } = await sb.from('ordens_servico').insert(rows);
   if(error) console.error('Erro ao inserir ordens', error);
@@ -1503,13 +1525,121 @@ function computeStats(){
   return list;
 }
 
+const dropZoneAcessos = document.getElementById('dropZoneAcessos');
+const fileInputAcessos = document.getElementById('fileInputAcessos');
+dropZoneAcessos.addEventListener('click', ()=> fileInputAcessos.click());
+dropZoneAcessos.addEventListener('dragover', e=>{ e.preventDefault(); dropZoneAcessos.classList.add('drag'); });
+dropZoneAcessos.addEventListener('dragleave', ()=> dropZoneAcessos.classList.remove('drag'));
+dropZoneAcessos.addEventListener('drop', e=>{
+  e.preventDefault(); dropZoneAcessos.classList.remove('drag');
+  if(e.dataTransfer.files.length) handleFileAcessos(e.dataTransfer.files[0]);
+});
+fileInputAcessos.addEventListener('change', e=>{
+  if(e.target.files.length) handleFileAcessos(e.target.files[0]);
+});
+
+function handleFileAcessos(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      let novas = 0, jaExistiamMarcadas = 0, ignoradas = 0;
+      const existentesMap = new Map(ORDENS.map(o => [o.placa+'|'+o.aberturaISO+'|'+o.tecnico, o]));
+      const novasOrdens = [];
+      const atualizacoesRemotas = [];
+
+      wb.SheetNames.forEach(sheetName=>{
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''});
+        rows.forEach(row=>{
+          const placa = row[0];
+          if(!placa || String(placa).trim()==='' ) return;
+          if(String(placa).trim().toLowerCase().startsWith('técnico')) return;
+          if(String(placa).trim() === 'Placa') return;
+
+          const tipoServico = row[3];
+          const instalador = row[4];
+          const cliente = row[5];
+          const abertura = row[6];
+
+          const dt = parseDataBR(abertura);
+          if(!dt) { ignoradas++; return; }
+
+          const tecnico = (instalador||'').toString().trim();
+          const tipo = tipoNormalizado(tipoServico);
+          const associado = (cliente||'').toString().trim();
+          const placaClean = String(placa).trim().toUpperCase();
+          const aberturaISO = paraISOLocal(dt);
+          const key = placaClean+'|'+aberturaISO+'|'+tecnico;
+
+          const existente = existentesMap.get(key);
+          if(existente){
+            if(!existente.filaAcesso){
+              existente.filaAcesso = true;
+              atualizacoesRemotas.push(existente.id);
+              jaExistiamMarcadas++;
+            }
+            return;
+          }
+
+          const novaOrdem = {
+            id: key.replace(/[^a-zA-Z0-9]/g,'_'),
+            placa: placaClean,
+            tecnico: tecnico || 'Não informado',
+            tipo: tipo,
+            associado: associado || 'Não informado',
+            aberturaISO: aberturaISO,
+            treat: 'none',
+            obs: '',
+            statusOs: 'Aberta',
+            filaAcesso: true
+          };
+          ORDENS.push(novaOrdem);
+          novasOrdens.push(novaOrdem);
+          existentesMap.set(key, novaOrdem);
+          novas++;
+        });
+      });
+
+      const log = document.getElementById('importLogAcessos');
+      log.classList.add('show');
+      log.innerHTML = `Processando ${novas + jaExistiamMarcadas} ordens...`;
+
+      Promise.all([
+        insertOrdens(novasOrdens),
+        ...atualizacoesRemotas.map(id => updateOrdemRemote(id, {fila_acesso: true}))
+      ]).then(()=>{
+        log.innerHTML = `Importação concluída: <b>${novas}</b> ordens novas adicionadas à fila, <b>${jaExistiamMarcadas}</b> ordens já existentes foram incluídas na fila${ignoradas? `, <b>${ignoradas}</b> linhas ignoradas por data inválida`:''}.`;
+        renderAll();
+        renderAcessos();
+      });
+
+    }catch(err){
+      const log = document.getElementById('importLogAcessos');
+      log.classList.add('show');
+      log.innerHTML = `Não foi possível ler este arquivo. Verifique se é o Excel exportado no padrão do sistema. Detalhe técnico: ${err.message}`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 function renderAcessos(){
   const list = computeStats();
-  const acessos = list.filter(o=>o.treat === 'acesso').sort((a,b)=> new Date(b.dataUltimoContato||0) - new Date(a.dataUltimoContato||0));
+  let fila = list.filter(o=>o.filaAcesso);
 
-  document.getElementById('acessosMeta').textContent = `${acessos.length} ordem(ns) marcada(s) como "Acesso enviado ao associado"`;
+  const filtroTratamento = document.getElementById('fAcessoTratamento') ? document.getElementById('fAcessoTratamento').value : '';
+  if(filtroTratamento === 'pendente') fila = fila.filter(o=>o.treat !== 'acesso');
+  if(filtroTratamento === 'acesso') fila = fila.filter(o=>o.treat === 'acesso');
 
-  if(acessos.length === 0){
+  fila.sort((a,b)=> b.aberturaISO.localeCompare(a.aberturaISO));
+
+  const totalFila = list.filter(o=>o.filaAcesso).length;
+  const pendentes = list.filter(o=>o.filaAcesso && o.treat !== 'acesso').length;
+  document.getElementById('acessosMeta').textContent = `${totalFila} ordem(ns) na fila · ${pendentes} ainda sem confirmação de acesso enviado`;
+  document.getElementById('navBadgeAcessos').textContent = pendentes;
+
+  if(fila.length === 0){
     document.getElementById('acessosEmpty').style.display = 'block';
     document.getElementById('acessosTableWrap').style.display = 'none';
     return;
@@ -1517,32 +1647,42 @@ function renderAcessos(){
   document.getElementById('acessosEmpty').style.display = 'none';
   document.getElementById('acessosTableWrap').style.display = 'block';
 
-  document.getElementById('acessosBody').innerHTML = acessos.map(o=>{
+  document.getElementById('acessosBody').innerHTML = fila.map(o=>{
     const dtAbertura = new Date(o.aberturaISO+'T00:00:00');
-    const dtMarcado = o.dataUltimoContato ? new Date(o.dataUltimoContato+'T00:00:00') : null;
-    return `<tr>
+    const treatVal = o.treat || 'none';
+    return `<tr class="row-treat t-${treatVal}">
       <td><span class="placa-chip">${o.placa}</span></td>
       <td style="text-align:left;">${o.tecnico}</td>
       <td>${o.tipo}</td>
       <td style="text-align:left;">${o.associado}</td>
       <td>${formatDateBR(dtAbertura)}</td>
-      <td>${dtMarcado ? formatDateBR(dtMarcado) : '—'}</td>
-      <td style="text-align:left; color:var(--text-dim);">${o.obs || '—'}</td>
-      <td><button class="btn btn-ghost btn-sm" style="color:var(--red); border-color:var(--red-line);" onclick="removerAcesso('${o.id}')">🗑️ Remover</button></td>
+      <td>
+        <select class="treat-select t-${treatVal}" data-id="${o.id}" onchange="updateTreat(this); setTimeout(renderAcessos, 350);">
+          <option value="none" ${treatVal==='none'?'selected':''}>Sem tratamento</option>
+          <option value="acesso" ${treatVal==='acesso'?'selected':''}>🔑 Acesso enviado</option>
+          <option value="amarelo" ${treatVal==='amarelo'?'selected':''}>🟡 Mensagem enviada</option>
+          <option value="vermelho" ${treatVal==='vermelho'?'selected':''}>🔴 Sem retorno técnico</option>
+          <option value="verde" ${treatVal==='verde'?'selected':''}>🟢 Retorno recebido</option>
+          <option value="azul" ${treatVal==='azul'?'selected':''}>🔵 Sem retorno associado</option>
+        </select>
+      </td>
+      <td style="text-align:left;">
+        <input type="text" class="obs-input" style="max-width:130px;" data-id="${o.id}" value="${(o.obs||'').replace(/"/g,'&quot;')}" placeholder="Observação..." onchange="updateObs(this)" onkeydown="if(event.key==='Enter'){ event.preventDefault(); this.blur(); }">
+      </td>
+      <td><button class="btn btn-ghost btn-sm" style="color:var(--red); border-color:var(--red-line);" onclick="removerDaFila('${o.id}')">🗑️ Remover</button></td>
     </tr>`;
   }).join('');
 }
 
-async function removerAcesso(ordemId){
+async function removerDaFila(ordemId){
   const ordem = ORDENS.find(o=>o.id===ordemId);
   if(!ordem) return;
 
-  const confirmado = confirm(`Remover a marcação de "Acesso enviado" da ordem ${ordem.placa} (${ordem.associado})?\n\nO tratamento voltará para "Sem tratamento" e ela sairá desta lista.`);
+  const confirmado = confirm(`Remover a ordem ${ordem.placa} (${ordem.associado}) desta fila de acesso?\n\nEla sai desta lista, mas continua normalmente em "Ordens de Serviço".`);
   if(!confirmado) return;
 
-  ordem.treat = 'none';
-  await updateOrdemRemote(ordemId, {treat: 'none'});
-  await registrarHistorico(ordemId, 'none', 'Marcação de acesso enviado removida (tratamento incorreto)');
+  ordem.filaAcesso = false;
+  await updateOrdemRemote(ordemId, {fila_acesso: false});
 
   renderAll();
   renderAcessos();
@@ -1558,7 +1698,7 @@ function renderAll(){
   document.getElementById('navBadgeOrdens').textContent = total;
   document.getElementById('sidebarFoot').textContent = total ? `${total} ordens carregadas` : 'Nenhuma base importada';
 
-  const totalAcessos = list.filter(o=>o.treat === 'acesso').length;
+  const totalAcessos = list.filter(o=>o.filaAcesso && o.treat !== 'acesso').length;
   document.getElementById('navBadgeAcessos').textContent = totalAcessos;
 
   // ---- DASHBOARD ----
