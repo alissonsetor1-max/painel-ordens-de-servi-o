@@ -15,8 +15,6 @@
 <title>PROSULSAT — Ordens de Serviço</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root{
     --bg: #0c1118;
@@ -277,7 +275,13 @@
   .treat-select.t-azul{ background:var(--blue-bg); color:var(--blue); border-color:var(--blue-line);}
   .treat-select.t-none{ color:var(--text-dim); }
 
-  .obs-input{ width:100%; max-width:110px; font-size:10.5px; padding:5px 6px; }
+  .obs-input{ width:100%; max-width:95px; font-size:10.5px; padding:5px 6px; }
+  .attach-btn{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:5px;
+    font-size:12px; padding:5px 6px; cursor:pointer; flex-shrink:0; transition:.12s; color:var(--text-dim);
+  }
+  .attach-btn:hover{ background:var(--panel-3); border-color:var(--blue-line); }
+  .attach-btn.tem-anexo{ background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue); }
   .dias-num{ font-weight:800; font-size:11px;}
   .dias-num.crit{ color:var(--red); }
   .dias-num.warn{ color:var(--amber); }
@@ -534,8 +538,7 @@
           <button class="btn btn-ghost btn-sm" id="btnExcluir" style="display:none; color:var(--red); border-color:var(--red-line);" onclick="confirmarExclusao()">🗑️ Excluir selecionadas</button>
           <button class="btn btn-primary btn-sm" onclick="abrirModalNovaOrdem()">➕ Nova ordem manual</button>
           <button class="btn btn-primary btn-sm" onclick="checkOverdueAndAlert(true)">⚠️ Ver ordens em atraso</button>
-          <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⤓ Exportar Excel</button>
-          <button class="btn btn-ghost btn-sm" onclick="exportPDF()">📄 Exportar PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⤓ Exportar relatório</button>
         </div>
       </div>
 
@@ -1126,6 +1129,59 @@ async function registrarHistoricoObs(ordemId, obs){
   if(error) console.error('Erro ao registrar histórico de observação', error);
 }
 
+/* =========================================================
+   ANEXOS (prints/arquivos)
+========================================================= */
+function abrirSeletorAnexo(ordemId){
+  const input = document.querySelector(`.attach-input-hidden[data-id="${ordemId}"]`);
+  if(input) input.click();
+}
+
+async function anexarArquivo(input){
+  const ordemId = input.dataset.id;
+  const arquivo = input.files[0];
+  if(!arquivo) return;
+
+  const btn = input.previousElementSibling;
+  const textoOriginal = btn.textContent;
+  btn.textContent = '⏳';
+  btn.style.pointerEvents = 'none';
+
+  try{
+    const extensao = arquivo.name.split('.').pop();
+    const nomeArquivo = `${ordemId}/${Date.now()}.${extensao}`;
+
+    const { error: erroUpload } = await sb.storage.from('anexos-ordens').upload(nomeArquivo, arquivo);
+    if(erroUpload){
+      alert('Erro ao enviar arquivo: ' + erroUpload.message);
+      btn.textContent = textoOriginal;
+      btn.style.pointerEvents = '';
+      return;
+    }
+
+    const { data: urlData } = sb.storage.from('anexos-ordens').getPublicUrl(nomeArquivo);
+    const urlPublica = urlData.publicUrl;
+
+    const { error: erroHist } = await sb.from('ordens_historico').insert({
+      ordem_id: ordemId,
+      treat: 'Anexo adicionado',
+      obs: arquivo.name,
+      anexo_url: urlPublica,
+      usuario: USUARIO_ATUAL.nome || 'Não identificado'
+    });
+    if(erroHist) console.error('Erro ao registrar anexo no histórico', erroHist);
+
+    btn.textContent = '✓';
+    btn.classList.add('tem-anexo');
+    setTimeout(()=>{ btn.textContent = '📎'; }, 1500);
+  }catch(e){
+    alert('Erro ao anexar arquivo: ' + e.message);
+    btn.textContent = textoOriginal;
+  }
+  btn.style.pointerEvents = '';
+  input.value = '';
+}
+
 async function verHistorico(ordemId, placa){
   document.getElementById('histTitle').textContent = `Histórico — ${placa}`;
   document.getElementById('histBody').innerHTML = '<div style="color:var(--text-mute); font-size:12.5px;">Carregando...</div>';
@@ -1139,9 +1195,19 @@ async function verHistorico(ordemId, placa){
   document.getElementById('histBody').innerHTML = data.map(h=>{
     const dt = new Date(h.criado_em);
     const dataFmt = dt.toLocaleDateString('pt-BR') + ' às ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    let anexoHtml = '';
+    if(h.anexo_url){
+      const isImagem = /\.(jpg|jpeg|png|gif|webp)$/i.test(h.anexo_url);
+      if(isImagem){
+        anexoHtml = `<a href="${h.anexo_url}" target="_blank"><img src="${h.anexo_url}" style="max-width:180px; max-height:120px; border-radius:6px; margin-top:6px; border:1px solid var(--line); display:block;"></a>`;
+      } else {
+        anexoHtml = `<a href="${h.anexo_url}" target="_blank" style="color:var(--blue); font-size:11.5px; font-weight:700; display:inline-block; margin-top:6px;">📎 Abrir arquivo anexado</a>`;
+      }
+    }
     return `<div class="hist-entry">
       <div class="hd">${dataFmt} — ${h.usuario||'—'}</div>
       <div class="bd"><b>${h.treat||''}</b>${h.obs ? ` · ${h.obs}` : ''}</div>
+      ${anexoHtml}
     </div>`;
   }).join('');
 }
@@ -1259,7 +1325,7 @@ function handleFile(file){
 ========================================================= */
 function computeStats(){
   const list = ORDENS.map(o=>{
-    const dt = new Date(o.aberturaISO+'T00:00:00');
+    const dt = new Date(o.aberturaISO);
     const dias = diasEmAberto(dt);
     return {...o, dias, atrasada: dias > PRAZO_DIAS, critica: dias >= 20};
   });
@@ -1353,9 +1419,9 @@ function renderAll(){
 
     // ---- ORDENS RECENTES ----
     const statusBadgeCores = {'Aberta':'blue','Em Andamento':'amber','Aguardando Peça':'violet','Concluída':'green','Cancelada':'mute'};
-    const recentes = [...list].sort((a,b)=> b.aberturaISO.localeCompare(a.aberturaISO)).slice(0,4);
+    const recentes = [...list].sort((a,b)=> new Date(b.aberturaISO) - new Date(a.aberturaISO)).slice(0,4);
     document.getElementById('recentList').innerHTML = recentes.map(o=>{
-      const dt = new Date(o.aberturaISO+'T00:00:00');
+      const dt = new Date(o.aberturaISO);
       const cor = statusColoresHex[o.statusOs] || '#5b6a80';
       return `<div class="recent-item">
         <div>
@@ -1441,39 +1507,6 @@ function alternarOrdenacaoAbertura(){
   applyFilters();
 }
 
-function obterListaFiltrada(){
-  const list = computeStats();
-  const search = document.getElementById('fSearch').value.trim().toLowerCase();
-  const tipo = document.getElementById('fTipo').value;
-  const tecnico = document.getElementById('fTecnico').value;
-  const status = document.getElementById('fStatus').value;
-  const treat = document.getElementById('fTreat').value;
-  const dataInicio = document.getElementById('fDataInicio').value;
-  const dataFim = document.getElementById('fDataFim').value;
-
-  let filtered = list.filter(o=>{
-    if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
-    if(tipo && o.tipo !== tipo) return false;
-    if(tecnico && o.tecnico !== tecnico) return false;
-    if(status === 'atraso' && !o.atrasada) return false;
-    if(status === 'ok' && o.atrasada) return false;
-    if(treat === 'none' && o.treat && o.treat !== 'none') return false;
-    if(treat && treat !== 'none' && o.treat !== treat) return false;
-    if(dataInicio && o.aberturaISO < dataInicio) return false;
-    if(dataFim && o.aberturaISO > dataFim) return false;
-    return true;
-  });
-
-  if(ordenacaoAbertura === 'desc'){
-    filtered.sort((a,b)=> b.aberturaISO.localeCompare(a.aberturaISO));
-  } else if(ordenacaoAbertura === 'asc'){
-    filtered.sort((a,b)=> a.aberturaISO.localeCompare(b.aberturaISO));
-  } else {
-    filtered.sort((a,b)=> b.dias - a.dias);
-  }
-  return filtered;
-}
-
 function applyFilters(){
   const list = computeStats();
   const search = document.getElementById('fSearch').value.trim().toLowerCase();
@@ -1500,9 +1533,9 @@ function applyFilters(){
   });
 
   if(ordenacaoAbertura === 'desc'){
-    filtered.sort((a,b)=> b.aberturaISO.localeCompare(a.aberturaISO));
+    filtered.sort((a,b)=> new Date(b.aberturaISO) - new Date(a.aberturaISO));
   } else if(ordenacaoAbertura === 'asc'){
-    filtered.sort((a,b)=> a.aberturaISO.localeCompare(b.aberturaISO));
+    filtered.sort((a,b)=> new Date(a.aberturaISO) - new Date(b.aberturaISO));
   } else {
     filtered.sort((a,b)=> b.dias - a.dias);
   }
@@ -1528,7 +1561,7 @@ function applyFilters(){
   document.getElementById('ordensBody').innerHTML = filtered.map(o=>{
     const diasClass = o.critica ? 'super-crit' : (o.dias > PRAZO_DIAS ? 'crit' : (o.dias >= PRAZO_DIAS-2 ? 'warn' : ''));
     const treatVal = o.treat || 'none';
-    const dt = new Date(o.aberturaISO+'T00:00:00');
+    const dt = new Date(o.aberturaISO);
     let statusBadge;
     if(o.critica) statusBadge = '<span class="badge critico">🔥 Crítico</span>';
     else if(o.atrasada) statusBadge = '<span class="badge atraso">Atrasada</span>';
@@ -1564,7 +1597,11 @@ function applyFilters(){
         ${o.dataUltimoContato ? `<div style="font-weight:700; font-size:11.5px;">${formatDateBR(new Date(o.dataUltimoContato+'T00:00:00'))}</div><div style="font-size:10px; color:var(--text-mute);">${o.atualizadoPor||''}</div>` : '<span style="color:var(--text-mute); font-size:11px;">—</span>'}
       </td>
       <td>
-        <input type="text" class="obs-input" data-id="${o.id}" value="${(o.obs||'').replace(/"/g,'&quot;')}" placeholder="Observação..." onchange="updateObs(this)" onkeydown="if(event.key==='Enter'){ event.preventDefault(); this.blur(); }">
+        <div style="display:flex; align-items:center; gap:4px;">
+          <input type="text" class="obs-input" data-id="${o.id}" value="${(o.obs||'').replace(/"/g,'&quot;')}" placeholder="Observação..." onchange="updateObs(this)" onkeydown="if(event.key==='Enter'){ event.preventDefault(); this.blur(); }">
+          <button class="attach-btn" title="Anexar print/arquivo" onclick="abrirSeletorAnexo('${o.id}')">📎</button>
+          <input type="file" class="attach-input-hidden" data-id="${o.id}" accept="image/*,.pdf" style="display:none;" onchange="anexarArquivo(this)">
+        </div>
       </td>
       <td>
         <button class="hist-btn" onclick="verHistorico('${o.id}','${o.placa}')">Ver histórico</button>
@@ -1710,145 +1747,19 @@ function closeModal(){ document.getElementById('alertModal').classList.remove('s
    EXPORTAÇÃO CSV
 ========================================================= */
 function exportCSV(){
-  const list = obterListaFiltrada();
+  const list = computeStats();
   const treatLabels = {none:'Sem tratamento',amarelo:'Mensagem enviada ao técnico',vermelho:'Sem retorno do técnico',verde:'Retorno recebido',azul:'Sem retorno do associado'};
   let csv = 'Placa;Tecnico;Tipo de Servico;Associado;Data Abertura;Dias em Aberto;Status;Tratamento;Observacao\n';
-  list.forEach(o=>{
-    const dt = new Date(o.aberturaISO+'T00:00:00');
+  list.sort((a,b)=>b.dias-a.dias).forEach(o=>{
+    const dt = new Date(o.aberturaISO);
     csv += [o.placa, o.tecnico, o.tipo, o.associado, formatDateBR(dt), o.dias, o.atrasada?'Atrasada':'No prazo', treatLabels[o.treat||'none'], (o.obs||'').replace(/;/g,',')].join(';') + '\n';
   });
   const blob = new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `ordens-servico-${paraISOLocal(new Date())}.csv`;
+  a.href = url; a.download = `ordens-servico-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
-}
-
-function exportPDF(){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  const list = obterListaFiltrada();
-  const treatLabels = {none:'Sem tratamento',amarelo:'Msg. enviada ao técnico',vermelho:'Sem retorno técnico',verde:'Retorno recebido',azul:'Sem retorno associado'};
-
-  const pageW = doc.internal.pageSize.getWidth();
-  const azul = [53, 104, 212];
-  const azulEscuro = [22, 32, 46];
-  const cinza = [92, 106, 128];
-  const vermelho = [214, 76, 57];
-  const verde = [47, 145, 96];
-
-  // ---- CABEÇALHO ----
-  doc.setFillColor(...azulEscuro);
-  doc.rect(0, 0, pageW, 24, 'F');
-  doc.setFillColor(...azul);
-  doc.roundedRect(10, 6, 12, 12, 3, 3, 'F');
-  doc.setTextColor(255,255,255);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.text('PS', 16, 13.5, {align:'center'});
-
-  doc.setFontSize(14);
-  doc.text('PROSULSAT', 27, 11);
-  doc.setFontSize(8.5);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(180,190,205);
-  doc.text('Relatório de Ordens de Serviço', 27, 16.5);
-
-  doc.setFontSize(8);
-  doc.setTextColor(200,208,220);
-  const agora = new Date();
-  const dataGeracao = `${String(agora.getDate()).padStart(2,'0')}/${String(agora.getMonth()+1).padStart(2,'0')}/${agora.getFullYear()} às ${String(agora.getHours()).padStart(2,'0')}:${String(agora.getMinutes()).padStart(2,'0')}`;
-  doc.text(`Gerado em ${dataGeracao} · por ${USUARIO_ATUAL.nome || 'Usuário'}`, pageW - 10, 11, {align:'right'});
-  doc.text(`${list.length} ordem(ns) neste relatório`, pageW - 10, 16.5, {align:'right'});
-
-  // ---- RESUMO EXECUTIVO ----
-  const total = list.length;
-  const atrasadas = list.filter(o=>o.atrasada).length;
-  const criticas = list.filter(o=>o.critica).length;
-  const noPrazo = total - atrasadas;
-
-  let y = 32;
-  const kpis = [
-    {label:'Total de ordens', valor: total, cor: azulEscuro},
-    {label:'Em atraso', valor: atrasadas, cor: vermelho},
-    {label:'Críticas (20+ dias)', valor: criticas, cor: [201,84,15]},
-    {label:'No prazo', valor: noPrazo, cor: verde},
-  ];
-  const kpiW = (pageW - 20 - 3*4) / 4;
-  kpis.forEach((k, i)=>{
-    const x = 10 + i*(kpiW+4);
-    doc.setDrawColor(225,230,237);
-    doc.setFillColor(248,249,251);
-    doc.roundedRect(x, y, kpiW, 16, 2, 2, 'FD');
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...k.cor);
-    doc.text(String(k.valor), x + 5, y + 10);
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...cinza);
-    doc.text(k.label, x + 5, y + 14);
-  });
-
-  y += 24;
-
-  // ---- TABELA ----
-  const treatCores = { none:[230,232,236], amarelo:[232,163,61], vermelho:[214,76,57], verde:[47,145,96], azul:[53,104,212] };
-  const body = list.map(o=>{
-    const dt = new Date(o.aberturaISO+'T00:00:00');
-    return [
-      o.placa,
-      o.tecnico,
-      o.tipo,
-      o.associado,
-      formatDateBR(dt),
-      `${o.dias}d`,
-      o.critica ? 'Crítico' : (o.atrasada ? 'Atrasada' : 'No prazo'),
-      treatLabels[o.treat||'none'],
-      o.obs || '—'
-    ];
-  });
-
-  doc.autoTable({
-    startY: y,
-    head: [['Placa','Técnico','Tipo','Associado','Abertura','Dias','Status','Tratamento','Observação']],
-    body: body,
-    theme: 'grid',
-    styles: { fontSize: 7.5, cellPadding: 2, textColor: [22,32,46], lineColor: [225,230,237], lineWidth: 0.1 },
-    headStyles: { fillColor: azulEscuro, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
-    alternateRowStyles: { fillColor: [248,249,251] },
-    columnStyles: {
-      0: { cellWidth: 20, font: 'courier', fontStyle: 'bold' },
-      4: { cellWidth: 20 },
-      5: { cellWidth: 12, halign: 'center' },
-      6: { cellWidth: 20 },
-    },
-    didParseCell: function(data){
-      if(data.section === 'body' && data.column.index === 6){
-        const val = data.cell.raw;
-        if(val === 'Crítico'){ data.cell.styles.textColor = vermelho; data.cell.styles.fontStyle = 'bold'; }
-        else if(val === 'Atrasada'){ data.cell.styles.textColor = [201,84,15]; data.cell.styles.fontStyle = 'bold'; }
-        else if(val === 'No prazo'){ data.cell.styles.textColor = verde; }
-      }
-    },
-    margin: { left: 10, right: 10 },
-  });
-
-  // ---- RODAPÉ ----
-  const totalPaginas = doc.internal.getNumberOfPages();
-  for(let p = 1; p <= totalPaginas; p++){
-    doc.setPage(p);
-    const pageH = doc.internal.pageSize.getHeight();
-    doc.setDrawColor(225,230,237);
-    doc.line(10, pageH - 10, pageW - 10, pageH - 10);
-    doc.setFontSize(7.5);
-    doc.setTextColor(...cinza);
-    doc.text('PROSULSAT · Sistema de Ordens de Serviço', 10, pageH - 6);
-    doc.text(`Página ${p} de ${totalPaginas}`, pageW - 10, pageH - 6, {align:'right'});
-  }
-
-  doc.save(`relatorio-os-prosulsat-${paraISOLocal(new Date())}.pdf`);
 }
 
 /* =========================================================
