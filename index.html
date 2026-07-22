@@ -122,7 +122,45 @@
     position:sticky; top:0; height:100vh;
     box-shadow:2px 0 24px rgba(0,0,0,.18);
   }
-  .brand{ display:flex; align-items:center; gap:11px; padding:4px 6px 22px; border-bottom:1px solid rgba(255,255,255,.14); margin-bottom:18px; }
+  .brand{ display:flex; align-items:center; gap:11px; padding:4px 6px 22px; border-bottom:1px solid rgba(255,255,255,.14); margin-bottom:18px; position:relative; }
+  .brand-txt{ flex:1; min-width:0; }
+
+  /* ===== SINO DE NOTIFICAÇÕES ===== */
+  .bell-wrap{ position:relative; flex-shrink:0; }
+  .bell-btn{
+    background:rgba(255,255,255,.1); border:none; color:rgba(255,255,255,.85); cursor:pointer;
+    width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    position:relative; transition:.15s;
+  }
+  .bell-btn svg{ width:16px; height:16px; }
+  .bell-btn:hover{ background:rgba(255,255,255,.2); }
+  .bell-badge{
+    position:absolute; top:-4px; right:-4px; background:var(--red); color:#fff; font-size:9.5px; font-weight:800;
+    min-width:16px; height:16px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+    padding:0 3px; border:2px solid #16296b;
+  }
+  .bell-panel{
+    display:none; position:absolute; top:40px; right:-8px; width:280px; max-height:340px; overflow-y:auto;
+    background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:0 20px 50px rgba(0,0,0,.3);
+    z-index:200;
+  }
+  .bell-panel.show{ display:block; }
+  .bell-panel-head{ padding:12px 14px; font-size:12px; font-weight:800; color:var(--text); border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--panel); border-radius:14px 14px 0 0; }
+  .bell-panel-body{ padding:6px; }
+  .bell-item{ padding:9px 10px; border-radius:9px; cursor:pointer; transition:.12s; }
+  .bell-item:hover{ background:var(--panel-2); }
+  .bell-item b{ font-size:12px; color:var(--text); display:block; }
+  .bell-item span{ font-size:10.5px; color:var(--text-mute); }
+  .bell-item .days{ float:right; font-size:10px; font-weight:800; color:var(--red); background:var(--red-bg); padding:2px 7px; border-radius:20px; }
+  .bell-empty{ padding:24px 14px; text-align:center; font-size:12px; color:var(--text-mute); }
+
+  /* ===== GRÁFICO DE EVOLUÇÃO ===== */
+  .evolucao-chart{ display:flex; align-items:flex-end; gap:14px; height:160px; padding:16px 8px 0; }
+  .evolucao-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end; }
+  .evolucao-track{ width:100%; max-width:44px; height:120px; display:flex; align-items:flex-end; background:var(--panel-2); border-radius:6px 6px 0 0; overflow:hidden; }
+  .evolucao-fill{ width:100%; border-radius:6px 6px 0 0; background:var(--blue); min-height:3px; transition:height .3s; }
+  .evolucao-label{ font-size:10.5px; color:var(--text-dim); font-weight:700; text-align:center; }
+  .evolucao-value{ font-size:11px; color:var(--text-mute); font-weight:700; }
   .brand-mark{
     width:38px;height:38px;border-radius:11px;
     background:rgba(255,255,255,.16);
@@ -495,6 +533,16 @@
         </svg>
       </div>
       <div class="brand-txt"><b>PROSULSAT</b><span>SISTEMA DE ORDENS</span></div>
+      <div class="bell-wrap">
+        <button class="bell-btn" id="bellBtn" onclick="toggleBellPanel()" title="Ordens críticas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="bell-badge" id="bellBadge" style="display:none;">0</span>
+        </button>
+        <div class="bell-panel" id="bellPanel">
+          <div class="bell-panel-head">Ordens críticas (20+ dias)</div>
+          <div class="bell-panel-body" id="bellPanelBody"></div>
+        </div>
+      </div>
     </div>
 
     <div class="nav-label">Geral</div>
@@ -508,6 +556,8 @@
 
     <div class="nav-label">Sistema</div>
     <div class="nav-item" data-view="usuarios"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="nav-txt">Usuários</span></div>
+    <div class="nav-item" data-view="configuracoes"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-txt">Configurações</span></div>
+    <div class="nav-item" data-view="auditoria"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span><span class="nav-txt">Auditoria</span></div>
 
     <div class="sidebar-foot-block">
       <div class="status-line">
@@ -603,6 +653,13 @@
         </div>
 
         <div class="dash-row">
+          <div class="card" style="flex:1;">
+            <div class="card-head"><h2>Evolução — Últimos dias</h2><span class="tag" id="evolucaoTag">Em atraso</span></div>
+            <div id="evolucaoChart" class="evolucao-chart"></div>
+          </div>
+        </div>
+
+        <div class="dash-row">
           <div class="card">
             <div class="card-head"><h2>Ranking de Técnicos</h2><span class="see-all" onclick="goTo('ranking')">Ver todos →</span></div>
             <div id="rankList"></div>
@@ -662,6 +719,10 @@
           <input type="date" id="fDataFim" autocomplete="off" style="padding:8px 10px;" title="Data de abertura - até">
           <button class="btn btn-ghost btn-sm" id="btnLimparData" style="display:none;" onclick="limparFiltroData()">✕ Limpar período</button>
         </div>
+        <select id="fTamanhoPagina" onchange="PAGINA_ATUAL_ORDENS=1; applyFilters();" title="Ordens por página">
+          <option value="20">20 por página</option>
+          <option value="50">50 por página</option>
+        </select>
       </div>
 
       <div id="ordensEmpty" class="empty">
@@ -708,6 +769,7 @@
           <tbody id="ordensBody"></tbody>
         </table>
       </div>
+      <div id="paginacaoOrdens" style="display:flex; gap:6px; justify-content:center; margin-top:16px; flex-wrap:wrap;"></div>
     </section>
 
     <!-- ============ RANKING ============ -->
@@ -773,6 +835,11 @@
           <option value="pendente">Ainda não enviado</option>
           <option value="acesso">🔑 Acesso enviado</option>
         </select>
+        <div style="display:flex; gap:8px; align-items:center; margin-left:auto;">
+          <span id="selCountAcessos" style="font-size:11.5px; color:var(--text-dim); font-weight:700; display:none;"></span>
+          <button class="btn btn-primary btn-sm" id="btnMarcarAcessos" style="display:none;" onclick="marcarSelecionadosComoEnviado()">🔑 Marcar como enviado</button>
+          <button class="btn btn-ghost btn-sm" id="btnRemoverAcessos" style="display:none; color:var(--red); border-color:var(--red-line);" onclick="removerSelecionadosDaFila()">🗑️ Remover selecionadas</button>
+        </div>
       </div>
 
       <div id="acessosEmpty" class="empty">
@@ -784,6 +851,7 @@
       <div class="table-wrap" id="acessosTableWrap" style="display:none; overflow-x:auto;">
         <table>
           <colgroup>
+            <col style="width:26px;">
             <col style="width:90px;">
             <col style="width:120px;">
             <col style="width:80px;">
@@ -796,6 +864,7 @@
           </colgroup>
           <thead>
             <tr>
+              <th style="width:26px;"><input type="checkbox" id="selectAllAcessos" onchange="toggleSelectAllAcessos(this)"></th>
               <th>Placa</th>
               <th>Técnico</th>
               <th>Tipo</th>
@@ -854,7 +923,10 @@
           <h1>Usuários</h1>
           <div class="meta"><span id="usuariosMeta">Contas cadastradas no sistema</span></div>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="carregarUsuarios()">🔄 Atualizar lista</button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('cadastroErro').style.display='none'; document.getElementById('novoUsuarioModal').classList.add('show')">➕ Novo usuário</button>
+          <button class="btn btn-ghost btn-sm" onclick="carregarUsuarios()">🔄 Atualizar lista</button>
+        </div>
       </div>
       </div>
 
@@ -876,6 +948,74 @@
       </div>
     </section>
 
+    <!-- ============ CONFIGURAÇÕES ============ -->
+    <section class="view" id="view-configuracoes">
+      <div class="dash-header-banner">
+      <div class="topbar" style="margin-bottom:0;">
+        <div>
+          <h1>Configurações</h1>
+          <div class="meta"><span>Prazos de atraso por tipo de serviço</span></div>
+        </div>
+      </div>
+      </div>
+
+      <div class="card" style="max-width:520px;">
+        <div class="card-head"><h2>Prazo para considerar "em atraso" (dias)</h2></div>
+        <div id="prazosForm" style="display:flex; flex-direction:column; gap:14px;">
+          <div>
+            <label class="form-label">Instalação</label>
+            <input type="number" min="1" id="prazoInstalacao" style="width:100%; padding:9px 12px;">
+          </div>
+          <div>
+            <label class="form-label">Manutenção</label>
+            <input type="number" min="1" id="prazoManutencao" style="width:100%; padding:9px 12px;">
+          </div>
+          <div>
+            <label class="form-label">Retirada</label>
+            <input type="number" min="1" id="prazoRetirada" style="width:100%; padding:9px 12px;">
+          </div>
+          <div id="prazosMsg" style="display:none; font-size:11.5px; font-weight:700; color:var(--green);"></div>
+          <button class="btn btn-primary" onclick="salvarPrazosConfiguraveis()" style="align-self:flex-start;">Salvar prazos</button>
+        </div>
+        <div class="footnote">O status "Crítico" é calculado automaticamente como o dobro do prazo definido para cada tipo.</div>
+      </div>
+    </section>
+
+    <!-- ============ AUDITORIA ============ -->
+    <section class="view" id="view-auditoria">
+      <div class="dash-header-banner">
+      <div class="topbar" style="margin-bottom:0;">
+        <div>
+          <h1>Auditoria</h1>
+          <div class="meta"><span id="auditoriaMeta">Registro de ações realizadas no sistema</span></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="carregarAuditoria()">🔄 Atualizar</button>
+      </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <colgroup>
+            <col style="width:150px;">
+            <col style="width:140px;">
+            <col style="width:180px;">
+            <col>
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Data / Hora</th>
+              <th style="text-align:left;">Usuário</th>
+              <th style="text-align:left;">Ação</th>
+              <th style="text-align:left;">Detalhe</th>
+            </tr>
+          </thead>
+          <tbody id="auditoriaBody">
+            <tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -885,12 +1025,12 @@
     <div class="modal-head">
       <div class="ic" style="background:var(--blue-bg); border-color:var(--blue-line);">🔒</div>
       <div>
-        <h3 id="loginModalTitle">Entrar no sistema</h3>
-        <p id="loginModalSub">Use seu e-mail e senha</p>
+        <h3>Entrar no sistema</h3>
+        <p>Use seu e-mail e senha</p>
       </div>
     </div>
 
-    <div class="modal-body" id="loginTabEntrar" style="padding:18px 20px;">
+    <div class="modal-body" style="padding:18px 20px;">
       <div style="margin-bottom:12px;">
         <label class="form-label">E-mail</label>
         <input type="email" id="loginEmail" placeholder="seu@email.com" style="width:100%; padding:10px 12px;">
@@ -900,15 +1040,30 @@
         <input type="password" id="loginSenha" placeholder="••••••••" style="width:100%; padding:10px 12px;" onkeydown="if(event.key==='Enter'){ entrarComSenha(); }">
       </div>
       <div id="loginErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700; margin-top:10px;"></div>
-      <div style="margin-top:14px; text-align:center;">
-        <span style="font-size:11.5px; color:var(--text-mute);">Ainda não tem conta?</span>
-        <span style="font-size:11.5px; color:var(--blue); font-weight:700; cursor:pointer;" onclick="mostrarAbaCadastro()">Criar conta</span>
+      <div style="margin-top:14px; text-align:center; font-size:11.5px; color:var(--text-mute);">
+        Não tem conta? Peça a um supervisor para te cadastrar em <b>Usuários</b>.
       </div>
     </div>
 
-    <div class="modal-body" id="loginTabCadastro" style="padding:18px 20px; display:none;">
+    <div class="modal-foot">
+      <button class="btn btn-primary" id="btnLoginAcao" style="width:100%; justify-content:center;" onclick="entrarComSenha()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL DE NOVO USUÁRIO (dentro de Usuários) ===== -->
+<div class="modal-overlay" id="novoUsuarioModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <div class="ic" style="background:var(--blue-bg); border-color:var(--blue-line);">➕</div>
+      <div>
+        <h3>Novo usuário</h3>
+        <p>Criar acesso para um colega</p>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:18px 20px;">
       <div style="margin-bottom:12px;">
-        <label class="form-label">Seu nome</label>
+        <label class="form-label">Nome</label>
         <input type="text" id="cadNome" placeholder="Ex: Carlos Mendes" style="width:100%; padding:10px 12px;">
       </div>
       <div style="margin-bottom:12px;">
@@ -924,18 +1079,14 @@
         <input type="email" id="cadEmail" placeholder="seu@email.com" style="width:100%; padding:10px 12px;">
       </div>
       <div>
-        <label class="form-label">Crie uma senha</label>
+        <label class="form-label">Senha inicial</label>
         <input type="password" id="cadSenha" placeholder="Mínimo 6 caracteres" style="width:100%; padding:10px 12px;">
       </div>
       <div id="cadastroErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700; margin-top:10px;"></div>
-      <div style="margin-top:14px; text-align:center;">
-        <span style="font-size:11.5px; color:var(--text-mute);">Já tem conta?</span>
-        <span style="font-size:11.5px; color:var(--blue); font-weight:700; cursor:pointer;" onclick="mostrarAbaEntrar()">Fazer login</span>
-      </div>
     </div>
-
     <div class="modal-foot">
-      <button class="btn btn-primary" id="btnLoginAcao" style="width:100%; justify-content:center;" onclick="entrarComSenha()">Entrar</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('novoUsuarioModal').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-primary" onclick="criarConta()">Criar usuário</button>
     </div>
   </div>
 </div>
@@ -1086,7 +1237,19 @@
 /* =========================================================
    ESTADO E PERSISTÊNCIA
 ========================================================= */
-const PRAZO_DIAS = 10;
+const PRAZO_DIAS = 10; // valor padrão de fallback, caso o tipo não tenha config específica
+let PRAZOS_POR_TIPO = { 'Instalação': 10, 'Manutenção': 10, 'Retirada': 10 };
+
+async function carregarPrazosConfiguraveis(){
+  try{
+    const { data, error } = await sb.from('config_prazos').select('*');
+    if(error || !data) return;
+    data.forEach(p => { PRAZOS_POR_TIPO[p.tipo] = p.dias; });
+  }catch(e){ console.error('Erro ao carregar prazos', e); }
+}
+function prazoParaTipo(tipo){
+  return PRAZOS_POR_TIPO[tipo] !== undefined ? PRAZOS_POR_TIPO[tipo] : PRAZO_DIAS;
+}
 let ORDENS = []; // { id, placa, tecnico, tipo, associado, aberturaISO, treat, obs, atualizadoPor, dataUltimoContato }
 
 const SUPABASE_URL = 'https://ywedgwmalzrdprpyorph.supabase.co';
@@ -1124,23 +1287,6 @@ function toggleTheme(checkbox){
 function carregarUsuario(){
   // Mantido por compatibilidade; a checagem real acontece em checarSessao()
   return false;
-}
-
-function mostrarAbaCadastro(){
-  document.getElementById('loginTabEntrar').style.display = 'none';
-  document.getElementById('loginTabCadastro').style.display = 'block';
-  document.getElementById('loginModalTitle').textContent = 'Criar conta';
-  document.getElementById('loginModalSub').textContent = 'Cadastre-se para usar o sistema';
-  document.getElementById('btnLoginAcao').textContent = 'Criar conta';
-  document.getElementById('btnLoginAcao').onclick = criarConta;
-}
-function mostrarAbaEntrar(){
-  document.getElementById('loginTabEntrar').style.display = 'block';
-  document.getElementById('loginTabCadastro').style.display = 'none';
-  document.getElementById('loginModalTitle').textContent = 'Entrar no sistema';
-  document.getElementById('loginModalSub').textContent = 'Use seu e-mail e senha';
-  document.getElementById('btnLoginAcao').textContent = 'Entrar';
-  document.getElementById('btnLoginAcao').onclick = entrarComSenha;
 }
 
 async function entrarComSenha(){
@@ -1199,18 +1345,13 @@ async function criarConta(){
       erroBox.style.display = 'block';
       return;
     }
-    // conta criada com sucesso, faz login automaticamente
-    const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
-    if(error){
-      erroBox.textContent = 'Conta criada, mas houve erro ao entrar. Tente fazer login.';
-      erroBox.style.display = 'block';
-      mostrarAbaEntrar();
-      return;
-    }
-    await carregarPerfilLogado(data.user.id);
-    document.getElementById('loginModal').classList.remove('show');
-    document.getElementById('appShell').style.display = 'flex';
-    await refreshData();
+    // conta criada com sucesso — quem está criando já está logado, não faz login automático como o novo usuário
+    document.getElementById('novoUsuarioModal').classList.remove('show');
+    document.getElementById('cadNome').value = '';
+    document.getElementById('cadEmail').value = '';
+    document.getElementById('cadSenha').value = '';
+    registrarAuditoria('Conta criada', `Nova conta criada: ${nome} (${papel}) — ${email}`);
+    carregarUsuarios();
   }catch(e){
     erroBox.textContent = 'Erro de conexão: ' + e.message;
     erroBox.style.display = 'block';
@@ -1243,7 +1384,6 @@ async function trocarUsuario(){
   document.getElementById('appShell').style.display = 'none';
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginSenha').value = '';
-  mostrarAbaEntrar();
   document.getElementById('loginModal').classList.add('show');
 }
 
@@ -1425,12 +1565,24 @@ async function finalizarSalvarNovaOrdem(placa, tecnico, tipo, associado, abertur
   ORDENS.unshift(novaOrdem);
   fecharModalNovaOrdem();
   renderAll();
+  registrarAuditoria('Ordem criada', `Criou a ordem manual da placa ${placa} (técnico: ${tecnico}, associado: ${associado})`);
 }
 
 async function updateOrdemRemote(id, fields){
   const payload = {...fields, atualizado_em: new Date().toISOString()};
   const { error } = await sb.from('ordens_servico').update(payload).eq('id', id);
   if(error) console.error('Erro ao atualizar ordem', error);
+}
+
+async function registrarAuditoria(acao, detalhe){
+  try{
+    const { error } = await sb.from('auditoria').insert({
+      usuario: USUARIO_ATUAL.nome || 'Não identificado',
+      acao: acao,
+      detalhe: detalhe || null
+    });
+    if(error) console.error('Erro ao registrar auditoria', error);
+  }catch(e){ console.error('Erro ao registrar auditoria', e); }
 }
 
 async function registrarHistorico(ordemId, treat, obs){
@@ -1574,6 +1726,23 @@ async function editarObsHistorico(histId){
 /* =========================================================
    NAVEGAÇÃO
 ========================================================= */
+function toggleBellPanel(){
+  document.getElementById('bellPanel').classList.toggle('show');
+}
+document.addEventListener('click', function(e){
+  const wrap = document.getElementById('bellWrap') || document.querySelector('.bell-wrap');
+  const panel = document.getElementById('bellPanel');
+  if(panel && panel.classList.contains('show') && wrap && !wrap.contains(e.target)){
+    panel.classList.remove('show');
+  }
+});
+function closeBellAndGoToOrdem(placa){
+  document.getElementById('bellPanel').classList.remove('show');
+  goTo('ordens');
+  document.getElementById('fSearch').value = placa;
+  applyFilters();
+}
+
 function goTo(view){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+view).classList.add('active');
@@ -1588,10 +1757,72 @@ function goTo(view){
   if(view === 'acessos'){
     renderAcessos();
   }
+  if(view === 'configuracoes'){
+    preencherFormularioPrazos();
+  }
+  if(view === 'auditoria'){
+    carregarAuditoria();
+  }
 }
 document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
   item.addEventListener('click', ()=> goTo(item.dataset.view));
 });
+
+function preencherFormularioPrazos(){
+  document.getElementById('prazoInstalacao').value = PRAZOS_POR_TIPO['Instalação'] || 10;
+  document.getElementById('prazoManutencao').value = PRAZOS_POR_TIPO['Manutenção'] || 10;
+  document.getElementById('prazoRetirada').value = PRAZOS_POR_TIPO['Retirada'] || 10;
+}
+
+async function salvarPrazosConfiguraveis(){
+  const novoInstalacao = parseInt(document.getElementById('prazoInstalacao').value) || 10;
+  const novoManutencao = parseInt(document.getElementById('prazoManutencao').value) || 10;
+  const novoRetirada = parseInt(document.getElementById('prazoRetirada').value) || 10;
+
+  const atualizacoes = [
+    { tipo: 'Instalação', dias: novoInstalacao },
+    { tipo: 'Manutenção', dias: novoManutencao },
+    { tipo: 'Retirada', dias: novoRetirada }
+  ];
+
+  for(const a of atualizacoes){
+    await sb.from('config_prazos').update({ dias: a.dias }).eq('tipo', a.tipo);
+    PRAZOS_POR_TIPO[a.tipo] = a.dias;
+  }
+
+  registrarAuditoria('Prazos alterados', `Instalação: ${novoInstalacao}d · Manutenção: ${novoManutencao}d · Retirada: ${novoRetirada}d`);
+
+  const msg = document.getElementById('prazosMsg');
+  msg.textContent = '✓ Prazos salvos com sucesso.';
+  msg.style.display = 'block';
+  setTimeout(()=>{ msg.style.display = 'none'; }, 2500);
+
+  renderAll();
+}
+
+async function carregarAuditoria(){
+  const tbody = document.getElementById('auditoriaBody');
+  tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Carregando...</td></tr>';
+
+  const { data, error } = await sb.from('auditoria').select('*').order('criado_em', {ascending:false}).limit(300);
+  if(error || !data || data.length === 0){
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhum registro de auditoria ainda.</td></tr>';
+    return;
+  }
+
+  document.getElementById('auditoriaMeta').textContent = `${data.length} registro(s) — mostrando os mais recentes`;
+
+  tbody.innerHTML = data.map(a=>{
+    const dt = new Date(a.criado_em);
+    const dataFmt = dt.toLocaleDateString('pt-BR') + ' às ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    return `<tr>
+      <td style="white-space:nowrap;">${dataFmt}</td>
+      <td style="text-align:left; font-weight:700;">${a.usuario}</td>
+      <td style="text-align:left;"><span class="badge" style="background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue-line);">${a.acao}</span></td>
+      <td style="text-align:left; color:var(--text-dim);">${a.detalhe || '—'}</td>
+    </tr>`;
+  }).join('');
+}
 
 async function carregarUsuarios(){
   const tbody = document.getElementById('usuariosBody');
@@ -1622,8 +1853,10 @@ async function carregarUsuarios(){
 }
 
 let USUARIO_ID_REDEFINIR = null;
+let USUARIO_NOME_REDEFINIR = null;
 function abrirRedefinirSenha(userId, nome){
   USUARIO_ID_REDEFINIR = userId;
+  USUARIO_NOME_REDEFINIR = nome;
   document.getElementById('redefinirSenhaNome').textContent = `Definir nova senha para ${nome}`;
   document.getElementById('novaSenhaInput').value = '';
   document.getElementById('redefinirSenhaErro').style.display = 'none';
@@ -1655,6 +1888,7 @@ async function confirmarRedefinirSenha(){
     }
     document.getElementById('redefinirSenhaModal').classList.remove('show');
     mostrarResultadoImportacao(true, 'Senha redefinida com sucesso. Informe a nova senha para o usuário.');
+    registrarAuditoria('Senha redefinida', `Redefiniu a senha do usuário ${USUARIO_NOME_REDEFINIR || USUARIO_ID_REDEFINIR}`);
   }catch(e){
     erroBox.textContent = 'Erro de conexão: ' + e.message;
     erroBox.style.display = 'block';
@@ -1776,7 +2010,8 @@ function computeStats(){
   const list = ORDENS.map(o=>{
     const dt = new Date(o.aberturaISO+'T00:00:00');
     const dias = diasEmAberto(dt);
-    return {...o, dias, atrasada: dias > PRAZO_DIAS, critica: dias >= 20};
+    const prazoTipo = prazoParaTipo(o.tipo);
+    return {...o, dias, prazoAplicado: prazoTipo, atrasada: dias > prazoTipo, critica: dias >= (prazoTipo * 2)};
   });
   return list;
 }
@@ -1886,6 +2121,48 @@ function handleFileAcessos(file){
   reader.readAsArrayBuffer(file);
 }
 
+async function salvarSnapshotDoDia(){
+  if(ORDENS.length === 0) return;
+  const list = computeStats();
+  const hoje = paraISOLocal(new Date());
+  const total = list.length;
+  const atrasadas = list.filter(o=>o.atrasada).length;
+  const criticas = list.filter(o=>o.critica).length;
+  const concluidas = list.filter(o=>o.statusOs === 'Concluída').length;
+  const noPrazo = total - atrasadas;
+
+  try{
+    await sb.from('dashboard_snapshots').upsert({
+      data: hoje, total, atrasadas, criticas, no_prazo: noPrazo, concluidas
+    }, { onConflict: 'data' });
+  }catch(e){ console.error('Erro ao salvar snapshot', e); }
+}
+
+async function renderEvolucaoChart(){
+  const container = document.getElementById('evolucaoChart');
+  if(!container) return;
+  const { data, error } = await sb.from('dashboard_snapshots').select('*').order('data', {ascending:true}).limit(14);
+  if(error || !data || data.length === 0){
+    container.innerHTML = '<div style="color:var(--text-mute); font-size:12px; margin:auto; padding:20px;">Ainda não há histórico suficiente. Volte aqui nos próximos dias para ver a evolução.</div>';
+    return;
+  }
+
+  const ultimos = data.slice(-8); // últimos 8 dias com registro
+  const maxVal = Math.max(...ultimos.map(d=>d.atrasadas), 1);
+
+  container.innerHTML = ultimos.map(d=>{
+    const dt = new Date(d.data+'T00:00:00');
+    const label = `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`;
+    const pct = Math.round((d.atrasadas/maxVal)*100);
+    const cor = d.atrasadas > 0 ? 'var(--red)' : 'var(--green)';
+    return `<div class="evolucao-col">
+      <div class="evolucao-value">${d.atrasadas}</div>
+      <div class="evolucao-track"><div class="evolucao-fill" style="height:${pct}%; background:${cor};"></div></div>
+      <div class="evolucao-label">${label}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderAcessos(){
   const list = computeStats();
   let fila = list.filter(o=>o.filaAcesso);
@@ -1913,6 +2190,7 @@ function renderAcessos(){
     const dtAbertura = new Date(o.aberturaISO+'T00:00:00');
     const treatVal = o.treat || 'none';
     return `<tr class="row-treat t-${treatVal}">
+      <td><input type="checkbox" class="row-check-acessos" data-id="${o.id}" onchange="atualizarSelecaoAcessos()"></td>
       <td><span class="placa-chip">${o.placa}</span></td>
       <td style="text-align:left;">${o.tecnico}</td>
       <td>${o.tipo}</td>
@@ -1935,6 +2213,69 @@ function renderAcessos(){
       <td><button class="btn btn-ghost btn-sm" style="color:var(--red); border-color:var(--red-line);" onclick="removerDaFila('${o.id}')"><svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/></svg> Remover</button></td>
     </tr>`;
   }).join('');
+  atualizarSelecaoAcessos();
+}
+
+function toggleSelectAllAcessos(checkbox){
+  document.querySelectorAll('.row-check-acessos').forEach(cb => cb.checked = checkbox.checked);
+  atualizarSelecaoAcessos();
+}
+function getSelecionadosAcessos(){
+  return Array.from(document.querySelectorAll('.row-check-acessos:checked')).map(cb => cb.dataset.id);
+}
+function atualizarSelecaoAcessos(){
+  const selecionados = getSelecionadosAcessos();
+  const count = document.getElementById('selCountAcessos');
+  const btnMarcar = document.getElementById('btnMarcarAcessos');
+  const btnRemover = document.getElementById('btnRemoverAcessos');
+  if(selecionados.length > 0){
+    count.style.display = 'inline'; count.textContent = `${selecionados.length} selecionada(s)`;
+    btnMarcar.style.display = 'inline-flex';
+    btnRemover.style.display = 'inline-flex';
+  } else {
+    count.style.display = 'none';
+    btnMarcar.style.display = 'none';
+    btnRemover.style.display = 'none';
+  }
+  const total = document.querySelectorAll('.row-check-acessos').length;
+  const selectAllBox = document.getElementById('selectAllAcessos');
+  if(selectAllBox) selectAllBox.checked = total > 0 && selecionados.length === total;
+}
+
+async function marcarSelecionadosComoEnviado(){
+  const ids = getSelecionadosAcessos();
+  if(ids.length === 0) return;
+  if(!confirm(`Marcar ${ids.length} ordem(ns) selecionada(s) como "🔑 Acesso enviado"?`)) return;
+
+  const hojeISO = paraISOLocal(new Date());
+  for(const id of ids){
+    const ordem = ORDENS.find(o=>o.id===id);
+    if(!ordem) continue;
+    ordem.treat = 'acesso';
+    ordem.atualizadoPor = USUARIO_ATUAL.nome || 'Não identificado';
+    ordem.dataUltimoContato = hojeISO;
+    await updateOrdemRemote(id, {treat:'acesso', atualizado_por: ordem.atualizadoPor, data_ultimo_contato: hojeISO});
+    await registrarHistorico(id, 'acesso', ordem.obs);
+  }
+  await registrarAuditoria('Tratamento em massa', `Marcou ${ids.length} ordem(ns) como "Acesso enviado" na fila`);
+  renderAll();
+  renderAcessos();
+}
+
+async function removerSelecionadosDaFila(){
+  const ids = getSelecionadosAcessos();
+  if(ids.length === 0) return;
+  if(!confirm(`Remover ${ids.length} ordem(ns) selecionada(s) desta fila de acesso?\n\nElas continuam normalmente em "Ordens de Serviço", só saem desta lista.`)) return;
+
+  for(const id of ids){
+    const ordem = ORDENS.find(o=>o.id===id);
+    if(!ordem) continue;
+    ordem.filaAcesso = false;
+    await updateOrdemRemote(id, {fila_acesso:false});
+  }
+  await registrarAuditoria('Remoção em massa', `Removeu ${ids.length} ordem(ns) da fila de Acesso Enviado`);
+  renderAll();
+  renderAcessos();
 }
 
 async function removerDaFila(ordemId){
@@ -1964,6 +2305,25 @@ function renderAll(){
   const totalAcessos = list.filter(o=>o.filaAcesso && o.treat !== 'acesso').length;
   document.getElementById('navBadgeAcessos').textContent = totalAcessos;
 
+  // ---- SINO DE CRÍTICAS ----
+  const criticasSino = list.filter(o=>o.critica).sort((a,b)=> b.dias - a.dias);
+  const bellBadge = document.getElementById('bellBadge');
+  if(criticasSino.length > 0){
+    bellBadge.style.display = 'flex';
+    bellBadge.textContent = criticasSino.length > 99 ? '99+' : criticasSino.length;
+  } else {
+    bellBadge.style.display = 'none';
+  }
+  document.getElementById('bellPanelBody').innerHTML = criticasSino.length === 0
+    ? '<div class="bell-empty">Nenhuma ordem crítica no momento 🎉</div>'
+    : criticasSino.slice(0,25).map(o=>`
+      <div class="bell-item" onclick="closeBellAndGoToOrdem('${o.placa}')">
+        <span class="days">${o.dias}d</span>
+        <b>${o.placa} — ${o.associado}</b>
+        <span>Técnico: ${o.tecnico}</span>
+      </div>
+    `).join('');
+
   // ---- DASHBOARD ----
   if(total === 0){
     document.getElementById('dashEmpty').style.display = 'block';
@@ -1973,6 +2333,7 @@ function renderAll(){
     document.getElementById('dashEmpty').style.display = 'none';
     document.getElementById('dashContent').style.display = 'block';
     document.getElementById('dashMeta').innerHTML = `<span><b>${total}</b> ordens na base</span><span><b>${tecnicosSet.size}</b> técnicos ativos</span><span>Prazo padrão: <b>${PRAZO_DIAS} dias</b></span>`;
+    renderEvolucaoChart();
 
     const statusCount = {'Aberta':0,'Em Andamento':0,'Aguardando Peça':0,'Concluída':0,'Cancelada':0};
     list.forEach(o=>{ const s = o.statusOs || 'Aberta'; if(statusCount[s]===undefined) statusCount[s]=0; statusCount[s]++; });
@@ -2109,8 +2470,8 @@ function populateFilterOptions(list){
 }
 
 ['fSearch','fTipo','fTecnico','fStatus','fTreat','fDataInicio','fDataFim'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', applyFilters);
-  document.getElementById(id).addEventListener('change', applyFilters);
+  document.getElementById(id).addEventListener('input', ()=>{ PAGINA_ATUAL_ORDENS = 1; applyFilters(); });
+  document.getElementById(id).addEventListener('change', ()=>{ PAGINA_ATUAL_ORDENS = 1; applyFilters(); });
 });
 
 function limparFiltroData(){
@@ -2120,6 +2481,30 @@ function limparFiltroData(){
 }
 
 let ordenacaoAbertura = null; // null = padrão (mais atrasado primeiro), 'desc' = mais novo primeiro, 'asc' = mais velho primeiro
+let PAGINA_ATUAL_ORDENS = 1;
+
+function renderPaginacaoOrdens(totalPaginas, searchAtivo){
+  const el = document.getElementById('paginacaoOrdens');
+  if(!el) return;
+  if(searchAtivo || totalPaginas <= 1){
+    el.innerHTML = '';
+    return;
+  }
+  let botoes = '';
+  botoes += `<button class="btn btn-ghost btn-sm" ${PAGINA_ATUAL_ORDENS<=1?'disabled':''} onclick="irParaPaginaOrdens(${PAGINA_ATUAL_ORDENS-1})">← Anterior</button>`;
+  const inicio = Math.max(1, PAGINA_ATUAL_ORDENS-2);
+  const fim = Math.min(totalPaginas, PAGINA_ATUAL_ORDENS+2);
+  for(let p=inicio; p<=fim; p++){
+    botoes += `<button class="btn ${p===PAGINA_ATUAL_ORDENS?'btn-primary':'btn-ghost'} btn-sm" onclick="irParaPaginaOrdens(${p})">${p}</button>`;
+  }
+  botoes += `<button class="btn btn-ghost btn-sm" ${PAGINA_ATUAL_ORDENS>=totalPaginas?'disabled':''} onclick="irParaPaginaOrdens(${PAGINA_ATUAL_ORDENS+1})">Próxima →</button>`;
+  el.innerHTML = botoes;
+}
+function irParaPaginaOrdens(p){
+  PAGINA_ATUAL_ORDENS = p;
+  applyFilters();
+  document.getElementById('ordensTableWrap').scrollIntoView({behavior:'smooth', block:'start'});
+}
 function alternarOrdenacaoAbertura(){
   if(ordenacaoAbertura === null || ordenacaoAbertura === 'asc') ordenacaoAbertura = 'desc';
   else ordenacaoAbertura = 'asc';
@@ -2162,7 +2547,19 @@ function applyFilters(){
     filtered.sort((a,b)=> b.dias - a.dias);
   }
 
-  document.getElementById('ordensMeta').textContent = `${filtered.length} de ${list.length} ordens`;
+  const searchAtivo = !!search;
+  const tamanhoPagina = parseInt(document.getElementById('fTamanhoPagina') ? document.getElementById('fTamanhoPagina').value : 20) || 20;
+  const totalPaginas = Math.max(1, Math.ceil(filtered.length / tamanhoPagina));
+  if(PAGINA_ATUAL_ORDENS > totalPaginas) PAGINA_ATUAL_ORDENS = totalPaginas;
+  if(PAGINA_ATUAL_ORDENS < 1) PAGINA_ATUAL_ORDENS = 1;
+
+  const listaPaginada = searchAtivo ? filtered : filtered.slice((PAGINA_ATUAL_ORDENS-1)*tamanhoPagina, PAGINA_ATUAL_ORDENS*tamanhoPagina);
+
+  document.getElementById('ordensMeta').textContent = searchAtivo
+    ? `${filtered.length} de ${list.length} ordens (resultado da busca, sem paginação)`
+    : `${filtered.length} de ${list.length} ordens · página ${PAGINA_ATUAL_ORDENS} de ${totalPaginas}`;
+
+  renderPaginacaoOrdens(totalPaginas, searchAtivo);
 
   if(list.length === 0){
     document.getElementById('ordensEmpty').style.display='block';
@@ -2180,7 +2577,7 @@ function applyFilters(){
     azul: '🔵 Sem retorno do associado'
   };
 
-  document.getElementById('ordensBody').innerHTML = filtered.map(o=>{
+  document.getElementById('ordensBody').innerHTML = listaPaginada.map(o=>{
     const diasClass = o.critica ? 'super-crit' : (o.dias > PRAZO_DIAS ? 'crit' : (o.dias >= PRAZO_DIAS-2 ? 'warn' : ''));
     const treatVal = o.treat || 'none';
     const dt = new Date(o.aberturaISO+'T00:00:00');
@@ -2326,6 +2723,7 @@ function confirmarExclusao(){
 }
 async function excluirOrdens(ids){
   const btn = document.getElementById('btnExcluir');
+  const placasExcluidas = ORDENS.filter(o => ids.includes(o.id)).map(o => o.placa);
   const TAMANHO_LOTE = 20;
   const totalLotes = Math.ceil(ids.length / TAMANHO_LOTE);
   for(let i = 0; i < ids.length; i += TAMANHO_LOTE){
@@ -2344,6 +2742,7 @@ async function excluirOrdens(ids){
   const selectAllBox = document.getElementById('selectAll');
   if(selectAllBox) selectAllBox.checked = false;
   renderAll();
+  registrarAuditoria('Ordens excluídas', `Excluiu ${ids.length} ordem(ns): ${placasExcluidas.slice(0,10).join(', ')}${placasExcluidas.length>10?'...':''}`);
 }
 
 /* =========================================================
@@ -2658,6 +3057,7 @@ function resetarFiltros(){
   document.getElementById('fTreat').value = '';
   document.getElementById('fDataInicio').value = '';
   document.getElementById('fDataFim').value = '';
+  PAGINA_ATUAL_ORDENS = 1;
 }
 
 (async function init(){
@@ -2665,8 +3065,18 @@ function resetarFiltros(){
   aplicarTemaSalvo();
   await checarSessao();
   await loadData();
+  await carregarPrazosConfiguraveis();
+  await salvarSnapshotDoDia();
   renderAll();
   if(ORDENS.length > 0) checkOverdueAndAlert(false);
+
+  // Atualização silenciosa a cada 90s, para o sino e os dados ficarem sempre corretos
+  setInterval(async ()=>{
+    const modalAberto = document.querySelector('.modal-overlay.show');
+    if(modalAberto) return; // não atualiza enquanto alguém está preenchendo um formulário
+    await loadData();
+    renderAll();
+  }, 90000);
 })();
 
 // Alguns navegadores restauram valores de formulário DEPOIS do carregamento inicial
