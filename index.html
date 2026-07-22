@@ -264,6 +264,11 @@
   .hist-entry::before{ content:''; position:absolute; left:-5px; top:14px; width:8px; height:8px; border-radius:50%; background:var(--blue); }
   .hist-entry .hd{ font-size:11px; color:var(--text-mute); font-weight:700; margin-bottom:3px;}
   .hist-entry .bd{ font-size:12.5px; }
+  .hist-edit-btn{
+    background:none; border:none; cursor:pointer; font-size:12px; padding:2px 5px;
+    border-radius:5px; flex-shrink:0; color:var(--text-mute); transition:.12s;
+  }
+  .hist-edit-btn:hover{ background:var(--panel-3); color:var(--blue); }
 
   .treat-select{
     width:100%; max-width:112px; font-size:9.5px; padding:5px 4px; border-radius:5px;
@@ -1255,10 +1260,44 @@ async function verHistorico(ordemId, placa){
     }
     return `<div class="hist-entry">
       <div class="hd">${dataFmt} — ${h.usuario||'—'}</div>
-      <div class="bd"><b>${h.treat||''}</b>${h.obs ? ` · ${h.obs}` : ''}</div>
+      <div class="bd" style="display:flex; align-items:flex-start; gap:8px; justify-content:space-between;">
+        <div style="flex:1; min-width:0;">
+          <b>${h.treat||''}</b>
+          <span id="histObsTxt-${h.id}">${h.obs ? ` · ${h.obs}` : ''}</span>
+          <input type="text" id="histObsInput-${h.id}" value="${(h.obs||'').replace(/"/g,'&quot;')}" style="display:none; width:100%; margin-top:4px; font-size:12px; padding:5px 8px;" onkeydown="if(event.key==='Enter'){ editarObsHistorico(${h.id}); }">
+        </div>
+        <button class="hist-edit-btn" id="histEditBtn-${h.id}" onclick="editarObsHistorico(${h.id})" title="Editar observação">✏️</button>
+      </div>
       ${anexoHtml}
     </div>`;
   }).join('');
+}
+
+async function editarObsHistorico(histId){
+  const btn = document.getElementById(`histEditBtn-${histId}`);
+  const txt = document.getElementById(`histObsTxt-${histId}`);
+  const input = document.getElementById(`histObsInput-${histId}`);
+
+  if(input.style.display === 'none'){
+    // entra em modo de edição
+    txt.style.display = 'none';
+    input.style.display = 'block';
+    input.focus();
+    btn.textContent = '💾';
+    return;
+  }
+
+  // salvar
+  const novoTexto = input.value.trim();
+  const { error } = await sb.from('ordens_historico').update({ obs: novoTexto }).eq('id', histId);
+  if(error){
+    alert('Erro ao salvar edição: ' + error.message);
+    return;
+  }
+  txt.textContent = novoTexto ? ` · ${novoTexto}` : '';
+  txt.style.display = 'inline';
+  input.style.display = 'none';
+  btn.textContent = '✏️';
 }
 
 /* =========================================================
