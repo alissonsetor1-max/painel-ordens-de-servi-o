@@ -557,8 +557,11 @@
           <option value="azul">🔵 Sem retorno do associado</option>
         </select>
         <div style="display:flex; align-items:center; gap:6px;">
-          <input type="date" id="fData" autocomplete="off" style="padding:8px 10px;" title="Filtrar por data de abertura">
-          <button class="btn btn-ghost btn-sm" id="btnLimparData" style="display:none;" onclick="limparFiltroData()">✕ Limpar data</button>
+          <span style="font-size:11px; color:var(--text-mute); font-weight:600;">De</span>
+          <input type="date" id="fDataInicio" autocomplete="off" style="padding:8px 10px;" title="Data de abertura - a partir de">
+          <span style="font-size:11px; color:var(--text-mute); font-weight:600;">até</span>
+          <input type="date" id="fDataFim" autocomplete="off" style="padding:8px 10px;" title="Data de abertura - até">
+          <button class="btn btn-ghost btn-sm" id="btnLimparData" style="display:none;" onclick="limparFiltroData()">✕ Limpar período</button>
         </div>
       </div>
 
@@ -1406,13 +1409,14 @@ function populateFilterOptions(list){
   });
 }
 
-['fSearch','fTipo','fTecnico','fStatus','fTreat','fData'].forEach(id=>{
+['fSearch','fTipo','fTecnico','fStatus','fTreat','fDataInicio','fDataFim'].forEach(id=>{
   document.getElementById(id).addEventListener('input', applyFilters);
   document.getElementById(id).addEventListener('change', applyFilters);
 });
 
 function limparFiltroData(){
-  document.getElementById('fData').value = '';
+  document.getElementById('fDataInicio').value = '';
+  document.getElementById('fDataFim').value = '';
   applyFilters();
 }
 
@@ -1433,9 +1437,10 @@ function applyFilters(){
   const tecnico = document.getElementById('fTecnico').value;
   const status = document.getElementById('fStatus').value;
   const treat = document.getElementById('fTreat').value;
-  const dataFiltro = document.getElementById('fData').value;
+  const dataInicio = document.getElementById('fDataInicio').value;
+  const dataFim = document.getElementById('fDataFim').value;
 
-  document.getElementById('btnLimparData').style.display = dataFiltro ? 'inline-flex' : 'none';
+  document.getElementById('btnLimparData').style.display = (dataInicio || dataFim) ? 'inline-flex' : 'none';
 
   let filtered = list.filter(o=>{
     if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
@@ -1445,7 +1450,8 @@ function applyFilters(){
     if(status === 'ok' && o.atrasada) return false;
     if(treat === 'none' && o.treat && o.treat !== 'none') return false;
     if(treat && treat !== 'none' && o.treat !== treat) return false;
-    if(dataFiltro && o.aberturaISO !== dataFiltro) return false;
+    if(dataInicio && o.aberturaISO < dataInicio) return false;
+    if(dataFim && o.aberturaISO > dataFim) return false;
     return true;
   });
 
@@ -1696,7 +1702,8 @@ function resetarFiltros(){
   document.getElementById('fTecnico').value = '';
   document.getElementById('fStatus').value = '';
   document.getElementById('fTreat').value = '';
-  document.getElementById('fData').value = '';
+  document.getElementById('fDataInicio').value = '';
+  document.getElementById('fDataFim').value = '';
 }
 
 (async function init(){
