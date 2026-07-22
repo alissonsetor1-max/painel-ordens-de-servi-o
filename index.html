@@ -30,7 +30,7 @@
     --red: #e3634f;      --red-bg: rgba(227,99,79,.14);       --red-line: rgba(227,99,79,.4);
     --green: #4caf7d;    --green-bg: rgba(76,175,125,.14);    --green-line: rgba(76,175,125,.4);
     --blue: #5b8def;     --blue-bg: rgba(91,141,239,.14);     --blue-line: rgba(91,141,239,.4);
-    --violet:#9b7ee8;
+    --violet:#9b7ee8;    --violet-bg: rgba(155,126,232,.14);  --violet-line: rgba(155,126,232,.4);
 
     --shadow-card: 0 1px 3px rgba(0,0,0,.25);
   }
@@ -49,7 +49,7 @@
     --red: #d64c39;     --red-bg: rgba(214,76,57,.09);       --red-line: rgba(214,76,57,.30);
     --green: #2f9160;   --green-bg: rgba(47,145,96,.10);     --green-line: rgba(47,145,96,.30);
     --blue: #3568d4;    --blue-bg: rgba(53,104,212,.09);     --blue-line: rgba(53,104,212,.28);
-    --violet:#7c5cd6;
+    --violet:#7c5cd6;    --violet-bg: rgba(124,92,214,.10);   --violet-line: rgba(124,92,214,.30);
 
     --shadow-card: 0 1px 2px rgba(20,30,50,.06), 0 1px 8px rgba(20,30,50,.04);
   }
@@ -291,6 +291,10 @@
   .badge.atraso{ background:var(--red-bg); color:var(--red); border:1px solid var(--red-line);}
   .badge.critico{ background:var(--red); color:#fff; border:1px solid var(--red); box-shadow:0 0 0 2px var(--red-bg); font-weight:900;}
   .badge.ok{ background:var(--green-bg); color:var(--green); border:1px solid var(--green-line);}
+  .role-badge{ font-size:10.5px; padding:3px 10px; }
+  .role-badge.role-supervisor{ background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue-line);}
+  .role-badge.role-tecnico{ background:var(--amber-bg); color:var(--amber); border:1px solid var(--amber-line);}
+  .role-badge.role-gestor{ background:var(--violet-bg); color:var(--violet); border:1px solid var(--violet-line);}
 
   .save-hint{ font-size:10.5px; color:var(--green); font-weight:700; opacity:0; transition:opacity .3s; margin-left:6px;}
   .save-hint.show{ opacity:1; }
@@ -1288,15 +1292,15 @@ async function carregarUsuarios(){
 
   document.getElementById('usuariosMeta').textContent = `${data.length} conta(s) cadastrada(s)`;
 
-  const papelCores = { 'Supervisor':'var(--blue)', 'Técnico':'var(--amber)', 'Gestor':'var(--violet)' };
+  const papelClasse = { 'Supervisor':'role-supervisor', 'Técnico':'role-tecnico', 'Gestor':'role-gestor' };
   tbody.innerHTML = data.map(u=>{
     const iniciais = (u.nome||'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
     const dt = u.criado_em ? new Date(u.criado_em) : null;
     const dataFmt = dt ? dt.toLocaleDateString('pt-BR') : '—';
-    const cor = papelCores[u.papel] || 'var(--text-dim)';
+    const classe = papelClasse[u.papel] || '';
     return `<tr>
       <td style="text-align:left;"><div class="tech-cell"><div class="avatar">${iniciais||'—'}</div>${u.nome||'—'}</div></td>
-      <td><span class="badge" style="background:${cor}22; color:${cor}; border:1px solid ${cor}55;">${u.papel||'—'}</span></td>
+      <td><span class="badge role-badge ${classe}">${u.papel||'—'}</span></td>
       <td style="text-align:left; color:var(--text-dim);">${u.email||'—'}</td>
       <td>${dataFmt}</td>
     </tr>`;
