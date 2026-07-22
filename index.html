@@ -227,6 +227,22 @@
   .tag{ font-size:10.5px; color:var(--text-dim); background:var(--panel-2); padding:3px 9px; border-radius:20px; font-weight:700;}
 
   table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+
+  #ordensTableWrap table{ border-collapse:separate; border-spacing:0 7px; margin-top:-7px; }
+  #ordensTableWrap tbody tr{ background:var(--panel); box-shadow:var(--shadow-card); }
+  #ordensTableWrap tbody tr:nth-child(even){ background:var(--panel); }
+  #ordensTableWrap tbody tr:hover{ background:var(--panel) !important; box-shadow:0 4px 14px rgba(53,104,212,.14); }
+  #ordensTableWrap td{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); border-right:none; }
+  #ordensTableWrap td:first-child{ border-left:3px solid var(--blue-line); border-top-left-radius:10px; border-bottom-left-radius:10px; }
+  #ordensTableWrap td:last-child{ border-right:1px solid var(--line); border-top-right-radius:10px; border-bottom-right-radius:10px; }
+  #ordensTableWrap .row-treat td:first-child{ border-left-width:4px; }
+  #ordensTableWrap .row-treat.t-amarelo td:first-child{ border-left-color:var(--amber); }
+  #ordensTableWrap .row-treat.t-vermelho td:first-child{ border-left-color:var(--red); }
+  #ordensTableWrap .row-treat.t-verde td:first-child{ border-left-color:var(--green); }
+  #ordensTableWrap .row-treat.t-azul td:first-child{ border-left-color:var(--blue); }
+  #ordensTableWrap .row-treat.t-acesso td:first-child{ border-left-color:var(--teal); }
+  #ordensTableWrap .row-treat.critico td:first-child{ border-left-color:var(--red); border-left-width:4px; }
+  #ordensTableWrap{ box-shadow:none; border:none; background:transparent; }
   th{ text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-mute); font-weight:800; padding:12px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
   td{ padding:10px 8px; font-size:12px; border-bottom:1px solid var(--line); vertical-align:middle; text-align:center; }
   tr:last-child td{ border-bottom:none;}
@@ -279,6 +295,9 @@
   .table-wrap{ background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow-card);}
   .table-wrap table{ font-size:12.5px;}
   .table-wrap th{ background:var(--panel-2); position:sticky; top:0;}
+  #ordensTableWrap thead th{ background:var(--panel); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  #ordensTableWrap thead th:first-child{ border-left:1px solid var(--line); border-top-left-radius:10px; border-bottom-left-radius:10px; }
+  #ordensTableWrap thead th:last-child{ border-right:1px solid var(--line); border-top-right-radius:10px; border-bottom-right-radius:10px; }
   .placa-chip{
     font-family:'Courier New', monospace; font-weight:800; font-size:10.5px;
     background:var(--blue-bg); border:1px solid var(--blue-line); color:var(--blue); padding:4px 8px; border-radius:6px; letter-spacing:.03em; white-space:nowrap;
@@ -755,6 +774,7 @@
             <col style="width:80px;">
             <col style="width:150px;">
             <col style="width:150px;">
+            <col style="width:80px;">
             <col style="width:90px;">
           </colgroup>
           <thead>
@@ -766,6 +786,7 @@
               <th>Abertura</th>
               <th>Tratamento</th>
               <th>Observação</th>
+              <th>Histórico</th>
               <th>Ação</th>
             </tr>
           </thead>
@@ -1889,7 +1910,8 @@ function renderAcessos(){
       <td style="text-align:left;">
         <input type="text" class="obs-input" style="max-width:130px;" data-id="${o.id}" value="${(o.obs||'').replace(/"/g,'&quot;')}" placeholder="Observação..." onchange="updateObs(this)" onkeydown="if(event.key==='Enter'){ event.preventDefault(); this.blur(); }">
       </td>
-      <td><button class="btn btn-ghost btn-sm" style="color:var(--red); border-color:var(--red-line);" onclick="removerDaFila('${o.id}')">🗑️ Remover</button></td>
+      <td><button class="hist-btn" onclick="verHistorico('${o.id}','${o.placa}')">Ver histórico</button></td>
+      <td><button class="btn btn-ghost btn-sm" style="color:var(--red); border-color:var(--red-line);" onclick="removerDaFila('${o.id}')"><svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/></svg> Remover</button></td>
     </tr>`;
   }).join('');
 }
