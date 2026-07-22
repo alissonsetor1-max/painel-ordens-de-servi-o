@@ -275,7 +275,7 @@
   .treat-select.t-azul{ background:var(--blue-bg); color:var(--blue); border-color:var(--blue-line);}
   .treat-select.t-none{ color:var(--text-dim); }
 
-  .obs-input{ width:100%; max-width:95px; font-size:10.5px; padding:5px 6px; }
+  .obs-input{ width:100%; max-width:170px; font-size:10.5px; padding:5px 6px; }
   .attach-btn{
     background:var(--panel-2); border:1px solid var(--line); border-radius:5px;
     font-size:12px; padding:5px 6px; cursor:pointer; flex-shrink:0; transition:.12s; color:var(--text-dim);
@@ -421,6 +421,9 @@
 
     <div class="nav-label">Dados</div>
     <div class="nav-item" data-view="importar"><span class="nav-ic">⤒</span><span class="nav-txt">Importar Excel</span></div>
+
+    <div class="nav-label">Sistema</div>
+    <div class="nav-item" data-view="usuarios"><span class="nav-ic">👥</span><span class="nav-txt">Usuários</span></div>
 
     <div class="sidebar-foot-block">
       <div class="status-line">
@@ -580,6 +583,21 @@
 
       <div class="table-wrap" id="ordensTableWrap" style="display:none; overflow-x:auto;">
         <table>
+          <colgroup>
+            <col style="width:32px;">
+            <col style="width:90px;">
+            <col style="width:130px;">
+            <col style="width:90px;">
+            <col style="width:110px;">
+            <col style="width:150px;">
+            <col style="width:80px;">
+            <col style="width:50px;">
+            <col style="width:80px;">
+            <col style="width:150px;">
+            <col style="width:80px;">
+            <col style="width:220px;">
+            <col style="width:70px;">
+          </colgroup>
           <thead>
             <tr>
               <th style="width:32px;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
@@ -664,6 +682,33 @@
       </div>
 
       <div class="footnote">Ordens já existentes (mesma placa + data de abertura) mantêm o tratamento e a observação já preenchidos. Apenas novas ordens são adicionadas.</div>
+    </section>
+
+    <!-- ============ USUÁRIOS ============ -->
+    <section class="view" id="view-usuarios">
+      <div class="topbar">
+        <div>
+          <h1>Usuários</h1>
+          <div class="meta"><span id="usuariosMeta">Contas cadastradas no sistema</span></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="carregarUsuarios()">🔄 Atualizar lista</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left;">Nome</th>
+              <th>Perfil</th>
+              <th style="text-align:left;">E-mail</th>
+              <th>Criado em</th>
+            </tr>
+          </thead>
+          <tbody id="usuariosBody">
+            <tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
   </main>
@@ -1223,10 +1268,40 @@ function goTo(view){
   if(view === 'ordens'){
     checkOverdueAndAlert(false);
   }
+  if(view === 'usuarios'){
+    carregarUsuarios();
+  }
 }
 document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
   item.addEventListener('click', ()=> goTo(item.dataset.view));
 });
+
+async function carregarUsuarios(){
+  const tbody = document.getElementById('usuariosBody');
+  tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Carregando...</td></tr>';
+
+  const { data, error } = await sb.from('perfis_usuarios').select('*').order('criado_em', {ascending:false});
+  if(error || !data || data.length === 0){
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhum usuário encontrado.</td></tr>';
+    return;
+  }
+
+  document.getElementById('usuariosMeta').textContent = `${data.length} conta(s) cadastrada(s)`;
+
+  const papelCores = { 'Supervisor':'var(--blue)', 'Técnico':'var(--amber)', 'Gestor':'var(--violet)' };
+  tbody.innerHTML = data.map(u=>{
+    const iniciais = (u.nome||'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    const dt = u.criado_em ? new Date(u.criado_em) : null;
+    const dataFmt = dt ? dt.toLocaleDateString('pt-BR') : '—';
+    const cor = papelCores[u.papel] || 'var(--text-dim)';
+    return `<tr>
+      <td style="text-align:left;"><div class="tech-cell"><div class="avatar">${iniciais||'—'}</div>${u.nome||'—'}</div></td>
+      <td><span class="badge" style="background:${cor}22; color:${cor}; border:1px solid ${cor}55;">${u.papel||'—'}</span></td>
+      <td style="text-align:left; color:var(--text-dim);">${u.email||'—'}</td>
+      <td>${dataFmt}</td>
+    </tr>`;
+  }).join('');
+}
 
 /* =========================================================
    IMPORTAÇÃO EXCEL
