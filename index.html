@@ -203,6 +203,7 @@
   .btn-ghost{ background:var(--panel-3); color:var(--text); border:1px solid var(--line); }
   .btn-ghost:hover{ background:var(--panel-2); border-color:var(--blue-line); transform:translateY(-1px); }
   .btn-sm{ padding:6px 10px; font-size:11.5px; }
+  .btn-ic{ width:13px; height:13px; flex-shrink:0; }
 
   /* ===== VIEWS ===== */
   .view{ display:none; }
@@ -429,7 +430,7 @@
     margin-top:12px; display:flex; align-items:center; justify-content:center; gap:8px;
     padding:8px; background:var(--panel-2); border-radius:8px; border:1px solid var(--line);
   }
-  .theme-ic{ font-size:12px; opacity:.8; }
+  .theme-ic{ display:flex; align-items:center; opacity:.75; }
   .theme-switch{ position:relative; display:inline-block; width:36px; height:20px; flex-shrink:0; }
   .theme-switch input{ opacity:0; width:0; height:0; }
   .theme-slider{
@@ -490,16 +491,16 @@
         <div class="user-name" id="userName">—</div>
         <div class="user-role" id="userRole">—</div>
       </div>
-      <button class="user-swap" onclick="trocarUsuario()" title="Sair">🚪</button>
+      <button class="user-swap" onclick="trocarUsuario()" title="Sair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg></button>
     </div>
 
     <div class="theme-toggle-wrap">
-      <span class="theme-ic">☀️</span>
+      <span class="theme-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
       <label class="theme-switch">
         <input type="checkbox" id="themeSwitch" onchange="toggleTheme(this)">
         <span class="theme-slider"></span>
       </label>
-      <span class="theme-ic">🌙</span>
+      <span class="theme-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg></span>
     </div>
     <div class="nav-item" id="btnAtualizarDados" style="margin-top:4px;" onclick="refreshData()"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.3 6.4M3 12a9 9 0 0 1 15.3-6.4M3 3v6h6M21 21v-6h-6"/></svg></span><span class="nav-txt">Atualizar dados</span></div>
   </aside>
@@ -589,18 +590,18 @@
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
           <span id="selCount" style="font-size:11.5px; color:var(--text-dim); font-weight:700; display:none;"></span>
-          <button class="btn btn-ghost btn-sm" id="btnExcluir" style="display:none; color:var(--red); border-color:var(--red-line);" onclick="confirmarExclusao()">🗑️ Excluir selecionadas</button>
-          <button class="btn btn-primary btn-sm" onclick="abrirModalNovaOrdem()">➕ Nova ordem manual</button>
-          <button class="btn btn-primary btn-sm" onclick="checkOverdueAndAlert(true)">⚠️ Ver ordens em atraso</button>
-          <button class="btn btn-ghost btn-sm" onclick="exportExcelPro()">📊 Exportar Excel</button>
-          <button class="btn btn-ghost btn-sm" onclick="exportPDF()">📄 Exportar PDF</button>
+          <button class="btn btn-ghost btn-sm" id="btnExcluir" style="display:none; color:var(--red); border-color:var(--red-line);" onclick="confirmarExclusao()"><svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/></svg> Excluir selecionadas</button>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalNovaOrdem()"><svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Nova ordem manual</button>
+          <button class="btn btn-primary btn-sm" onclick="checkOverdueAndAlert(true)"><svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg> Ver ordens em atraso</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportExcelPro()"><svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8M8 9h2"/></svg> Exportar Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportPDF()"><svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 15v-3h1.5a1.5 1.5 0 0 1 0 3H9Zm4-3v3m2-3h1.5m-1.5 1.5H16"/></svg> Exportar PDF</button>
         </div>
       </div>
       </div>
 
       <div class="filters">
         <div class="search-box">
-          <span class="ic">🔎</span>
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
           <input type="search" id="fSearch" autocomplete="off" placeholder="Buscar por placa, técnico ou associado...">
         </div>
         <select id="fTipo" autocomplete="off"><option value="">Tipo de serviço (todos)</option></select>
@@ -2292,11 +2293,11 @@ async function excluirOrdens(ids){
     const { error } = await sb.from('ordens_servico').delete().in('id', lote);
     if(error){
       alert('Erro ao excluir: ' + error.message);
-      if(btn) btn.textContent = '🗑️ Excluir selecionadas';
+      if(btn) btn.innerHTML = '<svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/></svg> Excluir selecionadas';
       return;
     }
   }
-  if(btn) btn.textContent = '🗑️ Excluir selecionadas';
+  if(btn) btn.innerHTML = '<svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/></svg> Excluir selecionadas';
   ORDENS = ORDENS.filter(o => !ids.includes(o.id));
   const selectAllBox = document.getElementById('selectAll');
   if(selectAllBox) selectAllBox.checked = false;
