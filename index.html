@@ -920,6 +920,25 @@
   </div>
 </div>
 
+<!-- ===== MODAL DE RESULTADO DE IMPORTAÇÃO ===== -->
+<div class="modal-overlay" id="resultadoImportModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-head">
+      <div class="ic" id="resultadoImportIcone" style="background:var(--green-bg); border-color:var(--green-line);">✅</div>
+      <div>
+        <h3 id="resultadoImportTitulo">Importação concluída</h3>
+        <p>Resumo da importação</p>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:18px 20px;">
+      <div id="resultadoImportTexto" style="font-size:13px; line-height:1.7;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="document.getElementById('resultadoImportModal').classList.remove('show')">Entendi</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL DE HISTÓRICO ===== -->
 <div class="modal-overlay" id="histModal">
   <div class="modal" style="max-width:480px;">
@@ -1505,6 +1524,15 @@ fileInput.addEventListener('change', e=>{
   if(e.target.files.length) handleFile(e.target.files[0]);
 });
 
+function mostrarResultadoImportacao(sucesso, htmlTexto){
+  document.getElementById('resultadoImportIcone').textContent = sucesso ? '✅' : '⚠️';
+  document.getElementById('resultadoImportIcone').style.background = sucesso ? 'var(--green-bg)' : 'var(--red-bg)';
+  document.getElementById('resultadoImportIcone').style.borderColor = sucesso ? 'var(--green-line)' : 'var(--red-line)';
+  document.getElementById('resultadoImportTitulo').textContent = sucesso ? 'Importação concluída' : 'Erro na importação';
+  document.getElementById('resultadoImportTexto').innerHTML = htmlTexto;
+  document.getElementById('resultadoImportModal').classList.add('show');
+}
+
 function handleFile(file){
   const reader = new FileReader();
   reader.onload = (e)=>{
@@ -1567,15 +1595,22 @@ function handleFile(file){
       log.innerHTML = `Enviando ${novas} ordens novas para o banco compartilhado...`;
 
       insertOrdens(novasOrdens).then(()=>{
-        log.innerHTML = `Importação concluída: <b>${novas}</b> ordens novas adicionadas ao banco compartilhado, <b>${atualizadas}</b> já existentes mantidas (com tratamento preservado)${ignoradas? `, <b>${ignoradas}</b> linhas ignoradas por data inválida`:''}. Base total: <b>${ORDENS.length}</b> ordens.`;
+        log.innerHTML = `Importação concluída: <b>${novas}</b> ordens novas, <b>${atualizadas}</b> já existentes mantidas. Base total: <b>${ORDENS.length}</b> ordens.`;
         renderAll();
         checkOverdueAndAlert(true);
+        mostrarResultadoImportacao(true,
+          `<b>${novas}</b> ordem(ns) nova(s) adicionada(s)<br>` +
+          `<b>${atualizadas}</b> ordem(ns) já existente(s) mantida(s) (tratamento preservado)` +
+          (ignoradas ? `<br><b>${ignoradas}</b> linha(s) ignorada(s) por data inválida` : '') +
+          `<br><br>Base total agora: <b>${ORDENS.length}</b> ordens.`
+        );
       });
 
     }catch(err){
       const log = document.getElementById('importLog');
       log.classList.add('show');
       log.innerHTML = `Não foi possível ler este arquivo. Verifique se é o Excel exportado no padrão do sistema. Detalhe técnico: ${err.message}`;
+      mostrarResultadoImportacao(false, `Não foi possível ler este arquivo. Verifique se é o Excel exportado no padrão do sistema.<br><br><span style="color:var(--text-mute); font-size:11.5px;">Detalhe técnico: ${err.message}</span>`);
     }
   };
   reader.readAsArrayBuffer(file);
@@ -1586,7 +1621,7 @@ function handleFile(file){
 ========================================================= */
 function computeStats(){
   const list = ORDENS.map(o=>{
-    const dt = new Date(o.aberturaISO);
+    const dt = new Date(o.aberturaISO+'T00:00:00');
     const dias = diasEmAberto(dt);
     return {...o, dias, atrasada: dias > PRAZO_DIAS, critica: dias >= 20};
   });
@@ -1678,15 +1713,21 @@ function handleFileAcessos(file){
         insertOrdens(novasOrdens),
         ...atualizacoesRemotas.map(id => updateOrdemRemote(id, {fila_acesso: true}))
       ]).then(()=>{
-        log.innerHTML = `Importação concluída: <b>${novas}</b> ordens novas adicionadas à fila, <b>${jaExistiamMarcadas}</b> ordens já existentes foram incluídas na fila${ignoradas? `, <b>${ignoradas}</b> linhas ignoradas por data inválida`:''}.`;
+        log.innerHTML = `Importação concluída: <b>${novas}</b> ordens novas, <b>${jaExistiamMarcadas}</b> já existentes incluídas na fila.`;
         renderAll();
         renderAcessos();
+        mostrarResultadoImportacao(true,
+          `<b>${novas}</b> ordem(ns) nova(s) adicionada(s) à fila<br>` +
+          `<b>${jaExistiamMarcadas}</b> ordem(ns) já existente(s) foram incluídas na fila` +
+          (ignoradas ? `<br><b>${ignoradas}</b> linha(s) ignorada(s) por data inválida` : '')
+        );
       });
 
     }catch(err){
       const log = document.getElementById('importLogAcessos');
       log.classList.add('show');
       log.innerHTML = `Não foi possível ler este arquivo. Verifique se é o Excel exportado no padrão do sistema. Detalhe técnico: ${err.message}`;
+      mostrarResultadoImportacao(false, `Não foi possível ler este arquivo. Verifique se é o Excel exportado no padrão do sistema.<br><br><span style="color:var(--text-mute); font-size:11.5px;">Detalhe técnico: ${err.message}</span>`);
     }
   };
   reader.readAsArrayBuffer(file);
@@ -1846,9 +1887,9 @@ function renderAll(){
 
     // ---- ORDENS RECENTES ----
     const statusBadgeCores = {'Aberta':'blue','Em Andamento':'amber','Aguardando Peça':'violet','Concluída':'green','Cancelada':'mute'};
-    const recentes = [...list].sort((a,b)=> new Date(b.aberturaISO) - new Date(a.aberturaISO)).slice(0,4);
+    const recentes = [...list].sort((a,b)=> b.aberturaISO.localeCompare(a.aberturaISO)).slice(0,4);
     document.getElementById('recentList').innerHTML = recentes.map(o=>{
-      const dt = new Date(o.aberturaISO);
+      const dt = new Date(o.aberturaISO+'T00:00:00');
       const cor = statusColoresHex[o.statusOs] || '#5b6a80';
       return `<div class="recent-item">
         <div>
@@ -1960,9 +2001,9 @@ function applyFilters(){
   });
 
   if(ordenacaoAbertura === 'desc'){
-    filtered.sort((a,b)=> new Date(b.aberturaISO) - new Date(a.aberturaISO));
+    filtered.sort((a,b)=> b.aberturaISO.localeCompare(a.aberturaISO));
   } else if(ordenacaoAbertura === 'asc'){
-    filtered.sort((a,b)=> new Date(a.aberturaISO) - new Date(b.aberturaISO));
+    filtered.sort((a,b)=> a.aberturaISO.localeCompare(b.aberturaISO));
   } else {
     filtered.sort((a,b)=> b.dias - a.dias);
   }
@@ -1988,7 +2029,7 @@ function applyFilters(){
   document.getElementById('ordensBody').innerHTML = filtered.map(o=>{
     const diasClass = o.critica ? 'super-crit' : (o.dias > PRAZO_DIAS ? 'crit' : (o.dias >= PRAZO_DIAS-2 ? 'warn' : ''));
     const treatVal = o.treat || 'none';
-    const dt = new Date(o.aberturaISO);
+    const dt = new Date(o.aberturaISO+'T00:00:00');
     let statusBadge;
     if(o.critica) statusBadge = '<span class="badge critico">🔥 Crítico</span>';
     else if(o.atrasada) statusBadge = '<span class="badge atraso">Atrasada</span>';
@@ -2188,7 +2229,7 @@ function exportCSV(){
   const treatLabels = {none:'Sem tratamento',amarelo:'Mensagem enviada ao técnico',vermelho:'Sem retorno do técnico',verde:'Retorno recebido',azul:'Sem retorno do associado',acesso:'Acesso enviado ao associado'};
   let csv = 'Placa;Tecnico;Tipo de Servico;Associado;Data Abertura;Dias em Aberto;Status;Tratamento;Observacao\n';
   list.sort((a,b)=>b.dias-a.dias).forEach(o=>{
-    const dt = new Date(o.aberturaISO);
+    const dt = new Date(o.aberturaISO+'T00:00:00');
     csv += [o.placa, o.tecnico, o.tipo, o.associado, formatDateBR(dt), o.dias, o.atrasada?'Atrasada':'No prazo', treatLabels[o.treat||'none'], (o.obs||'').replace(/;/g,',')].join(';') + '\n';
   });
   const blob = new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'});
