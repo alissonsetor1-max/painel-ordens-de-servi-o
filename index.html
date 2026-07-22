@@ -15,6 +15,8 @@
 <title>PROSULSAT — Ordens de Serviço</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root{
     --bg: #0c1118;
@@ -532,7 +534,8 @@
           <button class="btn btn-ghost btn-sm" id="btnExcluir" style="display:none; color:var(--red); border-color:var(--red-line);" onclick="confirmarExclusao()">🗑️ Excluir selecionadas</button>
           <button class="btn btn-primary btn-sm" onclick="abrirModalNovaOrdem()">➕ Nova ordem manual</button>
           <button class="btn btn-primary btn-sm" onclick="checkOverdueAndAlert(true)">⚠️ Ver ordens em atraso</button>
-          <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⤓ Exportar relatório</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⤓ Exportar Excel</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportPDF()">📄 Exportar PDF</button>
         </div>
       </div>
 
@@ -979,6 +982,14 @@ function parseDataBR(str){
   if(!d||!m||!y) return null;
   return new Date(y, m-1, d);
 }
+function paraISOLocal(dateObj){
+  // Converte Date para "YYYY-MM-DD" usando o horário LOCAL (evita o bug de toISOString()
+  // que converte para UTC e pode "voltar" um dia em fusos horários negativos, como o do Brasil)
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth()+1).padStart(2,'0');
+  const d = String(dateObj.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
 function formatDateBR(dateObj){
   if(!dateObj) return '—';
   const d = String(dateObj.getDate()).padStart(2,'0');
@@ -1044,7 +1055,7 @@ function abrirModalNovaOrdem(){
   document.getElementById('novaTecnico').value = '';
   document.getElementById('novaTipo').value = 'Instalação';
   document.getElementById('novaAssociado').value = '';
-  document.getElementById('novaAbertura').value = new Date().toISOString().slice(0,10);
+  document.getElementById('novaAbertura').value = paraISOLocal(new Date());
   document.getElementById('novaOrdemErro').style.display = 'none';
   document.getElementById('novaOrdemModal').classList.add('show');
 }
@@ -1198,7 +1209,7 @@ function handleFile(file){
           const tipo = tipoNormalizado(tipoServico);
           const associado = (cliente||'').toString().trim();
           const placaClean = String(placa).trim().toUpperCase();
-          const aberturaISO = dt.toISOString().slice(0,10);
+          const aberturaISO = paraISOLocal(dt);
           const key = placaClean+'|'+aberturaISO+'|'+tecnico;
 
           if(existentesKey.has(key)){
@@ -1430,6 +1441,39 @@ function alternarOrdenacaoAbertura(){
   applyFilters();
 }
 
+function obterListaFiltrada(){
+  const list = computeStats();
+  const search = document.getElementById('fSearch').value.trim().toLowerCase();
+  const tipo = document.getElementById('fTipo').value;
+  const tecnico = document.getElementById('fTecnico').value;
+  const status = document.getElementById('fStatus').value;
+  const treat = document.getElementById('fTreat').value;
+  const dataInicio = document.getElementById('fDataInicio').value;
+  const dataFim = document.getElementById('fDataFim').value;
+
+  let filtered = list.filter(o=>{
+    if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
+    if(tipo && o.tipo !== tipo) return false;
+    if(tecnico && o.tecnico !== tecnico) return false;
+    if(status === 'atraso' && !o.atrasada) return false;
+    if(status === 'ok' && o.atrasada) return false;
+    if(treat === 'none' && o.treat && o.treat !== 'none') return false;
+    if(treat && treat !== 'none' && o.treat !== treat) return false;
+    if(dataInicio && o.aberturaISO < dataInicio) return false;
+    if(dataFim && o.aberturaISO > dataFim) return false;
+    return true;
+  });
+
+  if(ordenacaoAbertura === 'desc'){
+    filtered.sort((a,b)=> new Date(b.aberturaISO) - new Date(a.aberturaISO));
+  } else if(ordenacaoAbertura === 'asc'){
+    filtered.sort((a,b)=> new Date(a.aberturaISO) - new Date(b.aberturaISO));
+  } else {
+    filtered.sort((a,b)=> b.dias - a.dias);
+  }
+  return filtered;
+}
+
 function applyFilters(){
   const list = computeStats();
   const search = document.getElementById('fSearch').value.trim().toLowerCase();
@@ -1534,7 +1578,7 @@ function updateTreat(sel){
   const id = sel.dataset.id;
   const ordem = ORDENS.find(o=>o.id===id);
   if(!ordem) return;
-  const hojeISO = new Date().toISOString().slice(0,10);
+  const hojeISO = paraISOLocal(new Date());
   ordem.treat = sel.value;
   ordem.atualizadoPor = USUARIO_ATUAL.nome || 'Não identificado';
   ordem.dataUltimoContato = hojeISO;
@@ -1666,19 +1710,145 @@ function closeModal(){ document.getElementById('alertModal').classList.remove('s
    EXPORTAÇÃO CSV
 ========================================================= */
 function exportCSV(){
-  const list = computeStats();
+  const list = obterListaFiltrada();
   const treatLabels = {none:'Sem tratamento',amarelo:'Mensagem enviada ao técnico',vermelho:'Sem retorno do técnico',verde:'Retorno recebido',azul:'Sem retorno do associado'};
   let csv = 'Placa;Tecnico;Tipo de Servico;Associado;Data Abertura;Dias em Aberto;Status;Tratamento;Observacao\n';
-  list.sort((a,b)=>b.dias-a.dias).forEach(o=>{
-    const dt = new Date(o.aberturaISO);
+  list.forEach(o=>{
+    const dt = new Date(o.aberturaISO+'T00:00:00');
     csv += [o.placa, o.tecnico, o.tipo, o.associado, formatDateBR(dt), o.dias, o.atrasada?'Atrasada':'No prazo', treatLabels[o.treat||'none'], (o.obs||'').replace(/;/g,',')].join(';') + '\n';
   });
   const blob = new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `ordens-servico-${new Date().toISOString().slice(0,10)}.csv`;
+  a.href = url; a.download = `ordens-servico-${paraISOLocal(new Date())}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function exportPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const list = obterListaFiltrada();
+  const treatLabels = {none:'Sem tratamento',amarelo:'Msg. enviada ao técnico',vermelho:'Sem retorno técnico',verde:'Retorno recebido',azul:'Sem retorno associado'};
+
+  const pageW = doc.internal.pageSize.getWidth();
+  const azul = [53, 104, 212];
+  const azulEscuro = [22, 32, 46];
+  const cinza = [92, 106, 128];
+  const vermelho = [214, 76, 57];
+  const verde = [47, 145, 96];
+
+  // ---- CABEÇALHO ----
+  doc.setFillColor(...azulEscuro);
+  doc.rect(0, 0, pageW, 24, 'F');
+  doc.setFillColor(...azul);
+  doc.roundedRect(10, 6, 12, 12, 3, 3, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('PS', 16, 13.5, {align:'center'});
+
+  doc.setFontSize(14);
+  doc.text('PROSULSAT', 27, 11);
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(180,190,205);
+  doc.text('Relatório de Ordens de Serviço', 27, 16.5);
+
+  doc.setFontSize(8);
+  doc.setTextColor(200,208,220);
+  const agora = new Date();
+  const dataGeracao = `${String(agora.getDate()).padStart(2,'0')}/${String(agora.getMonth()+1).padStart(2,'0')}/${agora.getFullYear()} às ${String(agora.getHours()).padStart(2,'0')}:${String(agora.getMinutes()).padStart(2,'0')}`;
+  doc.text(`Gerado em ${dataGeracao} · por ${USUARIO_ATUAL.nome || 'Usuário'}`, pageW - 10, 11, {align:'right'});
+  doc.text(`${list.length} ordem(ns) neste relatório`, pageW - 10, 16.5, {align:'right'});
+
+  // ---- RESUMO EXECUTIVO ----
+  const total = list.length;
+  const atrasadas = list.filter(o=>o.atrasada).length;
+  const criticas = list.filter(o=>o.critica).length;
+  const noPrazo = total - atrasadas;
+
+  let y = 32;
+  const kpis = [
+    {label:'Total de ordens', valor: total, cor: azulEscuro},
+    {label:'Em atraso', valor: atrasadas, cor: vermelho},
+    {label:'Críticas (20+ dias)', valor: criticas, cor: [201,84,15]},
+    {label:'No prazo', valor: noPrazo, cor: verde},
+  ];
+  const kpiW = (pageW - 20 - 3*4) / 4;
+  kpis.forEach((k, i)=>{
+    const x = 10 + i*(kpiW+4);
+    doc.setDrawColor(225,230,237);
+    doc.setFillColor(248,249,251);
+    doc.roundedRect(x, y, kpiW, 16, 2, 2, 'FD');
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...k.cor);
+    doc.text(String(k.valor), x + 5, y + 10);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...cinza);
+    doc.text(k.label, x + 5, y + 14);
+  });
+
+  y += 24;
+
+  // ---- TABELA ----
+  const treatCores = { none:[230,232,236], amarelo:[232,163,61], vermelho:[214,76,57], verde:[47,145,96], azul:[53,104,212] };
+  const body = list.map(o=>{
+    const dt = new Date(o.aberturaISO+'T00:00:00');
+    return [
+      o.placa,
+      o.tecnico,
+      o.tipo,
+      o.associado,
+      formatDateBR(dt),
+      `${o.dias}d`,
+      o.critica ? 'Crítico' : (o.atrasada ? 'Atrasada' : 'No prazo'),
+      treatLabels[o.treat||'none'],
+      o.obs || '—'
+    ];
+  });
+
+  doc.autoTable({
+    startY: y,
+    head: [['Placa','Técnico','Tipo','Associado','Abertura','Dias','Status','Tratamento','Observação']],
+    body: body,
+    theme: 'grid',
+    styles: { fontSize: 7.5, cellPadding: 2, textColor: [22,32,46], lineColor: [225,230,237], lineWidth: 0.1 },
+    headStyles: { fillColor: azulEscuro, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
+    alternateRowStyles: { fillColor: [248,249,251] },
+    columnStyles: {
+      0: { cellWidth: 20, font: 'courier', fontStyle: 'bold' },
+      4: { cellWidth: 20 },
+      5: { cellWidth: 12, halign: 'center' },
+      6: { cellWidth: 20 },
+    },
+    didParseCell: function(data){
+      if(data.section === 'body' && data.column.index === 6){
+        const val = data.cell.raw;
+        if(val === 'Crítico'){ data.cell.styles.textColor = vermelho; data.cell.styles.fontStyle = 'bold'; }
+        else if(val === 'Atrasada'){ data.cell.styles.textColor = [201,84,15]; data.cell.styles.fontStyle = 'bold'; }
+        else if(val === 'No prazo'){ data.cell.styles.textColor = verde; }
+      }
+    },
+    margin: { left: 10, right: 10 },
+  });
+
+  // ---- RODAPÉ ----
+  const totalPaginas = doc.internal.getNumberOfPages();
+  for(let p = 1; p <= totalPaginas; p++){
+    doc.setPage(p);
+    const pageH = doc.internal.pageSize.getHeight();
+    doc.setDrawColor(225,230,237);
+    doc.line(10, pageH - 10, pageW - 10, pageH - 10);
+    doc.setFontSize(7.5);
+    doc.setTextColor(...cinza);
+    doc.text('PROSULSAT · Sistema de Ordens de Serviço', 10, pageH - 6);
+    doc.text(`Página ${p} de ${totalPaginas}`, pageW - 10, pageH - 6, {align:'right'});
+  }
+
+  doc.save(`relatorio-os-prosulsat-${paraISOLocal(new Date())}.pdf`);
 }
 
 /* =========================================================
