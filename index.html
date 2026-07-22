@@ -262,8 +262,8 @@
   .type-count .of-which{ font-size:10.5px; color:var(--red); font-weight:700;}
 
   /* Empty state */
-  .empty{ text-align:center; padding:50px 20px; color:var(--text-dim);}
-  .empty .icon{ width:52px;height:52px;border-radius:14px;background:var(--panel-2);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:22px;}
+  .empty{ text-align:center; padding:56px 20px; color:var(--text-dim);}
+  .empty .icon{ width:56px;height:56px;border-radius:16px;background:linear-gradient(145deg, var(--panel-2), var(--panel-3));margin:0 auto 18px;display:flex;align-items:center;justify-content:center;font-size:24px; box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 2px 8px rgba(0,0,0,.08);}
   .empty h3{ color:var(--text); font-size:15px; margin-bottom:6px;}
   .empty p{ font-size:12.5px; max-width:360px; margin:0 auto 18px; line-height:1.5;}
 
@@ -278,7 +278,7 @@
   .search-box input{ width:100%; padding-left:32px;}
   .search-box .ic{ position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:.5; font-size:12px;}
 
-  .table-wrap{ background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  .table-wrap{ background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow-card);}
   .table-wrap table{ font-size:12.5px;}
   .table-wrap th{ background:var(--panel-2); position:sticky; top:0;}
   .placa-chip{
@@ -368,9 +368,9 @@
   }
   .modal-overlay.show{ display:flex; }
   .modal{
-    background:var(--panel); border:1px solid var(--red-line); border-radius:16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:18px;
     max-width:560px; width:100%; max-height:80vh; display:flex; flex-direction:column;
-    box-shadow:0 20px 60px rgba(0,0,0,.5);
+    box-shadow:0 24px 64px rgba(0,0,0,.35), 0 4px 16px rgba(0,0,0,.15);
   }
   .modal-head{ display:flex; align-items:flex-start; gap:14px; padding:22px 24px 16px; border-bottom:1px solid var(--line);}
   .modal-head .ic{ width:40px;height:40px;border-radius:10px; background:var(--red-bg); border:1px solid var(--red-line); display:flex;align-items:center;justify-content:center; font-size:18px; flex-shrink:0;}
@@ -581,7 +581,8 @@
 
     <!-- ============ ORDENS ============ -->
     <section class="view" id="view-ordens">
-      <div class="topbar">
+      <div class="dash-header-banner">
+      <div class="topbar" style="margin-bottom:0;">
         <div>
           <h1>Ordens de Serviço</h1>
           <div class="meta"><span id="ordensMeta">0 ordens</span></div>
@@ -594,6 +595,7 @@
           <button class="btn btn-ghost btn-sm" onclick="exportExcelPro()">📊 Exportar Excel</button>
           <button class="btn btn-ghost btn-sm" onclick="exportPDF()">📄 Exportar PDF</button>
         </div>
+      </div>
       </div>
 
       <div class="filters">
@@ -674,11 +676,13 @@
 
     <!-- ============ RANKING ============ -->
     <section class="view" id="view-ranking">
-      <div class="topbar">
+      <div class="dash-header-banner">
+      <div class="topbar" style="margin-bottom:0;">
         <div>
           <h1>Ranking de Técnicos</h1>
           <div class="meta"><span>Volume de ordens, por tipo e status de atraso</span></div>
         </div>
+      </div>
       </div>
 
       <div id="rankingEmpty" class="empty">
@@ -706,12 +710,14 @@
 
     <!-- ============ ACESSO ENVIADO ============ -->
     <section class="view" id="view-acessos">
-      <div class="topbar">
+      <div class="dash-header-banner">
+      <div class="topbar" style="margin-bottom:0;">
         <div>
           <h1>🔑 Acesso Enviado</h1>
           <div class="meta"><span id="acessosMeta">Ordens executadas pelos técnicos, aguardando confirmação de envio de acesso</span></div>
         </div>
         <button class="btn btn-primary btn-sm" onclick="document.getElementById('dropZoneAcessos').scrollIntoView({behavior:'smooth'})">⤒ Importar ordens concluídas</button>
+      </div>
       </div>
 
       <div class="card" style="padding-bottom:20px; margin-bottom:16px;">
@@ -770,11 +776,13 @@
 
     <!-- ============ IMPORTAR ============ -->
     <section class="view" id="view-importar">
-      <div class="topbar">
+      <div class="dash-header-banner">
+      <div class="topbar" style="margin-bottom:0;">
         <div>
           <h1>Importar Excel</h1>
           <div class="meta"><span>Use o mesmo padrão de exportação do sistema atual, todos os dias</span></div>
         </div>
+      </div>
       </div>
 
       <div class="card" style="padding-bottom:20px;">
@@ -802,12 +810,14 @@
 
     <!-- ============ USUÁRIOS ============ -->
     <section class="view" id="view-usuarios">
-      <div class="topbar">
+      <div class="dash-header-banner">
+      <div class="topbar" style="margin-bottom:0;">
         <div>
           <h1>Usuários</h1>
           <div class="meta"><span id="usuariosMeta">Contas cadastradas no sistema</span></div>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="carregarUsuarios()">🔄 Atualizar lista</button>
+      </div>
       </div>
 
       <div class="table-wrap">
@@ -1018,7 +1028,7 @@
 
 <!-- ===== MODAL DE ATRASO ===== -->
 <div class="modal-overlay" id="alertModal">
-  <div class="modal">
+  <div class="modal" style="border-color:var(--red-line);">
     <div class="modal-head">
       <div class="ic">⚠️</div>
       <div>
