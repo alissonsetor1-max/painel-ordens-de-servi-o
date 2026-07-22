@@ -539,16 +539,16 @@
       <div class="filters">
         <div class="search-box">
           <span class="ic">🔎</span>
-          <input type="search" id="fSearch" placeholder="Buscar por placa, técnico ou associado...">
+          <input type="search" id="fSearch" autocomplete="off" placeholder="Buscar por placa, técnico ou associado...">
         </div>
-        <select id="fTipo"><option value="">Tipo de serviço (todos)</option></select>
-        <select id="fTecnico"><option value="">Técnico (todos)</option></select>
-        <select id="fStatus">
+        <select id="fTipo" autocomplete="off"><option value="">Tipo de serviço (todos)</option></select>
+        <select id="fTecnico" autocomplete="off"><option value="">Técnico (todos)</option></select>
+        <select id="fStatus" autocomplete="off">
           <option value="">Status (todos)</option>
           <option value="atraso">Em atraso</option>
           <option value="ok">No prazo</option>
         </select>
-        <select id="fTreat">
+        <select id="fTreat" autocomplete="off">
           <option value="">Tratamento (todos)</option>
           <option value="none">Sem tratamento</option>
           <option value="amarelo">🟡 Mensagem enviada ao técnico</option>
@@ -557,7 +557,7 @@
           <option value="azul">🔵 Sem retorno do associado</option>
         </select>
         <div style="display:flex; align-items:center; gap:6px;">
-          <input type="date" id="fData" style="padding:8px 10px;" title="Filtrar por data de abertura">
+          <input type="date" id="fData" autocomplete="off" style="padding:8px 10px;" title="Filtrar por data de abertura">
           <button class="btn btn-ghost btn-sm" id="btnLimparData" style="display:none;" onclick="limparFiltroData()">✕ Limpar data</button>
         </div>
       </div>
@@ -1690,7 +1690,17 @@ async function refreshData(){
   setTimeout(()=>{ txt.textContent = original; btn.style.pointerEvents = ''; }, 1200);
 }
 
+function resetarFiltros(){
+  document.getElementById('fSearch').value = '';
+  document.getElementById('fTipo').value = '';
+  document.getElementById('fTecnico').value = '';
+  document.getElementById('fStatus').value = '';
+  document.getElementById('fTreat').value = '';
+  document.getElementById('fData').value = '';
+}
+
 (async function init(){
+  resetarFiltros();
   aplicarTemaSalvo();
   await checarSessao();
   await loadData();
