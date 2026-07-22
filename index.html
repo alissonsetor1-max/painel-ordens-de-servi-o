@@ -1707,6 +1707,19 @@ function resetarFiltros(){
   renderAll();
   if(ORDENS.length > 0) checkOverdueAndAlert(false);
 })();
+
+// Alguns navegadores restauram valores de formulário DEPOIS do carregamento inicial
+// (ex: ao dar F5). Isso garante que o filtro continue limpo mesmo nesse caso.
+window.addEventListener('pageshow', function(){
+  resetarFiltros();
+  applyFilters();
+});
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    resetarFiltros();
+    applyFilters();
+  }, 50);
+});
 </script>
 </body>
 </html>
