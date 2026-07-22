@@ -867,7 +867,8 @@
     <div class="modal-body" style="padding:18px 20px; display:flex; flex-direction:column; gap:12px;">
       <div>
         <label class="form-label">Placa do veículo *</label>
-        <input type="text" id="novaPlaca" placeholder="Ex: ABC1D23" style="width:100%; padding:9px 12px; text-transform:uppercase;">
+        <input type="text" id="novaPlaca" placeholder="Ex: ABC1D23" style="width:100%; padding:9px 12px; text-transform:uppercase;" oninput="verificarPlacaDuplicada(this)">
+        <div id="avisoPlacaDuplicada" style="display:none; margin-top:6px; font-size:11px; color:var(--amber); font-weight:700;"></div>
       </div>
       <div>
         <label class="form-label">Técnico *</label>
@@ -1186,11 +1187,28 @@ function abrirModalNovaOrdem(){
   document.getElementById('novaAssociado').value = '';
   document.getElementById('novaAbertura').value = paraISOLocal(new Date());
   document.getElementById('novaOrdemErro').style.display = 'none';
+  document.getElementById('avisoPlacaDuplicada').style.display = 'none';
   document.getElementById('novaOrdemModal').classList.add('show');
 }
 function fecharModalNovaOrdem(){
   document.getElementById('novaOrdemModal').classList.remove('show');
 }
+function verificarPlacaDuplicada(input){
+  const placa = input.value.trim().toUpperCase();
+  const aviso = document.getElementById('avisoPlacaDuplicada');
+  if(!placa){
+    aviso.style.display = 'none';
+    return;
+  }
+  const jaExiste = ORDENS.find(o => o.placa === placa);
+  if(jaExiste){
+    aviso.textContent = `⚠️ Essa placa já está cadastrada (técnico ${jaExiste.tecnico})`;
+    aviso.style.display = 'block';
+  } else {
+    aviso.style.display = 'none';
+  }
+}
+
 async function salvarNovaOrdem(){
   const placa = document.getElementById('novaPlaca').value.trim().toUpperCase();
   const tecnico = document.getElementById('novaTecnico').value.trim();
@@ -1198,11 +1216,24 @@ async function salvarNovaOrdem(){
   const associado = document.getElementById('novaAssociado').value.trim();
   const abertura = document.getElementById('novaAbertura').value;
   const erroBox = document.getElementById('novaOrdemErro');
+  erroBox.style.display = 'none';
 
   if(!placa || !tecnico || !associado || !abertura){
     erroBox.textContent = 'Preencha todos os campos obrigatórios (*).';
     erroBox.style.display = 'block';
     return;
+  }
+
+  // Verifica se a placa já existe no sistema (em qualquer ordem, de qualquer data)
+  const jaExiste = ORDENS.find(o => o.placa === placa);
+  if(jaExiste){
+    const dtExistente = new Date(jaExiste.aberturaISO+'T00:00:00');
+    const continuar = confirm(
+      `⚠️ A placa ${placa} já está cadastrada no sistema!\n\n` +
+      `Ordem existente: Técnico ${jaExiste.tecnico}, aberta em ${formatDateBR(dtExistente)}, associado ${jaExiste.associado}.\n\n` +
+      `Deseja continuar e cadastrar mesmo assim?`
+    );
+    if(!continuar) return;
   }
 
   const key = `${placa}|${abertura}|${tecnico}`;
