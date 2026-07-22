@@ -433,7 +433,7 @@
         <div class="user-name" id="userName">—</div>
         <div class="user-role" id="userRole">—</div>
       </div>
-      <button class="user-swap" onclick="trocarUsuario()" title="Trocar usuário">⇄</button>
+      <button class="user-swap" onclick="trocarUsuario()" title="Sair">🚪</button>
     </div>
 
     <div class="theme-toggle-wrap">
@@ -444,7 +444,7 @@
       </label>
       <span class="theme-ic">🌙</span>
     </div>
-    <div class="nav-item" style="margin-top:4px;" onclick="refreshData()"><span class="nav-ic">🔄</span><span class="nav-txt">Atualizar dados</span></div>
+    <div class="nav-item" id="btnAtualizarDados" style="margin-top:4px;" onclick="refreshData()"><span class="nav-ic">🔄</span><span class="nav-txt">Atualizar dados</span></div>
   </aside>
 
   <!-- ===== MAIN ===== -->
@@ -664,28 +664,59 @@
 <div class="modal-overlay show" id="loginModal">
   <div class="modal" style="max-width:380px;">
     <div class="modal-head">
-      <div class="ic" style="background:var(--blue-bg); border-color:var(--blue-line);">👤</div>
+      <div class="ic" style="background:var(--blue-bg); border-color:var(--blue-line);">🔒</div>
       <div>
-        <h3>Identifique-se</h3>
-        <p>Usado para registrar quem tratou cada ordem</p>
+        <h3 id="loginModalTitle">Entrar no sistema</h3>
+        <p id="loginModalSub">Use seu e-mail e senha</p>
       </div>
     </div>
-    <div class="modal-body" style="padding:18px 20px;">
+
+    <div class="modal-body" id="loginTabEntrar" style="padding:18px 20px;">
       <div style="margin-bottom:12px;">
-        <label style="font-size:11.5px; font-weight:700; color:var(--text-dim); display:block; margin-bottom:6px;">Seu nome</label>
-        <input type="text" id="loginNome" placeholder="Ex: Carlos Mendes" style="width:100%; padding:10px 12px;">
+        <label class="form-label">E-mail</label>
+        <input type="email" id="loginEmail" placeholder="seu@email.com" style="width:100%; padding:10px 12px;">
       </div>
       <div>
-        <label style="font-size:11.5px; font-weight:700; color:var(--text-dim); display:block; margin-bottom:6px;">Perfil</label>
-        <select id="loginPapel" style="width:100%; padding:10px 12px;">
+        <label class="form-label">Senha</label>
+        <input type="password" id="loginSenha" placeholder="••••••••" style="width:100%; padding:10px 12px;" onkeydown="if(event.key==='Enter'){ entrarComSenha(); }">
+      </div>
+      <div id="loginErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700; margin-top:10px;"></div>
+      <div style="margin-top:14px; text-align:center;">
+        <span style="font-size:11.5px; color:var(--text-mute);">Ainda não tem conta?</span>
+        <span style="font-size:11.5px; color:var(--blue); font-weight:700; cursor:pointer;" onclick="mostrarAbaCadastro()">Criar conta</span>
+      </div>
+    </div>
+
+    <div class="modal-body" id="loginTabCadastro" style="padding:18px 20px; display:none;">
+      <div style="margin-bottom:12px;">
+        <label class="form-label">Seu nome</label>
+        <input type="text" id="cadNome" placeholder="Ex: Carlos Mendes" style="width:100%; padding:10px 12px;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">Perfil</label>
+        <select id="cadPapel" style="width:100%; padding:10px 12px;">
           <option value="Supervisor">Supervisor</option>
           <option value="Técnico">Técnico</option>
           <option value="Gestor">Gestor</option>
         </select>
       </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">E-mail</label>
+        <input type="email" id="cadEmail" placeholder="seu@email.com" style="width:100%; padding:10px 12px;">
+      </div>
+      <div>
+        <label class="form-label">Crie uma senha</label>
+        <input type="password" id="cadSenha" placeholder="Mínimo 6 caracteres" style="width:100%; padding:10px 12px;">
+      </div>
+      <div id="cadastroErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700; margin-top:10px;"></div>
+      <div style="margin-top:14px; text-align:center;">
+        <span style="font-size:11.5px; color:var(--text-mute);">Já tem conta?</span>
+        <span style="font-size:11.5px; color:var(--blue); font-weight:700; cursor:pointer;" onclick="mostrarAbaEntrar()">Fazer login</span>
+      </div>
     </div>
+
     <div class="modal-foot">
-      <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="fazerLogin()">Entrar</button>
+      <button class="btn btn-primary" id="btnLoginAcao" style="width:100%; justify-content:center;" onclick="entrarComSenha()">Entrar</button>
     </div>
   </div>
 </div>
@@ -809,34 +840,127 @@ function toggleTheme(checkbox){
 }
 
 function carregarUsuario(){
-  const nome = localStorage.getItem('os_usuario_nome');
-  const papel = localStorage.getItem('os_usuario_papel');
-  if(nome && papel){
-    USUARIO_ATUAL = { nome, papel };
+  // Mantido por compatibilidade; a checagem real acontece em checarSessao()
+  return false;
+}
+
+function mostrarAbaCadastro(){
+  document.getElementById('loginTabEntrar').style.display = 'none';
+  document.getElementById('loginTabCadastro').style.display = 'block';
+  document.getElementById('loginModalTitle').textContent = 'Criar conta';
+  document.getElementById('loginModalSub').textContent = 'Cadastre-se para usar o sistema';
+  document.getElementById('btnLoginAcao').textContent = 'Criar conta';
+  document.getElementById('btnLoginAcao').onclick = criarConta;
+}
+function mostrarAbaEntrar(){
+  document.getElementById('loginTabEntrar').style.display = 'block';
+  document.getElementById('loginTabCadastro').style.display = 'none';
+  document.getElementById('loginModalTitle').textContent = 'Entrar no sistema';
+  document.getElementById('loginModalSub').textContent = 'Use seu e-mail e senha';
+  document.getElementById('btnLoginAcao').textContent = 'Entrar';
+  document.getElementById('btnLoginAcao').onclick = entrarComSenha;
+}
+
+async function entrarComSenha(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+  const erroBox = document.getElementById('loginErro');
+  erroBox.style.display = 'none';
+
+  if(!email || !senha){
+    erroBox.textContent = 'Preencha e-mail e senha.';
+    erroBox.style.display = 'block';
+    return;
+  }
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
+  if(error){
+    erroBox.textContent = 'E-mail ou senha incorretos.';
+    erroBox.style.display = 'block';
+    return;
+  }
+
+  await carregarPerfilLogado(data.user.id);
+  document.getElementById('loginModal').classList.remove('show');
+  await refreshData();
+}
+
+async function criarConta(){
+  const nome = document.getElementById('cadNome').value.trim();
+  const papel = document.getElementById('cadPapel').value;
+  const email = document.getElementById('cadEmail').value.trim();
+  const senha = document.getElementById('cadSenha').value;
+  const erroBox = document.getElementById('cadastroErro');
+  erroBox.style.display = 'none';
+
+  if(!nome || !email || !senha){
+    erroBox.textContent = 'Preencha todos os campos.';
+    erroBox.style.display = 'block';
+    return;
+  }
+  if(senha.length < 6){
+    erroBox.textContent = 'A senha precisa ter no mínimo 6 caracteres.';
+    erroBox.style.display = 'block';
+    return;
+  }
+
+  try{
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/criar-usuario`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: senha, nome, papel })
+    });
+    const result = await resp.json();
+    if(!resp.ok || result.error){
+      erroBox.textContent = result.error || 'Erro ao criar conta.';
+      erroBox.style.display = 'block';
+      return;
+    }
+    // conta criada com sucesso, faz login automaticamente
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
+    if(error){
+      erroBox.textContent = 'Conta criada, mas houve erro ao entrar. Tente fazer login.';
+      erroBox.style.display = 'block';
+      mostrarAbaEntrar();
+      return;
+    }
+    await carregarPerfilLogado(data.user.id);
     document.getElementById('loginModal').classList.remove('show');
-    atualizarBadgeUsuario();
+    await refreshData();
+  }catch(e){
+    erroBox.textContent = 'Erro de conexão: ' + e.message;
+    erroBox.style.display = 'block';
+  }
+}
+
+async function carregarPerfilLogado(userId){
+  const { data, error } = await sb.from('perfis_usuarios').select('*').eq('id', userId).single();
+  if(error || !data){
+    USUARIO_ATUAL = { nome: 'Usuário', papel: 'Técnico' };
+  } else {
+    USUARIO_ATUAL = { nome: data.nome, papel: data.papel };
+  }
+  atualizarBadgeUsuario();
+}
+
+async function checarSessao(){
+  const { data } = await sb.auth.getSession();
+  if(data && data.session){
+    await carregarPerfilLogado(data.session.user.id);
+    document.getElementById('loginModal').classList.remove('show');
     return true;
   }
   return false;
 }
-function fazerLogin(){
-  const nome = document.getElementById('loginNome').value.trim();
-  const papel = document.getElementById('loginPapel').value;
-  if(!nome){
-    document.getElementById('loginNome').style.borderColor = 'var(--red)';
-    return;
-  }
-  localStorage.setItem('os_usuario_nome', nome);
-  localStorage.setItem('os_usuario_papel', papel);
-  USUARIO_ATUAL = { nome, papel };
-  document.getElementById('loginModal').classList.remove('show');
-  atualizarBadgeUsuario();
-}
-function trocarUsuario(){
-  document.getElementById('loginNome').value = USUARIO_ATUAL.nome;
-  document.getElementById('loginPapel').value = USUARIO_ATUAL.papel;
+
+async function trocarUsuario(){
+  await sb.auth.signOut();
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginSenha').value = '';
+  mostrarAbaEntrar();
   document.getElementById('loginModal').classList.add('show');
 }
+
 function atualizarBadgeUsuario(){
   document.getElementById('userName').textContent = USUARIO_ATUAL.nome;
   document.getElementById('userRole').textContent = USUARIO_ATUAL.papel;
@@ -1020,7 +1144,7 @@ function goTo(view){
     checkOverdueAndAlert(false);
   }
 }
-document.querySelectorAll('.nav-item').forEach(item=>{
+document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
   item.addEventListener('click', ()=> goTo(item.dataset.view));
 });
 
@@ -1555,13 +1679,20 @@ function exportCSV(){
    INIT
 ========================================================= */
 async function refreshData(){
+  const btn = document.getElementById('btnAtualizarDados');
+  const txt = btn.querySelector('.nav-txt');
+  const original = txt.textContent;
+  txt.textContent = 'Atualizando...';
+  btn.style.pointerEvents = 'none';
   await loadData();
   renderAll();
+  txt.textContent = 'Atualizado ✓';
+  setTimeout(()=>{ txt.textContent = original; btn.style.pointerEvents = ''; }, 1200);
 }
 
 (async function init(){
   aplicarTemaSalvo();
-  carregarUsuario();
+  await checarSessao();
   await loadData();
   renderAll();
   if(ORDENS.length > 0) checkOverdueAndAlert(false);
