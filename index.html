@@ -1259,7 +1259,7 @@ function handleFile(file){
 ========================================================= */
 function computeStats(){
   const list = ORDENS.map(o=>{
-    const dt = new Date(o.aberturaISO);
+    const dt = new Date(o.aberturaISO+'T00:00:00');
     const dias = diasEmAberto(dt);
     return {...o, dias, atrasada: dias > PRAZO_DIAS, critica: dias >= 20};
   });
@@ -1353,9 +1353,9 @@ function renderAll(){
 
     // ---- ORDENS RECENTES ----
     const statusBadgeCores = {'Aberta':'blue','Em Andamento':'amber','Aguardando Peça':'violet','Concluída':'green','Cancelada':'mute'};
-    const recentes = [...list].sort((a,b)=> new Date(b.aberturaISO) - new Date(a.aberturaISO)).slice(0,4);
+    const recentes = [...list].sort((a,b)=> b.aberturaISO.localeCompare(a.aberturaISO)).slice(0,4);
     document.getElementById('recentList').innerHTML = recentes.map(o=>{
-      const dt = new Date(o.aberturaISO);
+      const dt = new Date(o.aberturaISO+'T00:00:00');
       const cor = statusColoresHex[o.statusOs] || '#5b6a80';
       return `<div class="recent-item">
         <div>
@@ -1465,9 +1465,9 @@ function obterListaFiltrada(){
   });
 
   if(ordenacaoAbertura === 'desc'){
-    filtered.sort((a,b)=> new Date(b.aberturaISO) - new Date(a.aberturaISO));
+    filtered.sort((a,b)=> b.aberturaISO.localeCompare(a.aberturaISO));
   } else if(ordenacaoAbertura === 'asc'){
-    filtered.sort((a,b)=> new Date(a.aberturaISO) - new Date(b.aberturaISO));
+    filtered.sort((a,b)=> a.aberturaISO.localeCompare(b.aberturaISO));
   } else {
     filtered.sort((a,b)=> b.dias - a.dias);
   }
@@ -1500,9 +1500,9 @@ function applyFilters(){
   });
 
   if(ordenacaoAbertura === 'desc'){
-    filtered.sort((a,b)=> new Date(b.aberturaISO) - new Date(a.aberturaISO));
+    filtered.sort((a,b)=> b.aberturaISO.localeCompare(a.aberturaISO));
   } else if(ordenacaoAbertura === 'asc'){
-    filtered.sort((a,b)=> new Date(a.aberturaISO) - new Date(b.aberturaISO));
+    filtered.sort((a,b)=> a.aberturaISO.localeCompare(b.aberturaISO));
   } else {
     filtered.sort((a,b)=> b.dias - a.dias);
   }
@@ -1528,7 +1528,7 @@ function applyFilters(){
   document.getElementById('ordensBody').innerHTML = filtered.map(o=>{
     const diasClass = o.critica ? 'super-crit' : (o.dias > PRAZO_DIAS ? 'crit' : (o.dias >= PRAZO_DIAS-2 ? 'warn' : ''));
     const treatVal = o.treat || 'none';
-    const dt = new Date(o.aberturaISO);
+    const dt = new Date(o.aberturaISO+'T00:00:00');
     let statusBadge;
     if(o.critica) statusBadge = '<span class="badge critico">🔥 Crítico</span>';
     else if(o.atrasada) statusBadge = '<span class="badge atraso">Atrasada</span>';
