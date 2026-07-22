@@ -31,6 +31,7 @@
     --green: #4caf7d;    --green-bg: rgba(76,175,125,.14);    --green-line: rgba(76,175,125,.4);
     --blue: #5b8def;     --blue-bg: rgba(91,141,239,.14);     --blue-line: rgba(91,141,239,.4);
     --violet:#9b7ee8;    --violet-bg: rgba(155,126,232,.14);  --violet-line: rgba(155,126,232,.4);
+    --teal:#2dd4bf;      --teal-bg: rgba(45,212,191,.14);     --teal-line: rgba(45,212,191,.4);
 
     --shadow-card: 0 1px 3px rgba(0,0,0,.25);
   }
@@ -50,6 +51,7 @@
     --green: #2f9160;   --green-bg: rgba(47,145,96,.10);     --green-line: rgba(47,145,96,.30);
     --blue: #3568d4;    --blue-bg: rgba(53,104,212,.09);     --blue-line: rgba(53,104,212,.28);
     --violet:#7c5cd6;    --violet-bg: rgba(124,92,214,.10);   --violet-line: rgba(124,92,214,.30);
+    --teal:#0d9488;      --teal-bg: rgba(13,148,136,.10);     --teal-line: rgba(13,148,136,.30);
 
     --shadow-card: 0 1px 2px rgba(20,30,50,.06), 0 1px 8px rgba(20,30,50,.04);
   }
@@ -255,6 +257,7 @@
   .row-treat.t-vermelho{ border-left-color:var(--red); }
   .row-treat.t-verde{ border-left-color:var(--green); }
   .row-treat.t-azul{ border-left-color:var(--blue); }
+  .row-treat.t-acesso{ border-left-color:var(--teal); }
   .row-treat.t-none{ border-left-color:#2a3547; }
   .row-treat.critico{ background:rgba(227,99,79,.06); }
   .dias-num.super-crit{ color:#fff; background:var(--red); padding:1px 5px; border-radius:5px; font-size:10.5px; }
@@ -278,6 +281,7 @@
   .treat-select.t-vermelho{ background:var(--red-bg); color:var(--red); border-color:var(--red-line);}
   .treat-select.t-verde{ background:var(--green-bg); color:var(--green); border-color:var(--green-line);}
   .treat-select.t-azul{ background:var(--blue-bg); color:var(--blue); border-color:var(--blue-line);}
+  .treat-select.t-acesso{ background:var(--teal-bg); color:var(--teal); border-color:var(--teal-line);}
   .treat-select.t-none{ color:var(--text-dim); }
 
   .obs-input{ width:100%; max-width:100px; font-size:10px; padding:5px 5px; }
@@ -427,6 +431,7 @@
     <div class="nav-item active" data-view="dashboard"><span class="nav-ic">📊</span><span class="nav-txt">Dashboard</span></div>
     <div class="nav-item" data-view="ordens"><span class="nav-ic">🚗</span><span class="nav-txt">Ordens de Serviço</span><span class="nav-badge" id="navBadgeOrdens">0</span></div>
     <div class="nav-item" data-view="ranking"><span class="nav-ic">🏆</span><span class="nav-txt">Ranking de Técnicos</span></div>
+    <div class="nav-item" data-view="acessos"><span class="nav-ic">🔑</span><span class="nav-txt">Acesso Enviado</span><span class="nav-badge" id="navBadgeAcessos" style="background:var(--teal-bg); color:var(--teal);">0</span></div>
 
     <div class="nav-label">Dados</div>
     <div class="nav-item" data-view="importar"><span class="nav-ic">⤒</span><span class="nav-txt">Importar Excel</span></div>
@@ -573,6 +578,7 @@
           <option value="vermelho">🔴 Sem retorno do técnico</option>
           <option value="verde">🟢 Retorno recebido</option>
           <option value="azul">🔵 Sem retorno do associado</option>
+          <option value="acesso">🔑 Acesso enviado ao associado</option>
         </select>
         <div style="display:flex; align-items:center; gap:6px;">
           <span style="font-size:11px; color:var(--text-mute); font-weight:600;">De</span>
@@ -658,6 +664,50 @@
             <tbody id="rankingBody"></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <!-- ============ ACESSO ENVIADO ============ -->
+    <section class="view" id="view-acessos">
+      <div class="topbar">
+        <div>
+          <h1>🔑 Acesso Enviado</h1>
+          <div class="meta"><span id="acessosMeta">Ordens marcadas como "Acesso enviado ao associado"</span></div>
+        </div>
+      </div>
+
+      <div id="acessosEmpty" class="empty">
+        <div class="icon">🔑</div>
+        <h3>Nenhum acesso enviado ainda</h3>
+        <p>Quando uma ordem for marcada com o tratamento "Acesso enviado ao associado", ela aparece aqui automaticamente.</p>
+      </div>
+
+      <div class="table-wrap" id="acessosTableWrap" style="display:none; overflow-x:auto;">
+        <table>
+          <colgroup>
+            <col style="width:90px;">
+            <col style="width:130px;">
+            <col style="width:90px;">
+            <col style="width:150px;">
+            <col style="width:90px;">
+            <col style="width:90px;">
+            <col style="width:200px;">
+            <col style="width:100px;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Placa</th>
+              <th>Técnico</th>
+              <th>Tipo</th>
+              <th>Associado</th>
+              <th>Abertura</th>
+              <th>Marcado em</th>
+              <th>Observação</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="acessosBody"></tbody>
+        </table>
       </div>
     </section>
 
@@ -1163,7 +1213,7 @@ async function updateOrdemRemote(id, fields){
 }
 
 async function registrarHistorico(ordemId, treat, obs){
-  const treatLabels = {none:'Sem tratamento',amarelo:'Mensagem enviada ao técnico',vermelho:'Sem retorno do técnico',verde:'Retorno recebido',azul:'Sem retorno do associado'};
+  const treatLabels = {none:'Sem tratamento',amarelo:'Mensagem enviada ao técnico',vermelho:'Sem retorno do técnico',verde:'Retorno recebido',azul:'Sem retorno do associado',acesso:'Acesso enviado ao associado'};
   const { error } = await sb.from('ordens_historico').insert({
     ordem_id: ordemId,
     treat: treatLabels[treat] || treat,
@@ -1314,6 +1364,9 @@ function goTo(view){
   if(view === 'usuarios'){
     carregarUsuarios();
   }
+  if(view === 'acessos'){
+    renderAcessos();
+  }
 }
 document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
   item.addEventListener('click', ()=> goTo(item.dataset.view));
@@ -1450,6 +1503,51 @@ function computeStats(){
   return list;
 }
 
+function renderAcessos(){
+  const list = computeStats();
+  const acessos = list.filter(o=>o.treat === 'acesso').sort((a,b)=> new Date(b.dataUltimoContato||0) - new Date(a.dataUltimoContato||0));
+
+  document.getElementById('acessosMeta').textContent = `${acessos.length} ordem(ns) marcada(s) como "Acesso enviado ao associado"`;
+
+  if(acessos.length === 0){
+    document.getElementById('acessosEmpty').style.display = 'block';
+    document.getElementById('acessosTableWrap').style.display = 'none';
+    return;
+  }
+  document.getElementById('acessosEmpty').style.display = 'none';
+  document.getElementById('acessosTableWrap').style.display = 'block';
+
+  document.getElementById('acessosBody').innerHTML = acessos.map(o=>{
+    const dtAbertura = new Date(o.aberturaISO+'T00:00:00');
+    const dtMarcado = o.dataUltimoContato ? new Date(o.dataUltimoContato+'T00:00:00') : null;
+    return `<tr>
+      <td><span class="placa-chip">${o.placa}</span></td>
+      <td style="text-align:left;">${o.tecnico}</td>
+      <td>${o.tipo}</td>
+      <td style="text-align:left;">${o.associado}</td>
+      <td>${formatDateBR(dtAbertura)}</td>
+      <td>${dtMarcado ? formatDateBR(dtMarcado) : '—'}</td>
+      <td style="text-align:left; color:var(--text-dim);">${o.obs || '—'}</td>
+      <td><button class="btn btn-ghost btn-sm" style="color:var(--red); border-color:var(--red-line);" onclick="removerAcesso('${o.id}')">🗑️ Remover</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function removerAcesso(ordemId){
+  const ordem = ORDENS.find(o=>o.id===ordemId);
+  if(!ordem) return;
+
+  const confirmado = confirm(`Remover a marcação de "Acesso enviado" da ordem ${ordem.placa} (${ordem.associado})?\n\nO tratamento voltará para "Sem tratamento" e ela sairá desta lista.`);
+  if(!confirmado) return;
+
+  ordem.treat = 'none';
+  await updateOrdemRemote(ordemId, {treat: 'none'});
+  await registrarHistorico(ordemId, 'none', 'Marcação de acesso enviado removida (tratamento incorreto)');
+
+  renderAll();
+  renderAcessos();
+}
+
 function renderAll(){
   const list = computeStats();
   const total = list.length;
@@ -1459,6 +1557,9 @@ function renderAll(){
 
   document.getElementById('navBadgeOrdens').textContent = total;
   document.getElementById('sidebarFoot').textContent = total ? `${total} ordens carregadas` : 'Nenhuma base importada';
+
+  const totalAcessos = list.filter(o=>o.treat === 'acesso').length;
+  document.getElementById('navBadgeAcessos').textContent = totalAcessos;
 
   // ---- DASHBOARD ----
   if(total === 0){
@@ -1709,6 +1810,7 @@ function applyFilters(){
           <option value="vermelho" ${treatVal==='vermelho'?'selected':''}>🔴 Sem retorno técnico</option>
           <option value="verde" ${treatVal==='verde'?'selected':''}>🟢 Retorno recebido</option>
           <option value="azul" ${treatVal==='azul'?'selected':''}>🔵 Sem retorno associado</option>
+          <option value="acesso" ${treatVal==='acesso'?'selected':''}>🔑 Acesso enviado</option>
         </select>
       </td>
       <td style="white-space:nowrap;">
@@ -1733,6 +1835,15 @@ function updateTreat(sel){
   const id = sel.dataset.id;
   const ordem = ORDENS.find(o=>o.id===id);
   if(!ordem) return;
+
+  if(sel.value === 'acesso'){
+    const confirmado = confirm(`Confirma que o ACESSO foi enviado ao associado da ordem ${ordem.placa} (${ordem.associado})?\n\nEssa ordem vai aparecer na aba "Acesso Enviado".`);
+    if(!confirmado){
+      sel.value = ordem.treat || 'none'; // reverte a seleção
+      return;
+    }
+  }
+
   const hojeISO = paraISOLocal(new Date());
   ordem.treat = sel.value;
   ordem.atualizadoPor = USUARIO_ATUAL.nome || 'Não identificado';
@@ -1866,7 +1977,7 @@ function closeModal(){ document.getElementById('alertModal').classList.remove('s
 ========================================================= */
 function exportCSV(){
   const list = computeStats();
-  const treatLabels = {none:'Sem tratamento',amarelo:'Mensagem enviada ao técnico',vermelho:'Sem retorno do técnico',verde:'Retorno recebido',azul:'Sem retorno do associado'};
+  const treatLabels = {none:'Sem tratamento',amarelo:'Mensagem enviada ao técnico',vermelho:'Sem retorno do técnico',verde:'Retorno recebido',azul:'Sem retorno do associado',acesso:'Acesso enviado ao associado'};
   let csv = 'Placa;Tecnico;Tipo de Servico;Associado;Data Abertura;Dias em Aberto;Status;Tratamento;Observacao\n';
   list.sort((a,b)=>b.dias-a.dias).forEach(o=>{
     const dt = new Date(o.aberturaISO);
