@@ -481,7 +481,7 @@
 </head>
 <body>
 
-<div class="shell">
+<div class="shell" id="appShell" style="display:none;">
   <!-- ===== SIDEBAR ===== -->
   <aside class="sidebar">
     <div class="brand">
@@ -1164,6 +1164,7 @@ async function entrarComSenha(){
 
   await carregarPerfilLogado(data.user.id);
   document.getElementById('loginModal').classList.remove('show');
+  document.getElementById('appShell').style.display = 'flex';
   await refreshData();
 }
 
@@ -1208,6 +1209,7 @@ async function criarConta(){
     }
     await carregarPerfilLogado(data.user.id);
     document.getElementById('loginModal').classList.remove('show');
+    document.getElementById('appShell').style.display = 'flex';
     await refreshData();
   }catch(e){
     erroBox.textContent = 'Erro de conexão: ' + e.message;
@@ -1230,6 +1232,7 @@ async function checarSessao(){
   if(data && data.session){
     await carregarPerfilLogado(data.session.user.id);
     document.getElementById('loginModal').classList.remove('show');
+    document.getElementById('appShell').style.display = 'flex';
     return true;
   }
   return false;
@@ -1237,6 +1240,7 @@ async function checarSessao(){
 
 async function trocarUsuario(){
   await sb.auth.signOut();
+  document.getElementById('appShell').style.display = 'none';
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginSenha').value = '';
   mostrarAbaEntrar();
