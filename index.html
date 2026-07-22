@@ -228,21 +228,23 @@
 
   table{ width:100%; border-collapse:collapse; table-layout:fixed; }
 
-  #ordensTableWrap table{ border-collapse:separate; border-spacing:0 7px; margin-top:-7px; }
-  #ordensTableWrap tbody tr{ background:var(--panel); box-shadow:var(--shadow-card); }
-  #ordensTableWrap tbody tr:nth-child(even){ background:var(--panel); }
-  #ordensTableWrap tbody tr:hover{ background:var(--panel) !important; box-shadow:0 4px 14px rgba(53,104,212,.14); }
-  #ordensTableWrap td{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); border-right:none; }
-  #ordensTableWrap td:first-child{ border-left:3px solid var(--blue-line); border-top-left-radius:10px; border-bottom-left-radius:10px; }
-  #ordensTableWrap td:last-child{ border-right:1px solid var(--line); border-top-right-radius:10px; border-bottom-right-radius:10px; }
-  #ordensTableWrap .row-treat td:first-child{ border-left-width:4px; }
-  #ordensTableWrap .row-treat.t-amarelo td:first-child{ border-left-color:var(--amber); }
-  #ordensTableWrap .row-treat.t-vermelho td:first-child{ border-left-color:var(--red); }
-  #ordensTableWrap .row-treat.t-verde td:first-child{ border-left-color:var(--green); }
-  #ordensTableWrap .row-treat.t-azul td:first-child{ border-left-color:var(--blue); }
-  #ordensTableWrap .row-treat.t-acesso td:first-child{ border-left-color:var(--teal); }
-  #ordensTableWrap .row-treat.critico td:first-child{ border-left-color:var(--red); border-left-width:4px; }
-  #ordensTableWrap{ box-shadow:none; border:none; background:transparent; }
+  #ordensTableWrap table, #acessosTableWrap table{ border-collapse:separate; border-spacing:0 7px; margin-top:-7px; }
+  #ordensTableWrap tbody tr, #acessosTableWrap tbody tr{ background:var(--panel); box-shadow:var(--shadow-card); }
+  #ordensTableWrap tbody tr:hover, #acessosTableWrap tbody tr:hover{ background:var(--panel) !important; box-shadow:0 4px 14px rgba(53,104,212,.14); }
+  #ordensTableWrap td, #acessosTableWrap td{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); border-right:none; }
+  #ordensTableWrap td:first-child, #acessosTableWrap td:first-child{ border-left:3px solid var(--blue-line); border-top-left-radius:10px; border-bottom-left-radius:10px; }
+  #ordensTableWrap td:last-child, #acessosTableWrap td:last-child{ border-right:1px solid var(--line); border-top-right-radius:10px; border-bottom-right-radius:10px; }
+  #ordensTableWrap .row-treat td:first-child, #acessosTableWrap .row-treat td:first-child{ border-left-width:4px; }
+  #ordensTableWrap .row-treat.t-amarelo td:first-child, #acessosTableWrap .row-treat.t-amarelo td:first-child{ border-left-color:var(--amber); }
+  #ordensTableWrap .row-treat.t-vermelho td:first-child, #acessosTableWrap .row-treat.t-vermelho td:first-child{ border-left-color:var(--red); }
+  #ordensTableWrap .row-treat.t-verde td:first-child, #acessosTableWrap .row-treat.t-verde td:first-child{ border-left-color:var(--green); }
+  #ordensTableWrap .row-treat.t-azul td:first-child, #acessosTableWrap .row-treat.t-azul td:first-child{ border-left-color:var(--blue); }
+  #ordensTableWrap .row-treat.t-acesso td:first-child, #acessosTableWrap .row-treat.t-acesso td:first-child{ border-left-color:var(--teal); }
+  #ordensTableWrap .row-treat.critico td:first-child, #acessosTableWrap .row-treat.critico td:first-child{ border-left-color:var(--red); border-left-width:4px; }
+  #ordensTableWrap, #acessosTableWrap{ box-shadow:none; border:none; background:transparent; }
+  #ordensTableWrap thead th, #acessosTableWrap thead th{ background:var(--panel); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  #ordensTableWrap thead th:first-child, #acessosTableWrap thead th:first-child{ border-left:1px solid var(--line); border-top-left-radius:10px; border-bottom-left-radius:10px; }
+  #ordensTableWrap thead th:last-child, #acessosTableWrap thead th:last-child{ border-right:1px solid var(--line); border-top-right-radius:10px; border-bottom-right-radius:10px; }
   th{ text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-mute); font-weight:800; padding:12px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
   td{ padding:10px 8px; font-size:12px; border-bottom:1px solid var(--line); vertical-align:middle; text-align:center; }
   tr:last-child td{ border-bottom:none;}
