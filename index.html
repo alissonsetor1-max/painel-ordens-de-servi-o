@@ -1925,6 +1925,13 @@ function fecharMenuMobile(){
 window.addEventListener('resize', aplicarClasseDispositivo);
 aplicarClasseDispositivo();
 
+// Move o painel de notificações para fora da sidebar, direto no <body>,
+// para garantir que ele sempre apareça por cima de qualquer outro conteúdo.
+(function moverBellPanelParaBody(){
+  const panel = document.getElementById('bellPanel');
+  if(panel) document.body.appendChild(panel);
+})();
+
 function goTo(view){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+view).classList.add('active');
