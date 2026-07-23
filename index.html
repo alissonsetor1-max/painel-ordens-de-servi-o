@@ -2420,6 +2420,13 @@ function handleFile(file){
 ========================================================= */
 function computeStats(){
   const list = ORDENS.map(o=>{
+    // Proteção: se a ordem estiver numa combinação que a deixaria invisível em
+    // todas as telas (Concluída + tratamento "acesso" + fora da fila, exceto Retirada),
+    // corrige sozinha o tratamento para não sumir do sistema.
+    if(o.statusOs === 'Concluída' && o.treat === 'acesso' && !o.filaAcesso && o.tipo !== 'Retirada'){
+      o.treat = 'none';
+      updateOrdemRemote(o.id, {treat: 'none'});
+    }
     const dt = new Date(o.aberturaISO+'T00:00:00');
     const dias = diasEmAberto(dt);
     const prazoTipo = prazoParaTipo(o.tipo);
