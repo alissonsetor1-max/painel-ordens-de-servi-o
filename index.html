@@ -281,23 +281,23 @@
 
   table{ width:100%; border-collapse:collapse; table-layout:fixed; }
 
-  #ordensTableWrap table, #acessosTableWrap table{ border-collapse:separate; border-spacing:0 7px; margin-top:-7px; }
-  #ordensTableWrap tbody tr, #acessosTableWrap tbody tr{ background:var(--panel); box-shadow:var(--shadow-card); }
-  #ordensTableWrap tbody tr:hover, #acessosTableWrap tbody tr:hover{ background:var(--panel) !important; box-shadow:0 4px 14px rgba(53,104,212,.14); }
-  #ordensTableWrap td, #acessosTableWrap td{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); border-right:none; }
-  #ordensTableWrap td:first-child, #acessosTableWrap td:first-child{ border-left:3px solid var(--blue-line); border-top-left-radius:10px; border-bottom-left-radius:10px; }
-  #ordensTableWrap td:last-child, #acessosTableWrap td:last-child{ border-right:1px solid var(--line); border-top-right-radius:10px; border-bottom-right-radius:10px; }
-  #ordensTableWrap .row-treat td:first-child, #acessosTableWrap .row-treat td:first-child{ border-left-width:4px; }
-  #ordensTableWrap .row-treat.t-amarelo td:first-child, #acessosTableWrap .row-treat.t-amarelo td:first-child{ border-left-color:var(--amber); }
-  #ordensTableWrap .row-treat.t-vermelho td:first-child, #acessosTableWrap .row-treat.t-vermelho td:first-child{ border-left-color:var(--red); }
-  #ordensTableWrap .row-treat.t-verde td:first-child, #acessosTableWrap .row-treat.t-verde td:first-child{ border-left-color:var(--green); }
-  #ordensTableWrap .row-treat.t-azul td:first-child, #acessosTableWrap .row-treat.t-azul td:first-child{ border-left-color:var(--blue); }
-  #ordensTableWrap .row-treat.t-acesso td:first-child, #acessosTableWrap .row-treat.t-acesso td:first-child{ border-left-color:var(--teal); }
-  #ordensTableWrap .row-treat.critico td:first-child, #acessosTableWrap .row-treat.critico td:first-child{ border-left-color:var(--red); border-left-width:4px; }
-  #ordensTableWrap, #acessosTableWrap{ box-shadow:none; border:none; background:transparent; }
-  #ordensTableWrap thead th, #acessosTableWrap thead th{ background:var(--panel); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
-  #ordensTableWrap thead th:first-child, #acessosTableWrap thead th:first-child{ border-left:1px solid var(--line); border-top-left-radius:10px; border-bottom-left-radius:10px; }
-  #ordensTableWrap thead th:last-child, #acessosTableWrap thead th:last-child{ border-right:1px solid var(--line); border-top-right-radius:10px; border-bottom-right-radius:10px; }
+  #ordensTableWrap table, #acessosTableWrap table, #concluidasTableWrap table{ border-collapse:separate; border-spacing:0 7px; margin-top:-7px; }
+  #ordensTableWrap tbody tr, #acessosTableWrap tbody tr, #concluidasTableWrap tbody tr{ background:var(--panel); box-shadow:var(--shadow-card); }
+  #ordensTableWrap tbody tr:hover, #acessosTableWrap tbody tr:hover, #concluidasTableWrap tbody tr:hover{ background:var(--panel) !important; box-shadow:0 4px 14px rgba(53,104,212,.14); }
+  #ordensTableWrap td, #acessosTableWrap td, #concluidasTableWrap td{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); border-right:none; }
+  #ordensTableWrap td:first-child, #acessosTableWrap td:first-child, #concluidasTableWrap td:first-child{ border-left:3px solid var(--blue-line); border-top-left-radius:10px; border-bottom-left-radius:10px; }
+  #ordensTableWrap td:last-child, #acessosTableWrap td:last-child, #concluidasTableWrap td:last-child{ border-right:1px solid var(--line); border-top-right-radius:10px; border-bottom-right-radius:10px; }
+  #ordensTableWrap .row-treat td:first-child, #acessosTableWrap .row-treat td:first-child, #concluidasTableWrap .row-treat td:first-child{ border-left-width:4px; }
+  #ordensTableWrap .row-treat.t-amarelo td:first-child, #acessosTableWrap .row-treat.t-amarelo td:first-child, #concluidasTableWrap .row-treat.t-amarelo td:first-child{ border-left-color:var(--amber); }
+  #ordensTableWrap .row-treat.t-vermelho td:first-child, #acessosTableWrap .row-treat.t-vermelho td:first-child, #concluidasTableWrap .row-treat.t-vermelho td:first-child{ border-left-color:var(--red); }
+  #ordensTableWrap .row-treat.t-verde td:first-child, #acessosTableWrap .row-treat.t-verde td:first-child, #concluidasTableWrap .row-treat.t-verde td:first-child{ border-left-color:var(--green); }
+  #ordensTableWrap .row-treat.t-azul td:first-child, #acessosTableWrap .row-treat.t-azul td:first-child, #concluidasTableWrap .row-treat.t-azul td:first-child{ border-left-color:var(--blue); }
+  #ordensTableWrap .row-treat.t-acesso td:first-child, #acessosTableWrap .row-treat.t-acesso td:first-child, #concluidasTableWrap .row-treat.t-acesso td:first-child{ border-left-color:var(--teal); }
+  #ordensTableWrap .row-treat.critico td:first-child, #acessosTableWrap .row-treat.critico td:first-child, #concluidasTableWrap .row-treat.critico td:first-child{ border-left-color:var(--red); border-left-width:4px; }
+  #ordensTableWrap, #acessosTableWrap, #concluidasTableWrap{ box-shadow:none; border:none; background:transparent; }
+  #ordensTableWrap thead th, #acessosTableWrap thead th, #concluidasTableWrap thead th{ background:var(--panel); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  #ordensTableWrap thead th:first-child, #acessosTableWrap thead th:first-child, #concluidasTableWrap thead th:first-child{ border-left:1px solid var(--line); border-top-left-radius:10px; border-bottom-left-radius:10px; }
+  #ordensTableWrap thead th:last-child, #acessosTableWrap thead th:last-child, #concluidasTableWrap thead th:last-child{ border-right:1px solid var(--line); border-top-right-radius:10px; border-bottom-right-radius:10px; }
   th{ text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-mute); font-weight:800; padding:12px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
   td{ padding:10px 8px; font-size:12px; border-bottom:1px solid var(--line); vertical-align:middle; text-align:center; }
   tr:last-child td{ border-bottom:none;}
@@ -508,6 +508,11 @@
     margin-top:12px; display:flex; align-items:center; justify-content:center; gap:8px;
     padding:8px; background:rgba(255,255,255,.08); border-radius:14px; border:1px solid rgba(255,255,255,.12);
   }
+  .theme-toggle-top{
+    margin-top:0; margin-bottom:14px; padding:5px 8px; background:transparent; border:none;
+    opacity:.65; transform:scale(.85); flex-shrink:0;
+  }
+  .theme-toggle-top:hover{ opacity:1; }
   .theme-ic{ display:flex; align-items:center; opacity:.75; color:rgba(255,255,255,.8); }
   .theme-switch{ position:relative; display:inline-block; width:36px; height:20px; flex-shrink:0; }
   .theme-switch input{ opacity:0; width:0; height:0; }
@@ -628,6 +633,15 @@
       </div>
     </div>
 
+    <div class="theme-toggle-wrap theme-toggle-top">
+      <span class="theme-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
+      <label class="theme-switch">
+        <input type="checkbox" id="themeSwitch" onchange="toggleTheme(this)">
+        <span class="theme-slider"></span>
+      </label>
+      <span class="theme-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg></span>
+    </div>
+
     <div class="nav-label">Geral</div>
     <div class="nav-item active" data-view="dashboard"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span><span class="nav-txt">Dashboard</span></div>
     <div class="nav-item" data-view="ordens"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l1.5-4.5A2 2 0 0 1 6.4 7h11.2a2 2 0 0 1 1.9 1.5L21 13"/><path d="M3 13h18v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5Z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg></span><span class="nav-txt">Ordens de Serviço</span><span class="nav-badge" id="navBadgeOrdens">0</span></div>
@@ -661,15 +675,6 @@
         <div class="user-role" id="userRole">—</div>
       </div>
       <button class="user-swap" onclick="trocarUsuario()" title="Sair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg></button>
-    </div>
-
-    <div class="theme-toggle-wrap">
-      <span class="theme-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
-      <label class="theme-switch">
-        <input type="checkbox" id="themeSwitch" onchange="toggleTheme(this)">
-        <span class="theme-slider"></span>
-      </label>
-      <span class="theme-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg></span>
     </div>
     <div class="nav-item" id="btnAtualizarDados" style="margin-top:4px;" onclick="refreshData()"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.3 6.4M3 12a9 9 0 0 1 15.3-6.4M3 3v6h6M21 21v-6h-6"/></svg></span><span class="nav-txt">Atualizar dados</span></div>
   </aside>
