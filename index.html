@@ -619,7 +619,10 @@
           <span class="bell-badge" id="bellBadge" style="display:none;">0</span>
         </button>
         <div class="bell-panel" id="bellPanel">
-          <div class="bell-panel-head">Ordens críticas (20+ dias)</div>
+          <div class="bell-panel-head" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <span>Ordens críticas (20+ dias)</span>
+            <span style="font-size:10.5px; color:var(--blue); font-weight:700; cursor:pointer;" onclick="limparNotificacoes()">Limpar notificações</span>
+          </div>
           <div class="bell-panel-body" id="bellPanelBody"></div>
         </div>
       </div>
@@ -1944,6 +1947,20 @@ async function editarObsHistorico(histId){
 /* =========================================================
    NAVEGAÇÃO
 ========================================================= */
+function obterNotificacoesDispensadas(){
+  try{
+    const salvas = localStorage.getItem('notificacoes_dispensadas');
+    return new Set(salvas ? JSON.parse(salvas) : []);
+  }catch(e){ return new Set(); }
+}
+function limparNotificacoes(){
+  const list = computeStats();
+  const dispensadasAtuais = obterNotificacoesDispensadas();
+  list.filter(o=>o.critica).forEach(o => dispensadasAtuais.add(o.id));
+  localStorage.setItem('notificacoes_dispensadas', JSON.stringify([...dispensadasAtuais]));
+  renderAll();
+}
+
 function toggleBellPanel(){
   const panel = document.getElementById('bellPanel');
   const abrindo = !panel.classList.contains('show');
@@ -2560,7 +2577,7 @@ async function renderEvolucaoChart(){
 
 function renderConcluidas(){
   const list = computeStats();
-  const concluidas = list.filter(o=>o.statusOs === 'Concluída');
+  const concluidas = list.filter(o=> o.statusOs === 'Concluída' && !(o.treat === 'acesso' && o.tipo !== 'Retirada'));
   const search = (document.getElementById('fSearchConcluidas').value || '').trim().toLowerCase();
   const tipo = document.getElementById('fTipoConcluidas').value;
   const tecnico = document.getElementById('fTecnicoConcluidas').value;
@@ -2840,12 +2857,13 @@ function renderAll(){
   const totalAcessos = list.filter(o=>o.filaAcesso).length;
   document.getElementById('navBadgeAcessos').textContent = totalAcessos;
 
-  const totalConcluidas = list.filter(o=>o.statusOs === 'Concluída').length;
+  const totalConcluidas = list.filter(o=> o.statusOs === 'Concluída' && !(o.treat === 'acesso' && o.tipo !== 'Retirada')).length;
   const badgeConcluidasEl = document.getElementById('navBadgeConcluidas');
   if(badgeConcluidasEl) badgeConcluidasEl.textContent = totalConcluidas;
 
   // ---- SINO DE CRÍTICAS ----
-  const criticasSino = list.filter(o=>o.critica).sort((a,b)=> b.dias - a.dias);
+  const dispensadas = obterNotificacoesDispensadas();
+  const criticasSino = list.filter(o=>o.critica && !dispensadas.has(o.id)).sort((a,b)=> b.dias - a.dias);
   const bellBadge = document.getElementById('bellBadge');
   if(criticasSino.length > 0){
     bellBadge.style.display = 'flex';
