@@ -993,13 +993,14 @@
         <table>
           <colgroup>
             <col style="width:90px;">
-            <col style="width:130px;">
-            <col style="width:90px;">
-            <col style="width:150px;">
+            <col style="width:120px;">
             <col style="width:80px;">
+            <col style="width:140px;">
+            <col style="width:75px;">
+            <col style="width:85px;">
+            <col style="width:170px;">
+            <col style="width:70px;">
             <col style="width:90px;">
-            <col style="width:200px;">
-            <col style="width:80px;">
           </colgroup>
           <thead>
             <tr>
@@ -1011,6 +1012,7 @@
               <th>Concluída em</th>
               <th>Observação</th>
               <th>Histórico</th>
+              <th>Ação</th>
             </tr>
           </thead>
           <tbody id="concluidasBody"></tbody>
@@ -2571,8 +2573,28 @@ function renderConcluidas(){
       <td><span class="badge ok">${dtConcluida ? formatDateBR(dtConcluida) : '—'}</span></td>
       <td style="text-align:left; color:var(--text-dim);">${o.obs || '—'}</td>
       <td><button class="hist-btn" onclick="verHistorico('${o.id}','${o.placa}')">Ver histórico</button></td>
+      <td><button class="btn btn-ghost btn-sm" style="color:var(--amber); border-color:var(--amber-line);" onclick="reverterConclusao('${o.id}')" title="Voltar para o status normal"><svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> Reverter</button></td>
     </tr>`;
   }).join('');
+}
+
+async function reverterConclusao(ordemId){
+  const ordem = ORDENS.find(o=>o.id===ordemId);
+  if(!ordem) return;
+
+  const confirmado = confirm(`Reverter a ordem ${ordem.placa} (${ordem.associado}) para o status normal?\n\nEla volta a aparecer em "Ordens de Serviço" como Aberta, e o tratamento é limpo.`);
+  if(!confirmado) return;
+
+  ordem.statusOs = 'Aberta';
+  ordem.concluidaEm = null;
+  ordem.treat = 'none';
+
+  await updateOrdemRemote(ordemId, { status_os: 'Aberta', concluida_em: null, treat: 'none' });
+  await registrarHistorico(ordemId, 'none', 'Conclusão revertida — ordem voltou ao status normal');
+  registrarAuditoria('Conclusão revertida', `Reverteu a ordem ${ordem.placa} (${ordem.associado}) de volta para o status Aberta`);
+
+  renderAll();
+  renderConcluidas();
 }
 
 function renderAcessos(){
