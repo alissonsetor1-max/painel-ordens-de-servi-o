@@ -2837,7 +2837,7 @@ function renderAll(){
   document.getElementById('navBadgeOrdens').textContent = listaAbertas.length;
   document.getElementById('sidebarFoot').textContent = total ? `${total} ordens carregadas` : 'Nenhuma base importada';
 
-  const totalAcessos = list.filter(o=>o.filaAcesso && o.treat !== 'acesso').length;
+  const totalAcessos = list.filter(o=>o.filaAcesso).length;
   document.getElementById('navBadgeAcessos').textContent = totalAcessos;
 
   const totalConcluidas = list.filter(o=>o.statusOs === 'Concluída').length;
@@ -3139,7 +3139,6 @@ function applyFilters(){
         <select class="status-select" data-id="${o.id}" onchange="updateStatusOs(this)">
           <option value="Aberta" ${o.statusOs==='Aberta'?'selected':''}>Aberta</option>
           <option value="Em Andamento" ${o.statusOs==='Em Andamento'?'selected':''}>Em Andamento</option>
-          <option value="Aguardando Peça" ${o.statusOs==='Aguardando Peça'?'selected':''}>Aguardando Peça</option>
           <option value="Concluída" ${o.statusOs==='Concluída'?'selected':''}>Concluída</option>
           <option value="Cancelada" ${o.statusOs==='Cancelada'?'selected':''}>Cancelada</option>
         </select>
