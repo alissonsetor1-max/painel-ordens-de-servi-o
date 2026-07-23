@@ -981,6 +981,15 @@
           <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
           <input type="search" id="fSearchConcluidas" autocomplete="off" placeholder="Buscar placa, técnico ou associado..." oninput="renderConcluidas()">
         </div>
+        <select id="fTipoConcluidas" onchange="renderConcluidas()"><option value="">Tipo de serviço (todos)</option></select>
+        <select id="fTecnicoConcluidas" onchange="renderConcluidas()"><option value="">Técnico (todos)</option></select>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:11px; color:var(--text-mute); font-weight:600;">Concluída de</span>
+          <input type="date" id="fDataInicioConcluidas" autocomplete="off" style="padding:8px 10px;" onchange="renderConcluidas()">
+          <span style="font-size:11px; color:var(--text-mute); font-weight:600;">até</span>
+          <input type="date" id="fDataFimConcluidas" autocomplete="off" style="padding:8px 10px;" onchange="renderConcluidas()">
+          <button class="btn btn-ghost btn-sm" id="btnLimparDataConcluidas" style="display:none;" onclick="limparFiltroDataConcluidas()">✕ Limpar período</button>
+        </div>
       </div>
 
       <div id="concluidasEmpty" class="empty">
@@ -989,9 +998,17 @@
         <p>Assim que uma ordem sumir da planilha semanal de importação, ela aparece aqui automaticamente.</p>
       </div>
 
+      <div class="filters" style="margin-bottom:10px;">
+        <span id="selCountConcluidas" style="font-size:11.5px; color:var(--text-dim); font-weight:700; display:none;"></span>
+        <button class="btn btn-ghost btn-sm" id="btnReverterConcluidas" style="display:none; color:var(--amber); border-color:var(--amber-line);" onclick="reverterSelecionadas()">
+          <svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> Reverter selecionadas
+        </button>
+      </div>
+
       <div class="table-wrap" id="concluidasTableWrap" style="display:none; overflow-x:auto;">
         <table>
           <colgroup>
+            <col style="width:26px;">
             <col style="width:90px;">
             <col style="width:120px;">
             <col style="width:80px;">
@@ -1004,6 +1021,7 @@
           </colgroup>
           <thead>
             <tr>
+              <th style="width:26px;"><input type="checkbox" id="selectAllConcluidas" onchange="toggleSelectAllConcluidas(this)"></th>
               <th>Placa</th>
               <th>Técnico</th>
               <th>Tipo</th>
@@ -2539,18 +2557,36 @@ function renderConcluidas(){
   const list = computeStats();
   const concluidas = list.filter(o=>o.statusOs === 'Concluída');
   const search = (document.getElementById('fSearchConcluidas').value || '').trim().toLowerCase();
+  const tipo = document.getElementById('fTipoConcluidas').value;
+  const tecnico = document.getElementById('fTecnicoConcluidas').value;
+  const dataInicio = document.getElementById('fDataInicioConcluidas').value;
+  const dataFim = document.getElementById('fDataFimConcluidas').value;
 
-  let filtradas = concluidas;
-  if(search){
-    filtradas = concluidas.filter(o =>
-      o.placa.toLowerCase().includes(search) ||
-      o.tecnico.toLowerCase().includes(search) ||
-      o.associado.toLowerCase().includes(search)
-    );
-  }
+  document.getElementById('btnLimparDataConcluidas').style.display = (dataInicio || dataFim) ? 'inline-flex' : 'none';
+
+  // popular selects de tipo/técnico dinamicamente
+  const tipoSel = document.getElementById('fTipoConcluidas');
+  const tecSel = document.getElementById('fTecnicoConcluidas');
+  const tiposAtuais = new Set(Array.from(tipoSel.options).map(o=>o.value));
+  const tecsAtuais = new Set(Array.from(tecSel.options).map(o=>o.value));
+  [...new Set(concluidas.map(o=>o.tipo))].sort().forEach(t=>{
+    if(!tiposAtuais.has(t)){ const opt = document.createElement('option'); opt.value=t; opt.textContent=t; tipoSel.appendChild(opt); }
+  });
+  [...new Set(concluidas.map(o=>o.tecnico))].sort().forEach(t=>{
+    if(!tecsAtuais.has(t)){ const opt = document.createElement('option'); opt.value=t; opt.textContent=t; tecSel.appendChild(opt); }
+  });
+
+  let filtradas = concluidas.filter(o=>{
+    if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
+    if(tipo && o.tipo !== tipo) return false;
+    if(tecnico && o.tecnico !== tecnico) return false;
+    if(dataInicio && (o.concluidaEm||'') < dataInicio) return false;
+    if(dataFim && (o.concluidaEm||'') > dataFim) return false;
+    return true;
+  });
   filtradas.sort((a,b)=> (b.concluidaEm||'').localeCompare(a.concluidaEm||''));
 
-  document.getElementById('concluidasMeta').textContent = `${concluidas.length} ordem(ns) concluída(s) automaticamente`;
+  document.getElementById('concluidasMeta').textContent = `${filtradas.length} de ${concluidas.length} ordem(ns) concluída(s)`;
   document.getElementById('navBadgeConcluidas').textContent = concluidas.length;
 
   if(filtradas.length === 0){
@@ -2565,6 +2601,7 @@ function renderConcluidas(){
     const dtAbertura = new Date(o.aberturaISO+'T00:00:00');
     const dtConcluida = o.concluidaEm ? new Date(o.concluidaEm+'T00:00:00') : null;
     return `<tr>
+      <td><input type="checkbox" class="row-check-concluidas" data-id="${o.id}" onchange="atualizarSelecaoConcluidas()"></td>
       <td><span class="placa-chip">${o.placa}</span></td>
       <td style="text-align:left;">${o.tecnico}</td>
       <td>${o.tipo}</td>
@@ -2576,6 +2613,50 @@ function renderConcluidas(){
       <td><button class="btn btn-ghost btn-sm" style="color:var(--amber); border-color:var(--amber-line);" onclick="reverterConclusao('${o.id}')" title="Voltar para o status normal"><svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> Reverter</button></td>
     </tr>`;
   }).join('');
+  atualizarSelecaoConcluidas();
+}
+
+function toggleSelectAllConcluidas(checkbox){
+  document.querySelectorAll('.row-check-concluidas').forEach(cb => cb.checked = checkbox.checked);
+  atualizarSelecaoConcluidas();
+}
+function getSelecionadosConcluidas(){
+  return Array.from(document.querySelectorAll('.row-check-concluidas:checked')).map(cb => cb.dataset.id);
+}
+function atualizarSelecaoConcluidas(){
+  const selecionados = getSelecionadosConcluidas();
+  const count = document.getElementById('selCountConcluidas');
+  const btn = document.getElementById('btnReverterConcluidas');
+  if(selecionados.length > 0){
+    count.style.display = 'inline'; count.textContent = `${selecionados.length} selecionada(s)`;
+    btn.style.display = 'inline-flex';
+  } else {
+    count.style.display = 'none';
+    btn.style.display = 'none';
+  }
+  const total = document.querySelectorAll('.row-check-concluidas').length;
+  const selectAllBox = document.getElementById('selectAllConcluidas');
+  if(selectAllBox) selectAllBox.checked = total > 0 && selecionados.length === total;
+}
+
+async function reverterSelecionadas(){
+  const ids = getSelecionadosConcluidas();
+  if(ids.length === 0) return;
+  if(!confirm(`Reverter ${ids.length} ordem(ns) selecionada(s) para o status normal?\n\nElas voltam a aparecer em "Ordens de Serviço" como Abertas, e o tratamento é limpo.`)) return;
+
+  for(const id of ids){
+    const ordem = ORDENS.find(o=>o.id===id);
+    if(!ordem) continue;
+    ordem.statusOs = 'Aberta';
+    ordem.concluidaEm = null;
+    ordem.treat = 'none';
+    await updateOrdemRemote(id, { status_os: 'Aberta', concluida_em: null, treat: 'none' });
+    await registrarHistorico(id, 'none', 'Conclusão revertida — ordem voltou ao status normal (reversão em lote)');
+  }
+  registrarAuditoria('Reversão em massa', `Reverteu ${ids.length} ordem(ns) da aba Concluídas de volta para o status Aberta`);
+
+  renderAll();
+  renderConcluidas();
 }
 
 async function reverterConclusao(ordemId){
@@ -2918,6 +2999,11 @@ function limparFiltroData(){
   document.getElementById('fDataInicio').value = '';
   document.getElementById('fDataFim').value = '';
   applyFilters();
+}
+function limparFiltroDataConcluidas(){
+  document.getElementById('fDataInicioConcluidas').value = '';
+  document.getElementById('fDataFimConcluidas').value = '';
+  renderConcluidas();
 }
 
 let ordenacaoAbertura = null; // null = padrão (mais atrasado primeiro), 'desc' = mais novo primeiro, 'asc' = mais velho primeiro
