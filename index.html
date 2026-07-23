@@ -2910,7 +2910,7 @@ async function removerDaFila(ordemId){
 function renderAll(){
   const list = computeStats();
   const total = list.length;
-  const listaAbertas = list.filter(o=>o.statusOs !== 'Concluída');
+  const listaAbertas = list.filter(o=>o.statusOs !== 'Concluída' && !o.filaAcesso);
   const atrasadas = list.filter(o=>o.atrasada);
   const noPrazo = list.filter(o=>!o.atrasada);
   const tecnicosSet = new Set(list.map(o=>o.tecnico));
@@ -3154,6 +3154,7 @@ function applyFilters(){
 
   let filtered = list.filter(o=>{
     if(o.statusOs === 'Concluída') return false; // concluídas ficam na aba própria "Concluídas"
+    if(o.filaAcesso) return false; // ordens na fila de Acesso Enviado ficam só na aba própria
     if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
     if(tipo && o.tipo !== tipo) return false;
     if(tecnico && o.tecnico !== tecnico) return false;
@@ -3442,6 +3443,7 @@ function obterListaParaExportacao(){
 
   let filtered = list.filter(o=>{
     if(o.statusOs === 'Concluída') return false;
+    if(o.filaAcesso) return false; // ordens na fila de Acesso Enviado ficam só na aba própria
     if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
     if(tipo && o.tipo !== tipo) return false;
     if(tecnico && o.tecnico !== tecnico) return false;
