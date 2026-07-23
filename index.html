@@ -140,7 +140,7 @@
     padding:0 3px; border:2px solid #16296b;
   }
   .bell-panel{
-    display:none; position:absolute; top:40px; right:-8px; width:280px; max-height:340px; overflow-y:auto;
+    display:none; position:fixed; overflow-y:auto;
     background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:0 20px 50px rgba(0,0,0,.3);
     z-index:200;
   }
@@ -574,8 +574,6 @@
 
   .table-wrap{ border-radius:10px; }
   table{ min-width:900px; } /* mantém a tabela legível, com rolagem horizontal */
-
-  .bell-panel{ position:fixed; top:64px; left:14px; right:14px; width:auto; max-width:none; }
 
   .user-card .user-role, .status-line{ font-size:10px; }
 }
@@ -1859,8 +1857,37 @@ async function editarObsHistorico(histId){
    NAVEGAÇÃO
 ========================================================= */
 function toggleBellPanel(){
-  document.getElementById('bellPanel').classList.toggle('show');
+  const panel = document.getElementById('bellPanel');
+  const abrindo = !panel.classList.contains('show');
+  panel.classList.toggle('show');
+  if(abrindo){
+    posicionarBellPanel();
+  }
 }
+function posicionarBellPanel(){
+  const panel = document.getElementById('bellPanel');
+  const btn = document.getElementById('bellBtn');
+  const rectBtn = btn.getBoundingClientRect();
+  const larguraPainel = Math.min(300, window.innerWidth - 24);
+  panel.style.position = 'fixed';
+  panel.style.width = larguraPainel + 'px';
+
+  let left = rectBtn.right - larguraPainel;
+  if(left < 12) left = 12;
+  if(left + larguraPainel > window.innerWidth - 12) left = window.innerWidth - larguraPainel - 12;
+
+  let top = rectBtn.bottom + 8;
+  const alturaMaxima = window.innerHeight - top - 20;
+
+  panel.style.left = left + 'px';
+  panel.style.right = 'auto';
+  panel.style.top = top + 'px';
+  panel.style.maxHeight = Math.min(340, alturaMaxima) + 'px';
+}
+window.addEventListener('resize', ()=>{
+  const panel = document.getElementById('bellPanel');
+  if(panel.classList.contains('show')) posicionarBellPanel();
+});
 document.addEventListener('click', function(e){
   const wrap = document.getElementById('bellWrap') || document.querySelector('.bell-wrap');
   const panel = document.getElementById('bellPanel');
