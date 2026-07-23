@@ -1167,6 +1167,13 @@
       </div>
       </div>
 
+      <div class="filters">
+        <div class="search-box">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+          <input type="search" id="fSearchAuditoria" autocomplete="off" placeholder="Buscar por placa, usuário ou ação..." oninput="filtrarAuditoria()">
+        </div>
+      </div>
+
       <div class="table-wrap">
         <table>
           <colgroup>
@@ -2107,6 +2114,8 @@ async function salvarPrazosConfiguraveis(){
   renderAll();
 }
 
+let AUDITORIA_CACHE = [];
+
 async function carregarAuditoria(){
   const tbody = document.getElementById('auditoriaBody');
   tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Carregando...</td></tr>';
@@ -2114,12 +2123,43 @@ async function carregarAuditoria(){
   const { data, error } = await sb.from('auditoria').select('*').order('criado_em', {ascending:false}).limit(300);
   if(error || !data || data.length === 0){
     tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhum registro de auditoria ainda.</td></tr>';
+    AUDITORIA_CACHE = [];
     return;
   }
 
-  document.getElementById('auditoriaMeta').textContent = `${data.length} registro(s) — mostrando os mais recentes`;
+  AUDITORIA_CACHE = data;
+  document.getElementById('fSearchAuditoria').value = '';
+  renderAuditoriaFiltrada(data);
+}
 
-  tbody.innerHTML = data.map(a=>{
+function filtrarAuditoria(){
+  const termo = (document.getElementById('fSearchAuditoria').value || '').trim().toLowerCase();
+  if(!termo){
+    renderAuditoriaFiltrada(AUDITORIA_CACHE);
+    return;
+  }
+  const filtrado = AUDITORIA_CACHE.filter(a =>
+    (a.usuario||'').toLowerCase().includes(termo) ||
+    (a.acao||'').toLowerCase().includes(termo) ||
+    (a.detalhe||'').toLowerCase().includes(termo)
+  );
+  renderAuditoriaFiltrada(filtrado, AUDITORIA_CACHE.length);
+}
+
+function renderAuditoriaFiltrada(lista, totalGeral){
+  const tbody = document.getElementById('auditoriaBody');
+  const total = totalGeral !== undefined ? totalGeral : AUDITORIA_CACHE.length;
+
+  document.getElementById('auditoriaMeta').textContent = totalGeral !== undefined
+    ? `${lista.length} de ${total} registro(s) — filtrado pela busca`
+    : `${total} registro(s) — mostrando os mais recentes`;
+
+  if(lista.length === 0){
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhum registro encontrado para essa busca.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = lista.map(a=>{
     const dt = new Date(a.criado_em);
     const dataFmt = dt.toLocaleDateString('pt-BR') + ' às ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
     return `<tr>
