@@ -341,7 +341,10 @@
     background:var(--panel-2); border:1px solid var(--line); color:var(--text);
     padding:9px 12px; border-radius:9px; font-size:12.5px; font-weight:600;
     transition:border-color .12s;
+    color-scheme: dark;
   }
+  [data-theme="light"] select, [data-theme="light"] input{ color-scheme: light; }
+  select option{ background:var(--panel-2); color:var(--text); }
   select:focus, input:focus{ outline:none; border-color:var(--blue); }
   .search-box{ position:relative; flex:2; min-width:220px;}
   .search-box input{ width:100%; padding-left:34px;}
@@ -2721,7 +2724,7 @@ function renderAcessos(){
     const treatVal = o.treat || 'none';
     return `<tr class="row-treat t-${treatVal}">
       <td><input type="checkbox" class="row-check-acessos" data-id="${o.id}" onchange="atualizarSelecaoAcessos()"></td>
-      <td><span class="placa-chip">${o.placa}</span>${o.statusOs==='Concluída' ? ' <span class="badge ok" style="font-size:8.5px;">Finalizada</span>' : ''}</td>
+      <td><div style="display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap;"><span class="placa-chip">${o.placa}</span>${o.statusOs==='Concluída' ? '<span class="badge ok" style="font-size:8.5px;">Finalizada</span>' : ''}</div></td>
       <td style="text-align:left;">${o.tecnico}</td>
       <td>${o.tipo}</td>
       <td style="text-align:left;">${o.associado}</td>
