@@ -363,6 +363,7 @@
   .row-treat.t-verde{ border-left-color:var(--green); }
   .row-treat.t-azul{ border-left-color:var(--blue); }
   .row-treat.t-acesso{ border-left-color:var(--teal); }
+  .row-treat.t-concluido{ border-left-color:var(--green); }
   .row-treat.t-none{ border-left-color:#2a3547; }
   .row-treat.critico{ border-left-width:3px; }
   .dias-num.super-crit{ color:#fff; background:var(--red); padding:1px 5px; border-radius:5px; font-size:10.5px; }
@@ -389,6 +390,7 @@
   .treat-select.t-verde{ background:var(--green-bg); color:var(--green); border-color:var(--green-line);}
   .treat-select.t-azul{ background:var(--blue-bg); color:var(--blue); border-color:var(--blue-line);}
   .treat-select.t-acesso{ background:var(--teal-bg); color:var(--teal); border-color:var(--teal-line);}
+  .treat-select.t-concluido{ background:var(--green-bg); color:var(--green); border-color:var(--green-line);}
   .treat-select.t-none{ color:var(--text-mute); font-weight:600; }
 
   .obs-input{ width:100%; max-width:100px; font-size:10px; padding:6px 7px; border-radius:7px; }
@@ -1777,7 +1779,7 @@ async function registrarAuditoria(acao, detalhe){
 }
 
 async function registrarHistorico(ordemId, treat, obs){
-  const treatLabels = {none:'Sem tratamento',amarelo:'Mensagem enviada ao técnico',vermelho:'Sem retorno do técnico',verde:'Retorno recebido',azul:'Sem retorno do associado',acesso:'Acesso enviado ao associado'};
+  const treatLabels = {none:'Sem tratamento',amarelo:'Mensagem enviada ao técnico',vermelho:'Sem retorno do técnico',verde:'Retorno recebido',azul:'Sem retorno do associado',acesso:'Acesso enviado ao associado',concluido:'Concluído'};
   const { error } = await sb.from('ordens_historico').insert({
     ordem_id: ordemId,
     treat: treatLabels[treat] || treat,
@@ -2575,7 +2577,7 @@ function renderConcluidas(){
 
 function renderAcessos(){
   const list = computeStats();
-  let fila = list.filter(o=>o.filaAcesso);
+  let fila = list.filter(o=>o.filaAcesso && o.statusOs !== 'Concluída');
 
   const filtroTratamento = document.getElementById('fAcessoTratamento') ? document.getElementById('fAcessoTratamento').value : '';
   if(filtroTratamento === 'pendente') fila = fila.filter(o=>o.treat !== 'acesso');
@@ -2610,6 +2612,7 @@ function renderAcessos(){
         <select class="treat-select t-${treatVal}" data-id="${o.id}" onchange="updateTreat(this); setTimeout(renderAcessos, 350);">
           <option value="none" ${treatVal==='none'?'selected':''}>Sem tratamento</option>
           <option value="acesso" ${treatVal==='acesso'?'selected':''}>🔑 Acesso enviado</option>
+          <option value="concluido" ${treatVal==='concluido'?'selected':''}>✅ Concluído</option>
           <option value="amarelo" ${treatVal==='amarelo'?'selected':''}>🟡 Mensagem enviada</option>
           <option value="vermelho" ${treatVal==='vermelho'?'selected':''}>🔴 Sem retorno técnico</option>
           <option value="verde" ${treatVal==='verde'?'selected':''}>🟢 Retorno recebido</option>
@@ -3027,6 +3030,7 @@ function applyFilters(){
           <option value="verde" ${treatVal==='verde'?'selected':''}>🟢 Retorno recebido</option>
           <option value="azul" ${treatVal==='azul'?'selected':''}>🔵 Sem retorno associado</option>
           <option value="acesso" ${treatVal==='acesso'?'selected':''}>🔑 Acesso enviado</option>
+          <option value="concluido" ${treatVal==='concluido'?'selected':''}>✅ Concluído</option>
         </select>
       </td>
       <td style="white-space:nowrap;">
@@ -3060,14 +3064,35 @@ function updateTreat(sel){
     }
   }
 
+  if(sel.value === 'concluido'){
+    const confirmado = confirm(`Marcar a ordem ${ordem.placa} (${ordem.associado}) como CONCLUÍDA?\n\nEla vai sair desta lista e aparecer na aba "Concluídas".`);
+    if(!confirmado){
+      sel.value = ordem.treat || 'none';
+      return;
+    }
+  }
+
   const hojeISO = paraISOLocal(new Date());
   ordem.treat = sel.value;
   ordem.atualizadoPor = USUARIO_ATUAL.nome || 'Não identificado';
   ordem.dataUltimoContato = hojeISO;
   sel.className = 'treat-select t-'+sel.value;
   sel.closest('tr').className = 'row-treat t-'+sel.value;
-  updateOrdemRemote(id, {treat: sel.value, atualizado_por: ordem.atualizadoPor, data_ultimo_contato: hojeISO});
+
+  const camposRemotos = {treat: sel.value, atualizado_por: ordem.atualizadoPor, data_ultimo_contato: hojeISO};
+
+  if(sel.value === 'concluido'){
+    ordem.statusOs = 'Concluída';
+    ordem.concluidaEm = hojeISO;
+    camposRemotos.status_os = 'Concluída';
+    camposRemotos.concluida_em = hojeISO;
+  }
+
+  updateOrdemRemote(id, camposRemotos);
   registrarHistorico(id, sel.value, ordem.obs);
+  if(sel.value === 'concluido'){
+    registrarAuditoria('Ordem concluída manualmente', `Marcou a ordem ${ordem.placa} (${ordem.associado}) como Concluída`);
+  }
   renderAll();
 }
 function updateObs(input){
@@ -3224,7 +3249,7 @@ function obterListaParaExportacao(){
   return filtered;
 }
 
-const TREAT_LABELS_EXPORT = {none:'Sem tratamento', amarelo:'Msg. enviada ao técnico', vermelho:'Sem retorno técnico', verde:'Retorno recebido', azul:'Sem retorno associado', acesso:'Acesso enviado'};
+const TREAT_LABELS_EXPORT = {none:'Sem tratamento', amarelo:'Msg. enviada ao técnico', vermelho:'Sem retorno técnico', verde:'Retorno recebido', azul:'Sem retorno associado', acesso:'Acesso enviado', concluido:'Concluído'};
 
 /* =========================================================
    EXPORTAÇÃO EM EXCEL PROFISSIONAL (ExcelJS)
