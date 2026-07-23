@@ -1009,15 +1009,16 @@
         <table>
           <colgroup>
             <col style="width:26px;">
-            <col style="width:90px;">
-            <col style="width:120px;">
-            <col style="width:80px;">
-            <col style="width:140px;">
-            <col style="width:75px;">
             <col style="width:85px;">
-            <col style="width:170px;">
+            <col style="width:110px;">
+            <col style="width:75px;">
+            <col style="width:130px;">
             <col style="width:70px;">
-            <col style="width:90px;">
+            <col style="width:80px;">
+            <col style="width:120px;">
+            <col style="width:140px;">
+            <col style="width:65px;">
+            <col style="width:85px;">
           </colgroup>
           <thead>
             <tr>
@@ -1028,6 +1029,7 @@
               <th>Associado</th>
               <th>Abertura</th>
               <th>Concluída em</th>
+              <th>Tratamento</th>
               <th>Observação</th>
               <th>Histórico</th>
               <th>Ação</th>
@@ -2600,7 +2602,8 @@ function renderConcluidas(){
   document.getElementById('concluidasBody').innerHTML = filtradas.map(o=>{
     const dtAbertura = new Date(o.aberturaISO+'T00:00:00');
     const dtConcluida = o.concluidaEm ? new Date(o.concluidaEm+'T00:00:00') : null;
-    return `<tr>
+    const treatVal = o.treat || 'none';
+    return `<tr class="row-treat t-${treatVal}">
       <td><input type="checkbox" class="row-check-concluidas" data-id="${o.id}" onchange="atualizarSelecaoConcluidas()"></td>
       <td><span class="placa-chip">${o.placa}</span></td>
       <td style="text-align:left;">${o.tecnico}</td>
@@ -2608,7 +2611,19 @@ function renderConcluidas(){
       <td style="text-align:left;">${o.associado}</td>
       <td>${formatDateBR(dtAbertura)}</td>
       <td><span class="badge ok">${dtConcluida ? formatDateBR(dtConcluida) : '—'}</span></td>
-      <td style="text-align:left; color:var(--text-dim);">${o.obs || '—'}</td>
+      <td>
+        <select class="treat-select t-${treatVal}" data-id="${o.id}" onchange="updateTreat(this); setTimeout(renderConcluidas, 350);">
+          <option value="none" ${treatVal==='none'?'selected':''}>Sem tratamento</option>
+          <option value="acesso" ${treatVal==='acesso'?'selected':''}>🔑 Acesso enviado</option>
+          <option value="amarelo" ${treatVal==='amarelo'?'selected':''}>🟡 Mensagem enviada</option>
+          <option value="vermelho" ${treatVal==='vermelho'?'selected':''}>🔴 Sem retorno técnico</option>
+          <option value="verde" ${treatVal==='verde'?'selected':''}>🟢 Retorno recebido</option>
+          <option value="azul" ${treatVal==='azul'?'selected':''}>🔵 Sem retorno associado</option>
+        </select>
+      </td>
+      <td style="text-align:left;">
+        <input type="text" class="obs-input" style="max-width:130px;" data-id="${o.id}" value="${(o.obs||'').replace(/"/g,'&quot;')}" placeholder="Observação..." onchange="updateObs(this)" onkeydown="if(event.key==='Enter'){ event.preventDefault(); this.blur(); }">
+      </td>
       <td><button class="hist-btn" onclick="verHistorico('${o.id}','${o.placa}')">Ver histórico</button></td>
       <td><button class="btn btn-ghost btn-sm" style="color:var(--amber); border-color:var(--amber-line);" onclick="reverterConclusao('${o.id}')" title="Voltar para o status normal"><svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> Reverter</button></td>
     </tr>`;
@@ -2680,7 +2695,7 @@ async function reverterConclusao(ordemId){
 
 function renderAcessos(){
   const list = computeStats();
-  let fila = list.filter(o=>o.filaAcesso && o.statusOs !== 'Concluída');
+  let fila = list.filter(o=>o.filaAcesso);
 
   const filtroTratamento = document.getElementById('fAcessoTratamento') ? document.getElementById('fAcessoTratamento').value : '';
   if(filtroTratamento === 'pendente') fila = fila.filter(o=>o.treat !== 'acesso');
@@ -2706,7 +2721,7 @@ function renderAcessos(){
     const treatVal = o.treat || 'none';
     return `<tr class="row-treat t-${treatVal}">
       <td><input type="checkbox" class="row-check-acessos" data-id="${o.id}" onchange="atualizarSelecaoAcessos()"></td>
-      <td><span class="placa-chip">${o.placa}</span></td>
+      <td><span class="placa-chip">${o.placa}</span>${o.statusOs==='Concluída' ? ' <span class="badge ok" style="font-size:8.5px;">Finalizada</span>' : ''}</td>
       <td style="text-align:left;">${o.tecnico}</td>
       <td>${o.tipo}</td>
       <td style="text-align:left;">${o.associado}</td>
@@ -3194,6 +3209,11 @@ function updateTreat(sel){
     ordem.concluidaEm = hojeISO;
     camposRemotos.status_os = 'Concluída';
     camposRemotos.concluida_em = hojeISO;
+  }
+
+  if(sel.value === 'acesso'){
+    ordem.filaAcesso = true;
+    camposRemotos.fila_acesso = true;
   }
 
   updateOrdemRemote(id, camposRemotos);
