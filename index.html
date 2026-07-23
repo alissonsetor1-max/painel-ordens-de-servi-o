@@ -625,6 +625,7 @@
     <div class="nav-item" data-view="ordens"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l1.5-4.5A2 2 0 0 1 6.4 7h11.2a2 2 0 0 1 1.9 1.5L21 13"/><path d="M3 13h18v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5Z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg></span><span class="nav-txt">Ordens de Serviço</span><span class="nav-badge" id="navBadgeOrdens">0</span></div>
     <div class="nav-item" data-view="ranking"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a1 1 0 0 0-1 1 5 5 0 0 0 4 4.9M17 6h3a1 1 0 0 1 1 1 5 5 0 0 1-4 4.9"/></svg></span><span class="nav-txt">Ranking de Técnicos</span></div>
     <div class="nav-item" data-view="acessos"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 20 3M20 3h-4M20 3v4M17 6l2 2"/></svg></span><span class="nav-txt">Acesso Enviado</span><span class="nav-badge" id="navBadgeAcessos" style="background:var(--teal-bg); color:var(--teal);">0</span></div>
+    <div class="nav-item" data-view="concluidas"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg></span><span class="nav-txt">Concluídas</span><span class="nav-badge" id="navBadgeConcluidas" style="background:var(--green-bg); color:var(--green);">0</span></div>
 
     <div class="nav-label">Dados</div>
     <div class="nav-item" data-view="importar"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg></span><span class="nav-txt">Importar Excel</span></div>
@@ -952,6 +953,65 @@
             </tr>
           </thead>
           <tbody id="acessosBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ CONCLUÍDAS ============ -->
+    <section class="view" id="view-concluidas">
+      <div class="dash-header-banner">
+      <div class="topbar" style="margin-bottom:0;">
+        <div>
+          <h1>✅ Ordens Concluídas</h1>
+          <div class="meta"><span id="concluidasMeta">Ordens que saíram da planilha semanal — marcadas como concluídas automaticamente</span></div>
+        </div>
+      </div>
+      </div>
+
+      <div class="footnote" style="margin-top:0; margin-bottom:16px;">
+        Toda vez que você importa a planilha semanal de ordens abertas, o sistema compara com o que já
+        está cadastrado. Qualquer ordem que estava em aberto e não veio mais na planilha nova é marcada
+        aqui automaticamente como <b>Concluída</b> — sem precisar excluir nada manualmente.
+      </div>
+
+      <div class="filters">
+        <div class="search-box">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+          <input type="search" id="fSearchConcluidas" autocomplete="off" placeholder="Buscar placa, técnico ou associado..." oninput="renderConcluidas()">
+        </div>
+      </div>
+
+      <div id="concluidasEmpty" class="empty">
+        <div class="icon">✅</div>
+        <h3>Nenhuma ordem concluída ainda</h3>
+        <p>Assim que uma ordem sumir da planilha semanal de importação, ela aparece aqui automaticamente.</p>
+      </div>
+
+      <div class="table-wrap" id="concluidasTableWrap" style="display:none; overflow-x:auto;">
+        <table>
+          <colgroup>
+            <col style="width:90px;">
+            <col style="width:130px;">
+            <col style="width:90px;">
+            <col style="width:150px;">
+            <col style="width:80px;">
+            <col style="width:90px;">
+            <col style="width:200px;">
+            <col style="width:80px;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Placa</th>
+              <th>Técnico</th>
+              <th>Tipo</th>
+              <th>Associado</th>
+              <th>Abertura</th>
+              <th>Concluída em</th>
+              <th>Observação</th>
+              <th>Histórico</th>
+            </tr>
+          </thead>
+          <tbody id="concluidasBody"></tbody>
         </table>
       </div>
     </section>
@@ -1582,7 +1642,8 @@ async function loadData(){
       associado: r.associado, aberturaISO: r.abertura_iso, treat: r.treat || 'none', obs: r.obs || '',
       atualizadoPor: r.atualizado_por || '', dataUltimoContato: r.data_ultimo_contato || '',
       statusOs: r.status_os || 'Aberta',
-      filaAcesso: r.fila_acesso || false
+      filaAcesso: r.fila_acesso || false,
+      concluidaEm: r.concluida_em || null
     }));
   }catch(e){ console.error('Erro ao carregar', e); ORDENS = []; }
 }
@@ -1947,6 +2008,9 @@ function goTo(view){
   if(view === 'acessos'){
     renderAcessos();
   }
+  if(view === 'concluidas'){
+    renderConcluidas();
+  }
   if(view === 'configuracoes'){
     preencherFormularioPrazos();
   }
@@ -2209,6 +2273,7 @@ function handleFile(file){
       let novas = 0, atualizadas = 0, ignoradas = 0;
       const existentesKey = new Set(ORDENS.map(o => o.placa+'|'+o.aberturaISO+'|'+o.tecnico));
       const novasOrdens = [];
+      const chavesNaPlanilhaNova = new Set(); // todas as chaves que vieram nesta planilha
 
       wb.SheetNames.forEach(sheetName=>{
         const ws = wb.Sheets[sheetName];
@@ -2233,6 +2298,7 @@ function handleFile(file){
           const placaClean = String(placa).trim().toUpperCase();
           const aberturaISO = paraISOLocal(dt);
           const key = placaClean+'|'+aberturaISO+'|'+tecnico;
+          chavesNaPlanilhaNova.add(key);
 
           if(existentesKey.has(key)){
             atualizadas++;
@@ -2257,17 +2323,39 @@ function handleFile(file){
         });
       });
 
+      // ---- RECONCILIAÇÃO: ordens que estavam abertas mas sumiram desta planilha ----
+      // (a planilha semanal só traz o que ainda está aberto no sistema de origem;
+      //  se uma ordem não aparece mais, é porque foi concluída)
+      const ordensParaConcluir = ORDENS.filter(o=>{
+        const key = o.placa+'|'+o.aberturaISO+'|'+o.tecnico;
+        const statusAtual = o.statusOs || 'Aberta';
+        const aindaAtiva = statusAtual === 'Aberta' || statusAtual === 'Em Andamento';
+        return aindaAtiva && !chavesNaPlanilhaNova.has(key) && !o.id.startsWith('manual_');
+      });
+
       const log = document.getElementById('importLog');
       log.classList.add('show');
       log.innerHTML = `Enviando ${novas} ordens novas para o banco compartilhado...`;
 
-      insertOrdens(novasOrdens).then(()=>{
-        log.innerHTML = `Importação concluída: <b>${novas}</b> ordens novas, <b>${atualizadas}</b> já existentes mantidas. Base total: <b>${ORDENS.length}</b> ordens.`;
+      const hojeISO = paraISOLocal(new Date());
+      Promise.all([
+        insertOrdens(novasOrdens),
+        ...ordensParaConcluir.map(o=>{
+          o.statusOs = 'Concluída';
+          o.concluidaEm = hojeISO;
+          return updateOrdemRemote(o.id, {status_os:'Concluída', concluida_em: hojeISO});
+        })
+      ]).then(()=>{
+        if(ordensParaConcluir.length > 0){
+          registrarAuditoria('Conclusão automática', `${ordensParaConcluir.length} ordem(ns) marcada(s) como Concluída automaticamente (não constavam na nova planilha)`);
+        }
+        log.innerHTML = `Importação concluída: <b>${novas}</b> ordens novas, <b>${atualizadas}</b> já existentes mantidas, <b>${ordensParaConcluir.length}</b> marcadas como concluídas automaticamente. Base total: <b>${ORDENS.length}</b> ordens.`;
         renderAll();
         checkOverdueAndAlert(true);
         mostrarResultadoImportacao(true,
           `<b>${novas}</b> ordem(ns) nova(s) adicionada(s)<br>` +
-          `<b>${atualizadas}</b> ordem(ns) já existente(s) mantida(s) (tratamento preservado)` +
+          `<b>${atualizadas}</b> ordem(ns) já existente(s) mantida(s) (tratamento preservado)<br>` +
+          `<b>${ordensParaConcluir.length}</b> ordem(ns) marcada(s) como <b>Concluída</b> automaticamente (não vieram nesta planilha)` +
           (ignoradas ? `<br><b>${ignoradas}</b> linha(s) ignorada(s) por data inválida` : '') +
           `<br><br>Base total agora: <b>${ORDENS.length}</b> ordens.`
         );
@@ -2443,6 +2531,48 @@ async function renderEvolucaoChart(){
   }).join('');
 }
 
+function renderConcluidas(){
+  const list = computeStats();
+  const concluidas = list.filter(o=>o.statusOs === 'Concluída');
+  const search = (document.getElementById('fSearchConcluidas').value || '').trim().toLowerCase();
+
+  let filtradas = concluidas;
+  if(search){
+    filtradas = concluidas.filter(o =>
+      o.placa.toLowerCase().includes(search) ||
+      o.tecnico.toLowerCase().includes(search) ||
+      o.associado.toLowerCase().includes(search)
+    );
+  }
+  filtradas.sort((a,b)=> (b.concluidaEm||'').localeCompare(a.concluidaEm||''));
+
+  document.getElementById('concluidasMeta').textContent = `${concluidas.length} ordem(ns) concluída(s) automaticamente`;
+  document.getElementById('navBadgeConcluidas').textContent = concluidas.length;
+
+  if(filtradas.length === 0){
+    document.getElementById('concluidasEmpty').style.display = 'block';
+    document.getElementById('concluidasTableWrap').style.display = 'none';
+    return;
+  }
+  document.getElementById('concluidasEmpty').style.display = 'none';
+  document.getElementById('concluidasTableWrap').style.display = 'block';
+
+  document.getElementById('concluidasBody').innerHTML = filtradas.map(o=>{
+    const dtAbertura = new Date(o.aberturaISO+'T00:00:00');
+    const dtConcluida = o.concluidaEm ? new Date(o.concluidaEm+'T00:00:00') : null;
+    return `<tr>
+      <td><span class="placa-chip">${o.placa}</span></td>
+      <td style="text-align:left;">${o.tecnico}</td>
+      <td>${o.tipo}</td>
+      <td style="text-align:left;">${o.associado}</td>
+      <td>${formatDateBR(dtAbertura)}</td>
+      <td><span class="badge ok">${dtConcluida ? formatDateBR(dtConcluida) : '—'}</span></td>
+      <td style="text-align:left; color:var(--text-dim);">${o.obs || '—'}</td>
+      <td><button class="hist-btn" onclick="verHistorico('${o.id}','${o.placa}')">Ver histórico</button></td>
+    </tr>`;
+  }).join('');
+}
+
 function renderAcessos(){
   const list = computeStats();
   let fila = list.filter(o=>o.filaAcesso);
@@ -2575,15 +2705,20 @@ async function removerDaFila(ordemId){
 function renderAll(){
   const list = computeStats();
   const total = list.length;
+  const listaAbertas = list.filter(o=>o.statusOs !== 'Concluída');
   const atrasadas = list.filter(o=>o.atrasada);
   const noPrazo = list.filter(o=>!o.atrasada);
   const tecnicosSet = new Set(list.map(o=>o.tecnico));
 
-  document.getElementById('navBadgeOrdens').textContent = total;
+  document.getElementById('navBadgeOrdens').textContent = listaAbertas.length;
   document.getElementById('sidebarFoot').textContent = total ? `${total} ordens carregadas` : 'Nenhuma base importada';
 
   const totalAcessos = list.filter(o=>o.filaAcesso && o.treat !== 'acesso').length;
   document.getElementById('navBadgeAcessos').textContent = totalAcessos;
+
+  const totalConcluidas = list.filter(o=>o.statusOs === 'Concluída').length;
+  const badgeConcluidasEl = document.getElementById('navBadgeConcluidas');
+  if(badgeConcluidasEl) badgeConcluidasEl.textContent = totalConcluidas;
 
   // ---- SINO DE CRÍTICAS ----
   const criticasSino = list.filter(o=>o.critica).sort((a,b)=> b.dias - a.dias);
@@ -2807,6 +2942,7 @@ function applyFilters(){
   document.getElementById('btnLimparData').style.display = (dataInicio || dataFim) ? 'inline-flex' : 'none';
 
   let filtered = list.filter(o=>{
+    if(o.statusOs === 'Concluída') return false; // concluídas ficam na aba própria "Concluídas"
     if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
     if(tipo && o.tipo !== tipo) return false;
     if(tecnico && o.tecnico !== tecnico) return false;
@@ -3068,6 +3204,7 @@ function obterListaParaExportacao(){
   const dataFim = document.getElementById('fDataFim').value;
 
   let filtered = list.filter(o=>{
+    if(o.statusOs === 'Concluída') return false;
     if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
     if(tipo && o.tipo !== tipo) return false;
     if(tecnico && o.tecnico !== tecnico) return false;
