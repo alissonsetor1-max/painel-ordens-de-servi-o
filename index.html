@@ -2816,15 +2816,19 @@ async function marcarSelecionadosComoEnviado(){
 async function removerSelecionadosDaFila(){
   const ids = getSelecionadosAcessos();
   if(ids.length === 0) return;
-  if(!confirm(`Remover ${ids.length} ordem(ns) selecionada(s) desta fila de acesso?\n\nElas continuam normalmente em "Ordens de Serviço", só saem desta lista.`)) return;
+  if(!confirm(`Remover ${ids.length} ordem(ns) selecionada(s) desta fila de acesso?\n\nElas voltam para "Ordens de Serviço" com status Aberta e sem tratamento.`)) return;
 
   for(const id of ids){
     const ordem = ORDENS.find(o=>o.id===id);
     if(!ordem) continue;
     ordem.filaAcesso = false;
-    await updateOrdemRemote(id, {fila_acesso:false});
+    ordem.statusOs = 'Aberta';
+    ordem.concluidaEm = null;
+    ordem.treat = 'none';
+    await updateOrdemRemote(id, {fila_acesso:false, status_os:'Aberta', concluida_em:null, treat:'none'});
+    await registrarHistorico(id, 'none', 'Removida da fila de Acesso Enviado (remoção em lote) — voltou para Ordens de Serviço');
   }
-  await registrarAuditoria('Remoção em massa', `Removeu ${ids.length} ordem(ns) da fila de Acesso Enviado`);
+  await registrarAuditoria('Remoção em massa', `Removeu ${ids.length} ordem(ns) da fila de Acesso Enviado, retornando ao status Aberta`);
   renderAll();
   renderAcessos();
 }
@@ -2833,11 +2837,15 @@ async function removerDaFila(ordemId){
   const ordem = ORDENS.find(o=>o.id===ordemId);
   if(!ordem) return;
 
-  const confirmado = confirm(`Remover a ordem ${ordem.placa} (${ordem.associado}) desta fila de acesso?\n\nEla sai desta lista, mas continua normalmente em "Ordens de Serviço".`);
+  const confirmado = confirm(`Remover a ordem ${ordem.placa} (${ordem.associado}) desta fila de acesso?\n\nEla volta para "Ordens de Serviço" com status Aberta e sem tratamento.`);
   if(!confirmado) return;
 
   ordem.filaAcesso = false;
-  await updateOrdemRemote(ordemId, {fila_acesso: false});
+  ordem.statusOs = 'Aberta';
+  ordem.concluidaEm = null;
+  ordem.treat = 'none';
+  await updateOrdemRemote(ordemId, {fila_acesso: false, status_os: 'Aberta', concluida_em: null, treat: 'none'});
+  await registrarHistorico(ordemId, 'none', 'Removida da fila de Acesso Enviado — voltou para Ordens de Serviço');
 
   renderAll();
   renderAcessos();
