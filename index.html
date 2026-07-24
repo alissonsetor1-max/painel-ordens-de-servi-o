@@ -114,7 +114,7 @@
 
   /* ===== SIDEBAR ===== */
   .sidebar{
-    width:248px; flex-shrink:0;
+    width:258px; flex-shrink:0;
     background:linear-gradient(165deg, #1d3a8f 0%, #16296b 55%, #0f1f52 100%);
     border-right:none;
     padding:20px 12px;
@@ -3037,7 +3037,7 @@ function renderConcluidas(){
   filtradas.sort((a,b)=> (b.concluidaEm||'').localeCompare(a.concluidaEm||''));
 
   document.getElementById('concluidasMeta').textContent = `${filtradas.length} de ${concluidas.length} ordem(ns) concluída(s)`;
-  document.getElementById('navBadgeConcluidas').textContent = formatarContadorBadge(concluidas.length);
+  document.getElementById('navBadgeConcluidas').textContent = concluidas.length;
 
   if(filtradas.length === 0){
     document.getElementById('concluidasEmpty').style.display = 'block';
@@ -3235,7 +3235,7 @@ function renderAcessos(){
   const totalFila = list.filter(o=>o.filaAcesso).length;
   const pendentes = list.filter(o=>o.filaAcesso && o.treat !== 'acesso').length;
   document.getElementById('acessosMeta').textContent = `${totalFila} ordem(ns) na fila · ${pendentes} ainda sem confirmação de acesso enviado`;
-  document.getElementById('navBadgeAcessos').textContent = formatarContadorBadge(pendentes);
+  document.getElementById('navBadgeAcessos').textContent = pendentes;
 
   if(fila.length === 0){
     document.getElementById('acessosEmpty').style.display = 'block';
@@ -3368,11 +3368,11 @@ function renderAll(){
   const noPrazo = list.filter(o=>!o.atrasada);
   const tecnicosSet = new Set(list.map(o=>o.tecnico));
 
-  document.getElementById('navBadgeOrdens').textContent = formatarContadorBadge(listaAbertas.length);
+  document.getElementById('navBadgeOrdens').textContent = listaAbertas.length;
   document.getElementById('sidebarFoot').textContent = total ? `${total} ordens carregadas` : 'Nenhuma base importada';
 
   const totalAcessos = list.filter(o=>o.filaAcesso).length;
-  document.getElementById('navBadgeAcessos').textContent = formatarContadorBadge(totalAcessos);
+  document.getElementById('navBadgeAcessos').textContent = totalAcessos;
 
   const totalConcluidas = list.filter(o=> o.statusOs === 'Concluída' && !(o.treat === 'acesso' && o.tipo !== 'Retirada')).length;
   const badgeConcluidasEl = document.getElementById('navBadgeConcluidas');
