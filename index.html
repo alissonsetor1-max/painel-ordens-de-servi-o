@@ -612,7 +612,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>
     <div class="brand">
-      <div class="brand-mark">
+      <div class="brand-mark" id="brandMarkContainer">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" fill="white" fill-opacity="0.16"/>
           <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" stroke="white" stroke-width="1.4"/>
@@ -1133,6 +1133,32 @@
       </div>
       </div>
 
+      <div class="card" style="max-width:520px; margin-bottom:16px;">
+        <div class="card-head"><h2>Logo do sistema</h2></div>
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:14px;">
+          <div id="logoPreviewBox" style="width:56px; height:56px; border-radius:14px; background:linear-gradient(145deg, #5b8def, #3a5fd0); display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden;">
+            <svg id="logoPreviewSvg" width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" fill="white" fill-opacity="0.16"/>
+              <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" stroke="white" stroke-width="1.4"/>
+              <circle cx="12" cy="10" r="3.1" fill="white"/>
+            </svg>
+            <img id="logoPreviewImg" style="display:none; width:100%; height:100%; object-fit:cover;">
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:12px; color:var(--text-dim); line-height:1.5;">
+              Essa imagem aparece no menu lateral, no lugar do ícone padrão. Use uma imagem quadrada (ex: 200x200px) para melhor resultado.
+            </div>
+          </div>
+        </div>
+        <input type="file" id="logoFileInput" accept="image/*" style="display:none;" onchange="previewNovaLogo(this)">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('logoFileInput').click()">📁 Escolher imagem</button>
+          <button class="btn btn-primary btn-sm" id="btnSalvarLogo" style="display:none;" onclick="salvarNovaLogo()">Salvar logo</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red); border-color:var(--red-line);" onclick="restaurarLogoPadrao()">Restaurar padrão</button>
+        </div>
+        <div id="logoMsg" style="display:none; font-size:11.5px; font-weight:700; color:var(--green); margin-top:10px;"></div>
+      </div>
+
       <div class="card" style="max-width:520px;">
         <div class="card-head"><h2>Prazo para considerar "em atraso" (dias)</h2></div>
         <div id="prazosForm" style="display:flex; flex-direction:column; gap:14px;">
@@ -1596,6 +1622,7 @@ async function entrarComSenha(){
   await carregarPerfilLogado(data.user.id);
   document.getElementById('loginModal').classList.remove('show');
   document.getElementById('appShell').style.display = 'flex';
+  carregarLogoPersonalizada();
   await refreshData();
 }
 
@@ -1660,6 +1687,7 @@ async function checarSessao(){
     await carregarPerfilLogado(data.session.user.id);
     document.getElementById('loginModal').classList.remove('show');
     document.getElementById('appShell').style.display = 'flex';
+  carregarLogoPersonalizada();
     return true;
   }
   return false;
@@ -2131,6 +2159,105 @@ function goTo(view){
 document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
   item.addEventListener('click', ()=> goTo(item.dataset.view));
 });
+
+/* =========================================================
+   LOGO PERSONALIZADA DO SISTEMA
+========================================================= */
+let ARQUIVO_LOGO_SELECIONADO = null;
+
+function previewNovaLogo(input){
+  const arquivo = input.files[0];
+  if(!arquivo) return;
+  ARQUIVO_LOGO_SELECIONADO = arquivo;
+
+  const leitor = new FileReader();
+  leitor.onload = (e)=>{
+    const img = document.getElementById('logoPreviewImg');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    document.getElementById('logoPreviewSvg').style.display = 'none';
+    document.getElementById('btnSalvarLogo').style.display = 'inline-flex';
+  };
+  leitor.readAsDataURL(arquivo);
+}
+
+async function salvarNovaLogo(){
+  if(!ARQUIVO_LOGO_SELECIONADO) return;
+  const msg = document.getElementById('logoMsg');
+  msg.style.display = 'block';
+  msg.style.color = 'var(--text-dim)';
+  msg.textContent = 'Enviando imagem...';
+
+  try{
+    const extensao = ARQUIVO_LOGO_SELECIONADO.name.split('.').pop();
+    const nomeArquivo = `logo/logo-sistema.${extensao}`;
+
+    const { error: erroUpload } = await sb.storage.from('anexos-ordens').upload(nomeArquivo, ARQUIVO_LOGO_SELECIONADO, { upsert: true });
+    if(erroUpload){
+      msg.style.color = 'var(--red)';
+      msg.textContent = 'Erro ao enviar imagem: ' + erroUpload.message;
+      return;
+    }
+
+    const { data: urlData } = sb.storage.from('anexos-ordens').getPublicUrl(nomeArquivo);
+    const urlPublica = urlData.publicUrl + '?v=' + Date.now(); // evita cache antigo
+
+    await sb.from('configuracoes_gerais').upsert({ chave: 'logo_url', valor: urlPublica }, { onConflict: 'chave' });
+
+    aplicarLogoNaSidebar(urlPublica);
+    registrarAuditoria('Logo alterada', 'Trocou a logo do sistema exibida na barra lateral');
+
+    msg.style.color = 'var(--green)';
+    msg.textContent = '✓ Logo atualizada com sucesso.';
+    document.getElementById('btnSalvarLogo').style.display = 'none';
+  }catch(e){
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Erro: ' + e.message;
+  }
+}
+
+async function restaurarLogoPadrao(){
+  if(!confirm('Restaurar a logo padrão do sistema?')) return;
+  await sb.from('configuracoes_gerais').upsert({ chave: 'logo_url', valor: '' }, { onConflict: 'chave' });
+  aplicarLogoNaSidebar('');
+  registrarAuditoria('Logo restaurada', 'Restaurou a logo padrão do sistema');
+
+  document.getElementById('logoPreviewImg').style.display = 'none';
+  document.getElementById('logoPreviewSvg').style.display = 'block';
+  document.getElementById('btnSalvarLogo').style.display = 'none';
+  const msg = document.getElementById('logoMsg');
+  msg.style.display = 'block';
+  msg.style.color = 'var(--green)';
+  msg.textContent = '✓ Logo padrão restaurada.';
+}
+
+function aplicarLogoNaSidebar(url){
+  const brandMark = document.getElementById('brandMarkContainer');
+  if(!brandMark) return;
+  if(url){
+    brandMark.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:11px;">`;
+  } else {
+    brandMark.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" fill="white" fill-opacity="0.16"/>
+      <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" stroke="white" stroke-width="1.4"/>
+      <circle cx="12" cy="10" r="3.1" fill="white"/>
+    </svg>`;
+  }
+}
+
+async function carregarLogoPersonalizada(){
+  try{
+    const { data, error } = await sb.from('configuracoes_gerais').select('valor').eq('chave', 'logo_url').single();
+    if(error || !data || !data.valor) return;
+    aplicarLogoNaSidebar(data.valor);
+    const img = document.getElementById('logoPreviewImg');
+    if(img){
+      img.src = data.valor;
+      img.style.display = 'block';
+      document.getElementById('logoPreviewSvg').style.display = 'none';
+    }
+  }catch(e){ /* silencioso — usa a logo padrão */ }
+}
 
 function preencherFormularioPrazos(){
   document.getElementById('prazoInstalacao').value = PRAZOS_POR_TIPO['Instalação'] || 10;
@@ -3853,6 +3980,7 @@ function resetarFiltros(){
   await checarSessao();
   await loadData();
   await carregarPrazosConfiguraveis();
+  await carregarLogoPersonalizada();
   await salvarSnapshotDoDia();
   renderAll();
   if(ORDENS.length > 0) checkOverdueAndAlert(false);
