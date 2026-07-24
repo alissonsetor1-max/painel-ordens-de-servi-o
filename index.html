@@ -121,8 +121,13 @@
     display:flex; flex-direction:column;
     position:sticky; top:0; height:100vh;
     box-shadow:2px 0 24px rgba(0,0,0,.18);
+    overflow-y:auto; overflow-x:hidden;
+    scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.25) transparent;
   }
-  .brand{ display:flex; align-items:center; gap:11px; padding:4px 6px 22px; border-bottom:1px solid rgba(255,255,255,.14); margin-bottom:18px; position:relative; }
+  .sidebar::-webkit-scrollbar{ width:5px; }
+  .sidebar::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.25); border-radius:10px; }
+  .sidebar::-webkit-scrollbar-track{ background:transparent; }
+  .brand{ display:flex; align-items:center; gap:11px; padding:2px 6px 16px; border-bottom:1px solid rgba(255,255,255,.14); margin-bottom:12px; position:relative; }
   .brand-txt{ flex:1; min-width:0; }
 
   /* ===== SINO DE NOTIFICAÇÕES ===== */
@@ -177,7 +182,7 @@
   .brand-txt b{ font-size:14.5px; display:block; color:#fff; letter-spacing:.02em; font-weight:800;}
   .brand-txt span{ font-size:9.5px; color:rgba(255,255,255,.55); font-weight:700; letter-spacing:.08em;}
 
-  .nav-label{ font-size:10px; text-transform:uppercase; letter-spacing:.09em; color:rgba(255,255,255,.4); font-weight:700; margin:20px 10px 9px;}
+  .nav-label{ font-size:9.5px; text-transform:uppercase; letter-spacing:.09em; color:rgba(255,255,255,.4); font-weight:700; margin:14px 10px 7px;}
   .nav-item{
     padding:10px 10px; border-radius:13px; font-size:12px; color:rgba(255,255,255,.7);
     font-weight:600; cursor:pointer; display:flex; align-items:center; gap:9px;
