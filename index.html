@@ -1856,7 +1856,7 @@ function verificarPlacaDuplicada(input){
 
 async function salvarNovaOrdem(){
   const placa = document.getElementById('novaPlaca').value.trim().toUpperCase();
-  const tecnico = document.getElementById('novaTecnico').value.trim();
+  const tecnico = padronizarNomeProprio(document.getElementById('novaTecnico').value.trim());
   const tipo = document.getElementById('novaTipo').value;
   const associado = padronizarNomeProprio(document.getElementById('novaAssociado').value.trim());
   const abertura = document.getElementById('novaAbertura').value;
@@ -1888,7 +1888,7 @@ async function salvarNovaOrdem(){
 async function confirmarCadastroDuplicado(){
   document.getElementById('placaDuplicadaModal').classList.remove('show');
   const placa = document.getElementById('novaPlaca').value.trim().toUpperCase();
-  const tecnico = document.getElementById('novaTecnico').value.trim();
+  const tecnico = padronizarNomeProprio(document.getElementById('novaTecnico').value.trim());
   const tipo = document.getElementById('novaTipo').value;
   const associado = padronizarNomeProprio(document.getElementById('novaAssociado').value.trim());
   const abertura = document.getElementById('novaAbertura').value;
@@ -2677,7 +2677,7 @@ function handleFile(file){
           const dt = parseDataBR(abertura);
           if(!dt) { ignoradas++; return; }
 
-          const tecnico = (instalador||'').toString().trim();
+          const tecnico = padronizarNomeProprio((instalador||'').toString().trim());
           const tipo = tipoNormalizado(tipoServico);
           const associado = padronizarNomeProprio((cliente||'').toString().trim());
           const placaClean = String(placa).trim().toUpperCase();
@@ -2851,7 +2851,7 @@ function handleFileAcessos(file){
           const dt = parseDataBR(abertura);
           if(!dt) { ignoradas++; return; }
 
-          const tecnico = (instalador||'').toString().trim();
+          const tecnico = padronizarNomeProprio((instalador||'').toString().trim());
           const tipo = tipoNormalizado(tipoServico);
           const associado = padronizarNomeProprio((cliente||'').toString().trim());
           const placaClean = String(placa).trim().toUpperCase();
