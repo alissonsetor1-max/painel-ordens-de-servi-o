@@ -625,6 +625,27 @@
 .skel-kpis{ display:flex; gap:14px; margin-bottom:20px; flex-wrap:wrap; }
 .skel-kpi{ flex:1; min-width:150px; height:74px; border-radius:14px; }
 .skel-card{ height:260px; border-radius:14px; }
+/* ===== CALENDÁRIO DE DEMANDA ===== */
+.calendario-legenda{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-mute); font-weight:600; margin-bottom:14px; }
+.cal-swatch{ width:14px; height:14px; border-radius:4px; border:1px solid var(--line); }
+.calendario-semana{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:6px; }
+.calendario-semana div{ text-align:center; font-size:10.5px; font-weight:800; color:var(--text-mute); text-transform:uppercase; letter-spacing:.04em; }
+.calendario-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.cal-dia{
+  aspect-ratio:1; border-radius:10px; border:1px solid var(--line); padding:6px;
+  display:flex; flex-direction:column; justify-content:space-between; cursor:pointer;
+  transition:transform .12s ease, box-shadow .12s ease; position:relative;
+}
+.cal-dia:hover{ transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.15); }
+.cal-dia.cal-fora-mes{ opacity:.3; cursor:default; }
+.cal-dia.cal-fora-mes:hover{ transform:none; box-shadow:none; }
+.cal-dia .cal-num{ font-size:11.5px; font-weight:800; color:var(--text); }
+.cal-dia .cal-qtd{ font-size:15px; font-weight:800; align-self:flex-end; }
+.cal-dia.cal-hoje{ border-color:var(--blue); border-width:2px; }
+@media (max-width:860px){
+  .cal-dia .cal-qtd{ font-size:11px; }
+  .cal-dia .cal-num{ font-size:9.5px; }
+}
 </style>
 </head>
 <body>
@@ -681,6 +702,7 @@
     <div class="nav-item active" data-view="dashboard"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span><span class="nav-txt">Dashboard</span></div>
     <div class="nav-item" data-view="ordens"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l1.5-4.5A2 2 0 0 1 6.4 7h11.2a2 2 0 0 1 1.9 1.5L21 13"/><path d="M3 13h18v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5Z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg></span><span class="nav-txt">Ordens de Serviço</span><span class="nav-badge" id="navBadgeOrdens">0</span></div>
     <div class="nav-item" data-view="ranking"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a1 1 0 0 0-1 1 5 5 0 0 0 4 4.9M17 6h3a1 1 0 0 1 1 1 5 5 0 0 1-4 4.9"/></svg></span><span class="nav-txt">Ranking de Técnicos</span></div>
+    <div class="nav-item" data-view="calendario"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><span class="nav-txt">Calendário</span></div>
     <div class="nav-item" data-view="acessos"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 20 3M20 3h-4M20 3v4M17 6l2 2"/></svg></span><span class="nav-txt">Acesso Enviado</span><span class="nav-badge" id="navBadgeAcessos" style="background:var(--teal-bg); color:var(--teal);">0</span></div>
     <div class="nav-item" data-view="concluidas"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg></span><span class="nav-txt">Concluídas</span><span class="nav-badge" id="navBadgeConcluidas" style="background:var(--green-bg); color:var(--green);">0</span></div>
 
@@ -956,6 +978,39 @@
             <tbody id="rankingBody"></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <!-- ============ CALENDÁRIO ============ -->
+    <section class="view" id="view-calendario">
+      <div class="dash-header-banner">
+      <div class="topbar" style="margin-bottom:0;">
+        <div>
+          <h1>📅 Calendário de Demanda</h1>
+          <div class="meta"><span>Quantas ordens foram abertas em cada dia — ajuda a enxergar picos de demanda</span></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="btn btn-ghost btn-sm" onclick="mudarMesCalendario(-1)">← Mês anterior</button>
+          <span id="calendarioMesLabel" style="font-size:13px; font-weight:800; min-width:140px; text-align:center;">—</span>
+          <button class="btn btn-ghost btn-sm" onclick="mudarMesCalendario(1)">Próximo mês →</button>
+        </div>
+      </div>
+      </div>
+
+      <div class="card">
+        <div class="calendario-legenda">
+          <span>Menos ordens</span>
+          <span class="cal-swatch" style="background:var(--panel-2);"></span>
+          <span class="cal-swatch" style="background:rgba(53,104,212,.25);"></span>
+          <span class="cal-swatch" style="background:rgba(53,104,212,.5);"></span>
+          <span class="cal-swatch" style="background:rgba(53,104,212,.75);"></span>
+          <span class="cal-swatch" style="background:var(--blue);"></span>
+          <span>Mais ordens</span>
+        </div>
+        <div class="calendario-semana">
+          <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+        </div>
+        <div class="calendario-grid" id="calendarioGrid"></div>
       </div>
     </section>
 
@@ -2307,6 +2362,9 @@ function goTo(view){
   if(view === 'auditoria'){
     carregarAuditoria();
   }
+  if(view === 'calendario'){
+    renderCalendario();
+  }
 }
 document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
   item.addEventListener('click', ()=> goTo(item.dataset.view));
@@ -2830,6 +2888,78 @@ function handleFile(file){
 /* =========================================================
    RENDERIZAÇÃO
 ========================================================= */
+/* =========================================================
+   CALENDÁRIO DE DEMANDA
+========================================================= */
+let CALENDARIO_MES_ATUAL = new Date().getMonth();
+let CALENDARIO_ANO_ATUAL = new Date().getFullYear();
+
+function mudarMesCalendario(delta){
+  CALENDARIO_MES_ATUAL += delta;
+  if(CALENDARIO_MES_ATUAL > 11){ CALENDARIO_MES_ATUAL = 0; CALENDARIO_ANO_ATUAL++; }
+  if(CALENDARIO_MES_ATUAL < 0){ CALENDARIO_MES_ATUAL = 11; CALENDARIO_ANO_ATUAL--; }
+  renderCalendario();
+}
+
+function renderCalendario(){
+  const grid = document.getElementById('calendarioGrid');
+  if(!grid) return;
+
+  const nomesMeses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  document.getElementById('calendarioMesLabel').textContent = `${nomesMeses[CALENDARIO_MES_ATUAL]} de ${CALENDARIO_ANO_ATUAL}`;
+
+  // contagem de ordens abertas por dia (todo o histórico, filtrado depois pelo mês exibido)
+  const contagemPorDia = {};
+  ORDENS.forEach(o=>{
+    contagemPorDia[o.aberturaISO] = (contagemPorDia[o.aberturaISO]||0) + 1;
+  });
+  const maxContagem = Math.max(...Object.values(contagemPorDia), 1);
+
+  const primeiroDiaMes = new Date(CALENDARIO_ANO_ATUAL, CALENDARIO_MES_ATUAL, 1);
+  const diaSemanaInicio = primeiroDiaMes.getDay(); // 0=domingo
+  const diasNoMes = new Date(CALENDARIO_ANO_ATUAL, CALENDARIO_MES_ATUAL+1, 0).getDate();
+  const diasNoMesAnterior = new Date(CALENDARIO_ANO_ATUAL, CALENDARIO_MES_ATUAL, 0).getDate();
+
+  const hojeISO = paraISOLocal(new Date());
+  let html = '';
+
+  // dias do mês anterior (preenchimento)
+  for(let i = diaSemanaInicio - 1; i >= 0; i--){
+    html += `<div class="cal-dia cal-fora-mes"><span class="cal-num">${diasNoMesAnterior - i}</span></div>`;
+  }
+
+  // dias do mês atual
+  for(let dia = 1; dia <= diasNoMes; dia++){
+    const dataObj = new Date(CALENDARIO_ANO_ATUAL, CALENDARIO_MES_ATUAL, dia);
+    const dataISO = paraISOLocal(dataObj);
+    const qtd = contagemPorDia[dataISO] || 0;
+    const intensidade = qtd === 0 ? 0 : Math.min(1, qtd / maxContagem);
+    const bg = qtd === 0 ? 'var(--panel-2)' : `rgba(53,104,212,${0.15 + intensidade*0.7})`;
+    const corTexto = intensidade > 0.55 ? '#fff' : 'var(--text)';
+    const ehHoje = dataISO === hojeISO;
+    html += `<div class="cal-dia ${ehHoje?'cal-hoje':''}" style="background:${bg};" onclick="abrirDiaCalendario('${dataISO}')">
+      <span class="cal-num" style="color:${corTexto};">${dia}</span>
+      ${qtd > 0 ? `<span class="cal-qtd" style="color:${corTexto};">${qtd}</span>` : ''}
+    </div>`;
+  }
+
+  // preencher final da grade até completar semana
+  const totalCelulas = diaSemanaInicio + diasNoMes;
+  const restante = (7 - (totalCelulas % 7)) % 7;
+  for(let i = 1; i <= restante; i++){
+    html += `<div class="cal-dia cal-fora-mes"><span class="cal-num">${i}</span></div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function abrirDiaCalendario(dataISO){
+  goTo('ordens');
+  document.getElementById('fDataInicio').value = dataISO;
+  document.getElementById('fDataFim').value = dataISO;
+  applyFilters();
+}
+
 function linhasSkeleton(colunas, linhas){
   const qtdLinhas = linhas || 5;
   let html = '';
