@@ -596,6 +596,16 @@
   .dash-kpi{ min-width:100%; }
   .brand-txt span{ display:none; }
 }
+.offline-banner{
+  position:fixed; top:0; left:0; right:0; z-index:300;
+  align-items:center; justify-content:center; gap:8px;
+  padding:8px 16px; font-size:12px; font-weight:700; color:#fff;
+  text-align:center;
+}
+.offline-banner-off{ background:var(--red); }
+.offline-banner-sync{ background:var(--amber); color:#1a1000; }
+.offline-dot{ width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; animation:pulseOffline 1.4s infinite; }
+@keyframes pulseOffline{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
 </style>
 </head>
 <body>
@@ -604,6 +614,8 @@
 <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="abrirMenuMobile()">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
 </button>
+
+<div id="offlineBanner" class="offline-banner" style="display:none;"></div>
 
 <div class="shell" id="appShell" style="display:none;">
   <!-- ===== SIDEBAR ===== -->
@@ -1883,10 +1895,87 @@ async function finalizarSalvarNovaOrdem(placa, tecnico, tipo, associado, abertur
   registrarAuditoria('Ordem criada', `Criou a ordem manual da placa ${placa} (técnico: ${tecnico}, associado: ${associado})`);
 }
 
+/* =========================================================
+   MODO OFFLINE — fila de alterações pendentes
+========================================================= */
+const CHAVE_FILA_OFFLINE = 'fila_offline_ordens';
+
+function obterFilaOffline(){
+  try{
+    const salva = localStorage.getItem(CHAVE_FILA_OFFLINE);
+    return salva ? JSON.parse(salva) : {};
+  }catch(e){ return {}; }
+}
+function salvarFilaOffline(fila){
+  localStorage.setItem(CHAVE_FILA_OFFLINE, JSON.stringify(fila));
+  atualizarIndicadorOffline();
+}
+function adicionarNaFilaOffline(id, fields){
+  const fila = obterFilaOffline();
+  fila[id] = { ...(fila[id]||{}), ...fields };
+  salvarFilaOffline(fila);
+}
+function contarPendentesOffline(){
+  return Object.keys(obterFilaOffline()).length;
+}
+
+function atualizarIndicadorOffline(){
+  const banner = document.getElementById('offlineBanner');
+  if(!banner) return;
+  const pendentes = contarPendentesOffline();
+  const semConexao = !navigator.onLine;
+
+  if(semConexao){
+    banner.style.display = 'flex';
+    banner.className = 'offline-banner offline-banner-off';
+    banner.innerHTML = `<span class="offline-dot"></span> Sem conexão — suas alterações estão sendo guardadas e serão enviadas quando a internet voltar${pendentes>0 ? ` (${pendentes} pendente${pendentes>1?'s':''})` : ''}`;
+  } else if(pendentes > 0){
+    banner.style.display = 'flex';
+    banner.className = 'offline-banner offline-banner-sync';
+    banner.innerHTML = `<span class="offline-dot"></span> Sincronizando ${pendentes} alteração(ões) pendente(s)...`;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+async function sincronizarFilaOffline(){
+  if(!navigator.onLine) return;
+  const fila = obterFilaOffline();
+  const ids = Object.keys(fila);
+  if(ids.length === 0) return;
+
+  for(const id of ids){
+    const fields = fila[id];
+    try{
+      const payload = {...fields, atualizado_em: new Date().toISOString()};
+      const { error } = await sb.from('ordens_servico').update(payload).eq('id', id);
+      if(!error){
+        delete fila[id];
+      }
+    }catch(e){ /* mantém na fila, tenta de novo depois */ }
+  }
+  salvarFilaOffline(fila);
+}
+
+window.addEventListener('online', ()=>{ atualizarIndicadorOffline(); sincronizarFilaOffline(); });
+window.addEventListener('offline', atualizarIndicadorOffline);
+setInterval(sincronizarFilaOffline, 20000); // tenta sincronizar a cada 20s, por segurança
+
 async function updateOrdemRemote(id, fields){
-  const payload = {...fields, atualizado_em: new Date().toISOString()};
-  const { error } = await sb.from('ordens_servico').update(payload).eq('id', id);
-  if(error) console.error('Erro ao atualizar ordem', error);
+  if(!navigator.onLine){
+    adicionarNaFilaOffline(id, fields);
+    return;
+  }
+  try{
+    const payload = {...fields, atualizado_em: new Date().toISOString()};
+    const { error } = await sb.from('ordens_servico').update(payload).eq('id', id);
+    if(error){
+      console.error('Erro ao atualizar ordem', error);
+      adicionarNaFilaOffline(id, fields); // conexão instável — guarda pra tentar de novo
+    }
+  }catch(e){
+    adicionarNaFilaOffline(id, fields);
+  }
 }
 
 async function registrarAuditoria(acao, detalhe){
@@ -2615,10 +2704,43 @@ function handleFile(file){
           o.concluidaEm = hojeISO;
           return updateOrdemRemote(o.id, {status_os:'Concluída', concluida_em: hojeISO});
         })
-      ]).then(()=>{
+      ]).then(async ()=>{
         if(ordensParaConcluir.length > 0){
           registrarAuditoria('Conclusão automática', `${ordensParaConcluir.length} ordem(ns) marcada(s) como Concluída automaticamente (não constavam na nova planilha)`);
         }
+
+        // ---- registra o histórico desta importação e compara com a anterior ----
+        const porTipoAtual = {};
+        ORDENS.filter(o => (o.statusOs||'Aberta') !== 'Concluída').forEach(o=>{
+          porTipoAtual[o.tipo] = (porTipoAtual[o.tipo]||0) + 1;
+        });
+
+        const { data: importacaoAnterior } = await sb.from('importacoes_historico').select('*').order('criado_em', {ascending:false}).limit(1).maybeSingle();
+
+        await sb.from('importacoes_historico').insert({
+          novas, atualizadas, concluidas_auto: ordensParaConcluir.length, por_tipo: porTipoAtual
+        });
+
+        let htmlComparativo = '';
+        if(importacaoAnterior && importacaoAnterior.por_tipo){
+          const tiposComparar = new Set([...Object.keys(porTipoAtual), ...Object.keys(importacaoAnterior.por_tipo)]);
+          const linhas = [...tiposComparar].map(tipo=>{
+            const atual = porTipoAtual[tipo] || 0;
+            const anterior = importacaoAnterior.por_tipo[tipo] || 0;
+            let variacaoTxt, cor;
+            if(anterior === 0){
+              variacaoTxt = atual > 0 ? 'novo' : '—';
+              cor = 'var(--text-mute)';
+            } else {
+              const pct = Math.round(((atual - anterior) / anterior) * 100);
+              variacaoTxt = (pct > 0 ? '+' : '') + pct + '%';
+              cor = pct > 0 ? 'var(--red)' : (pct < 0 ? 'var(--green)' : 'var(--text-mute)');
+            }
+            return `<div style="display:flex; justify-content:space-between; padding:4px 0; font-size:12px;"><span>${tipo}</span><span><b>${atual}</b> <span style="color:${cor}; font-weight:700;">(${variacaoTxt})</span></span></div>`;
+          }).join('');
+          htmlComparativo = `<br><br><b>Comparado à última importação:</b><br>${linhas}`;
+        }
+
         log.innerHTML = `Importação concluída: <b>${novas}</b> ordens novas, <b>${atualizadas}</b> já existentes mantidas, <b>${ordensParaConcluir.length}</b> marcadas como concluídas automaticamente. Base total: <b>${ORDENS.length}</b> ordens.`;
         renderAll();
         checkOverdueAndAlert(true);
@@ -2627,7 +2749,8 @@ function handleFile(file){
           `<b>${atualizadas}</b> ordem(ns) já existente(s) mantida(s) (tratamento preservado)<br>` +
           `<b>${ordensParaConcluir.length}</b> ordem(ns) marcada(s) como <b>Concluída</b> automaticamente (não vieram nesta planilha)` +
           (ignoradas ? `<br><b>${ignoradas}</b> linha(s) ignorada(s) por data inválida` : '') +
-          `<br><br>Base total agora: <b>${ORDENS.length}</b> ordens.`
+          `<br><br>Base total agora: <b>${ORDENS.length}</b> ordens.` +
+          htmlComparativo
         );
       });
 
@@ -3977,6 +4100,8 @@ function resetarFiltros(){
 (async function init(){
   resetarFiltros();
   aplicarTemaSalvo();
+  atualizarIndicadorOffline();
+  sincronizarFilaOffline();
   await checarSessao();
   await loadData();
   await carregarPrazosConfiguraveis();
