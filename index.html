@@ -114,10 +114,10 @@
 
   /* ===== SIDEBAR ===== */
   .sidebar{
-    width:230px; flex-shrink:0;
+    width:248px; flex-shrink:0;
     background:linear-gradient(165deg, #1d3a8f 0%, #16296b 55%, #0f1f52 100%);
     border-right:none;
-    padding:20px 14px;
+    padding:20px 12px;
     display:flex; flex-direction:column;
     position:sticky; top:0; height:100vh;
     box-shadow:2px 0 24px rgba(0,0,0,.18);
@@ -179,12 +179,12 @@
 
   .nav-label{ font-size:10px; text-transform:uppercase; letter-spacing:.09em; color:rgba(255,255,255,.4); font-weight:700; margin:20px 10px 9px;}
   .nav-item{
-    padding:11px 12px; border-radius:14px; font-size:12.5px; color:rgba(255,255,255,.7);
-    font-weight:600; cursor:pointer; display:flex; align-items:center; gap:10px;
+    padding:10px 10px; border-radius:13px; font-size:12px; color:rgba(255,255,255,.7);
+    font-weight:600; cursor:pointer; display:flex; align-items:center; gap:9px;
     border:1px solid transparent; transition:.14s; position:relative; margin-bottom:3px;
   }
-  .nav-ic{ width:19px; height:19px; display:flex; align-items:center; justify-content:center; flex-shrink:0; opacity:.85; transition:opacity .15s; }
-  .nav-ic svg{ width:17px; height:17px; }
+  .nav-ic{ width:17px; height:17px; display:flex; align-items:center; justify-content:center; flex-shrink:0; opacity:.85; transition:opacity .15s; }
+  .nav-ic svg{ width:16px; height:16px; }
   .nav-item:hover .nav-ic{ opacity:1; }
   .nav-item.active .nav-ic{ opacity:1; }
   .nav-txt{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -195,8 +195,8 @@
     box-shadow:0 4px 14px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.1);
   }
   .nav-badge{
-    margin-left:auto; font-size:10px; font-weight:800; padding:2px 7px; border-radius:20px;
-    background:rgba(227,99,79,.25); color:#ff9d8c; flex-shrink:0;
+    margin-left:auto; font-size:9.5px; font-weight:800; padding:2px 6px; border-radius:20px;
+    background:rgba(227,99,79,.25); color:#ff9d8c; flex-shrink:0; min-width:16px; text-align:center;
   }
   .sidebar-foot{ margin-top:auto; padding:12px 10px 0; border-top:1px solid rgba(255,255,255,.14); font-size:10.5px; color:rgba(255,255,255,.5);}
   .sidebar-foot-block{ margin-top:auto; padding-top:14px; border-top:1px solid rgba(255,255,255,.14); display:flex; flex-direction:column; gap:6px; }
@@ -2803,6 +2803,12 @@ function handleFile(file){
 /* =========================================================
    RENDERIZAÇÃO
 ========================================================= */
+function formatarContadorBadge(numero){
+  if(numero > 999) return '999+';
+  if(numero > 99) return '99+';
+  return String(numero);
+}
+
 function computeStats(){
   const list = ORDENS.map(o=>{
     // Proteção: se a ordem estiver numa combinação que a deixaria invisível em
@@ -3031,7 +3037,7 @@ function renderConcluidas(){
   filtradas.sort((a,b)=> (b.concluidaEm||'').localeCompare(a.concluidaEm||''));
 
   document.getElementById('concluidasMeta').textContent = `${filtradas.length} de ${concluidas.length} ordem(ns) concluída(s)`;
-  document.getElementById('navBadgeConcluidas').textContent = concluidas.length;
+  document.getElementById('navBadgeConcluidas').textContent = formatarContadorBadge(concluidas.length);
 
   if(filtradas.length === 0){
     document.getElementById('concluidasEmpty').style.display = 'block';
@@ -3229,7 +3235,7 @@ function renderAcessos(){
   const totalFila = list.filter(o=>o.filaAcesso).length;
   const pendentes = list.filter(o=>o.filaAcesso && o.treat !== 'acesso').length;
   document.getElementById('acessosMeta').textContent = `${totalFila} ordem(ns) na fila · ${pendentes} ainda sem confirmação de acesso enviado`;
-  document.getElementById('navBadgeAcessos').textContent = pendentes;
+  document.getElementById('navBadgeAcessos').textContent = formatarContadorBadge(pendentes);
 
   if(fila.length === 0){
     document.getElementById('acessosEmpty').style.display = 'block';
@@ -3362,11 +3368,11 @@ function renderAll(){
   const noPrazo = list.filter(o=>!o.atrasada);
   const tecnicosSet = new Set(list.map(o=>o.tecnico));
 
-  document.getElementById('navBadgeOrdens').textContent = listaAbertas.length;
+  document.getElementById('navBadgeOrdens').textContent = formatarContadorBadge(listaAbertas.length);
   document.getElementById('sidebarFoot').textContent = total ? `${total} ordens carregadas` : 'Nenhuma base importada';
 
   const totalAcessos = list.filter(o=>o.filaAcesso).length;
-  document.getElementById('navBadgeAcessos').textContent = totalAcessos;
+  document.getElementById('navBadgeAcessos').textContent = formatarContadorBadge(totalAcessos);
 
   const totalConcluidas = list.filter(o=> o.statusOs === 'Concluída' && !(o.treat === 'acesso' && o.tipo !== 'Retirada')).length;
   const badgeConcluidasEl = document.getElementById('navBadgeConcluidas');
