@@ -909,9 +909,19 @@
       <div id="rankingContent" style="display:none;">
         <div class="table-wrap">
           <table>
+            <colgroup>
+              <col style="width:40px;">
+              <col style="width:220px;">
+              <col style="width:80px;">
+              <col style="width:90px;">
+              <col style="width:100px;">
+              <col style="width:80px;">
+              <col style="width:90px;">
+              <col style="width:90px;">
+            </colgroup>
             <thead>
               <tr>
-                <th>#</th><th>Técnico</th><th>Total OS</th>
+                <th>#</th><th style="text-align:left;">Técnico</th><th>Total OS</th>
                 <th>Instalação</th><th>Manutenção</th><th>Retirada</th>
                 <th>Em atraso</th><th>Status</th>
               </tr>
@@ -3498,7 +3508,7 @@ function renderAll(){
       const iniciais = nome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
       return `<tr>
         <td>${i+1}</td>
-        <td><div class="tech-cell" style="cursor:pointer;" onclick="abrirDetalheTecnico('${nome.replace(/'/g,"\\'")}')"><div class="avatar">${iniciais}</div><span style="text-decoration:underline; text-decoration-color:var(--blue-line);">${nome}</span></div></td>
+        <td style="text-align:left;"><div class="tech-cell" style="cursor:pointer;" onclick="abrirDetalheTecnico('${nome.replace(/'/g,"\\'")}')"><div class="avatar">${iniciais}</div><span style="text-decoration:underline; text-decoration-color:var(--blue-line);">${nome}</span></div></td>
         <td><b>${d.total}</b></td>
         <td>${d.Instalação||0}</td>
         <td>${d.Manutenção||0}</td>
