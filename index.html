@@ -535,6 +535,20 @@
 .mobile-menu-btn, .mobile-close-btn{ display:none; }
 .mobile-overlay{ display:none; }
 
+/* Faixa intermediária — telas/zoom médios: só encolhe a sidebar, não some com ela.
+   Evita o "sumiço" repentino de informação ao dar zoom no navegador. */
+@media (max-width: 1180px) and (min-width: 861px){
+  .sidebar{ width:76px !important; padding:16px 8px; }
+  .sidebar .nav-txt, .sidebar .brand-txt, .sidebar .user-info,
+  .sidebar .status-line span:not(.status-dot), .sidebar .nav-label,
+  .sidebar .nav-badge, .sidebar .theme-toggle-top{ display:none !important; }
+  .sidebar .nav-item{ justify-content:center; padding:11px 0; }
+  .sidebar .brand{ justify-content:center; padding-bottom:16px; }
+  .sidebar .user-card{ justify-content:center; padding:8px; }
+  .sidebar .user-swap{ display:none; }
+  .main{ max-width:calc(100% - 0px) !important; }
+}
+
 @media (max-width: 860px){
   .mobile-menu-btn{
     display:flex; align-items:center; justify-content:center;
