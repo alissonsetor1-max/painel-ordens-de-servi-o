@@ -1433,6 +1433,56 @@
   </div>
 </div>
 
+<!-- ===== MODAL DE DETALHE DO TÉCNICO ===== -->
+<div class="modal-overlay" id="tecnicoDetalheModal">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-head">
+      <div class="ic" id="tecnicoDetalheAvatar" style="background:var(--blue-bg); border-color:var(--blue-line); font-weight:800;">--</div>
+      <div>
+        <h3 id="tecnicoDetalheNome">Técnico</h3>
+        <p>Painel individual de desempenho</p>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:18px 20px;">
+      <div class="dash-kpis" style="margin-bottom:16px;">
+        <div class="dash-kpi" style="padding:12px 14px;">
+          <div class="ic" style="background:var(--blue-bg); color:var(--blue); width:34px; height:34px;">📋</div>
+          <div class="txt"><div class="n" id="tdTotal" style="font-size:18px;">0</div><div class="l">Total de OS</div></div>
+        </div>
+        <div class="dash-kpi" style="padding:12px 14px;">
+          <div class="ic" style="background:var(--red-bg); color:var(--red); width:34px; height:34px;">⚠️</div>
+          <div class="txt"><div class="n" id="tdAtraso" style="font-size:18px;">0</div><div class="l">Em Atraso</div></div>
+        </div>
+        <div class="dash-kpi" style="padding:12px 14px;">
+          <div class="ic" style="background:var(--green-bg); color:var(--green); width:34px; height:34px;">✅</div>
+          <div class="txt"><div class="n" id="tdConcluidas" style="font-size:18px;">0</div><div class="l">Concluídas</div></div>
+        </div>
+        <div class="dash-kpi" style="padding:12px 14px;">
+          <div class="ic" style="background:var(--amber-bg); color:var(--amber); width:34px; height:34px;">⏱️</div>
+          <div class="txt"><div class="n" id="tdTempoMedio" style="font-size:18px;">—</div><div class="l">Tempo médio conclusão</div></div>
+        </div>
+      </div>
+
+      <div class="card-head" style="margin-bottom:8px;"><h2>Por tipo de serviço</h2></div>
+      <div id="tdPorTipo" style="margin-bottom:16px;"></div>
+
+      <div class="card-head" style="margin-bottom:8px;"><h2>Histórico — últimos 30 dias</h2></div>
+      <div style="max-height:220px; overflow-y:auto;">
+        <table>
+          <thead>
+            <tr><th style="text-align:left;">Placa</th><th style="text-align:left;">Tipo</th><th style="text-align:left;">Associado</th><th>Abertura</th><th>Status</th></tr>
+          </thead>
+          <tbody id="tdHistorico"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="document.getElementById('tecnicoDetalheModal').classList.remove('show')">Fechar</button>
+      <button class="btn btn-primary" id="tdVerOrdensBtn">Ver todas as ordens dele</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL DE HISTÓRICO ===== -->
 <div class="modal-overlay" id="histModal">
   <div class="modal" style="max-width:480px;">
@@ -2769,6 +2819,87 @@ async function reverterConclusao(ordemId){
   renderConcluidas();
 }
 
+function abrirDetalheTecnico(nomeTecnico){
+  const list = computeStats();
+  const ordensDoTecnico = list.filter(o => o.tecnico === nomeTecnico);
+  if(ordensDoTecnico.length === 0) return;
+
+  const iniciais = nomeTecnico.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  document.getElementById('tecnicoDetalheAvatar').textContent = iniciais;
+  document.getElementById('tecnicoDetalheNome').textContent = nomeTecnico;
+
+  const total = ordensDoTecnico.length;
+  const emAtraso = ordensDoTecnico.filter(o=>o.atrasada && o.statusOs !== 'Concluída').length;
+  const concluidasArr = ordensDoTecnico.filter(o=>o.statusOs === 'Concluída' && o.concluidaEm);
+  const concluidas = ordensDoTecnico.filter(o=>o.statusOs === 'Concluída').length;
+
+  document.getElementById('tdTotal').textContent = total;
+  document.getElementById('tdAtraso').textContent = emAtraso;
+  document.getElementById('tdConcluidas').textContent = concluidas;
+
+  // tempo médio de conclusão (dias entre abertura e conclusão)
+  if(concluidasArr.length > 0){
+    const somaDias = concluidasArr.reduce((acc,o)=>{
+      const abertura = new Date(o.aberturaISO+'T00:00:00');
+      const conclusao = new Date(o.concluidaEm+'T00:00:00');
+      const dias = Math.round((conclusao - abertura) / 86400000);
+      return acc + Math.max(dias,0);
+    }, 0);
+    const media = Math.round(somaDias / concluidasArr.length);
+    document.getElementById('tdTempoMedio').textContent = media + 'd';
+  } else {
+    document.getElementById('tdTempoMedio').textContent = '—';
+  }
+
+  // por tipo de serviço
+  const porTipo = {};
+  ordensDoTecnico.forEach(o=>{
+    porTipo[o.tipo] = (porTipo[o.tipo]||0) + 1;
+  });
+  const coresTipo = {'Instalação':'var(--blue)','Manutenção':'var(--violet)','Retirada':'var(--amber)'};
+  document.getElementById('tdPorTipo').innerHTML = Object.entries(porTipo).map(([tipo,qtd])=>`
+    <div class="type-row">
+      <div class="type-name"><span class="type-swatch" style="background:${coresTipo[tipo]||'var(--text-mute)'}"></span>${tipo}</div>
+      <div class="type-count"><span class="n">${qtd}</span></div>
+    </div>
+  `).join('');
+
+  // histórico dos últimos 30 dias (por data de abertura)
+  const limite30dias = new Date();
+  limite30dias.setDate(limite30dias.getDate() - 30);
+  const limite30ISO = paraISOLocal(limite30dias);
+  const ultimos30 = ordensDoTecnico
+    .filter(o => o.aberturaISO >= limite30ISO)
+    .sort((a,b)=> b.aberturaISO.localeCompare(a.aberturaISO));
+
+  document.getElementById('tdHistorico').innerHTML = ultimos30.length === 0
+    ? '<tr><td colspan="5" style="text-align:center; color:var(--text-mute); padding:16px;">Nenhuma ordem aberta nos últimos 30 dias</td></tr>'
+    : ultimos30.map(o=>{
+        const dt = new Date(o.aberturaISO+'T00:00:00');
+        let statusTxt;
+        if(o.statusOs === 'Concluída') statusTxt = '<span class="badge ok">Concluída</span>';
+        else if(o.critica) statusTxt = '<span class="badge critico">Crítico</span>';
+        else if(o.atrasada) statusTxt = '<span class="badge atraso">Atrasada</span>';
+        else statusTxt = '<span class="badge ok">No prazo</span>';
+        return `<tr>
+          <td style="text-align:left;"><span class="placa-chip">${o.placa}</span></td>
+          <td style="text-align:left;">${o.tipo}</td>
+          <td style="text-align:left;">${o.associado}</td>
+          <td>${formatDateBR(dt)}</td>
+          <td>${statusTxt}</td>
+        </tr>`;
+      }).join('');
+
+  document.getElementById('tdVerOrdensBtn').onclick = ()=>{
+    document.getElementById('tecnicoDetalheModal').classList.remove('show');
+    goTo('ordens');
+    document.getElementById('fSearch').value = nomeTecnico;
+    applyFilters();
+  };
+
+  document.getElementById('tecnicoDetalheModal').classList.add('show');
+}
+
 function renderAcessos(){
   const list = computeStats();
   let fila = list.filter(o=>o.filaAcesso);
@@ -3014,9 +3145,9 @@ function renderAll(){
     });
     const rankArr = Object.entries(porTecnico).sort((a,b)=> b[1].total - a[1].total);
     document.getElementById('rankList').innerHTML = rankArr.slice(0,4).map(([nome,d],i)=>`
-      <div class="rank-list-item">
+      <div class="rank-list-item" style="cursor:pointer;" onclick="abrirDetalheTecnico('${nome.replace(/'/g,"\\'")}')">
         <div class="rank-num ${i===0?'top1':''}">${i+1}</div>
-        <div class="nome">${nome}</div>
+        <div class="nome" style="text-decoration:underline; text-decoration-color:var(--blue-line);">${nome}</div>
         <div class="qtd">${d.total} OS</div>
       </div>
     `).join('') || '<div style="color:var(--text-mute); font-size:12px;">Sem dados</div>';
@@ -3060,7 +3191,7 @@ function renderAll(){
       const iniciais = nome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
       return `<tr>
         <td>${i+1}</td>
-        <td><div class="tech-cell"><div class="avatar">${iniciais}</div>${nome}</div></td>
+        <td><div class="tech-cell" style="cursor:pointer;" onclick="abrirDetalheTecnico('${nome.replace(/'/g,"\\'")}')"><div class="avatar">${iniciais}</div><span style="text-decoration:underline; text-decoration-color:var(--blue-line);">${nome}</span></div></td>
         <td><b>${d.total}</b></td>
         <td>${d.Instalação||0}</td>
         <td>${d.Manutenção||0}</td>
