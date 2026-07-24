@@ -606,6 +606,12 @@
 .offline-banner-sync{ background:var(--amber); color:#1a1000; }
 .offline-dot{ width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; animation:pulseOffline 1.4s infinite; }
 @keyframes pulseOffline{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+.sla-card{ display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.sla-numero{ font-family:'Manrope','Inter',sans-serif; font-size:44px; font-weight:800; line-height:1; margin:6px 0 10px; }
+.sla-numero.sla-otimo{ color:var(--green); }
+.sla-numero.sla-atencao{ color:var(--amber); }
+.sla-numero.sla-critico{ color:var(--red); }
+.sla-legenda{ font-size:11px; color:var(--text-mute); font-weight:600; line-height:1.4; }
 </style>
 </head>
 <body>
@@ -761,6 +767,11 @@
           <div class="card" style="flex:1;">
             <div class="card-head"><h2>Evolução — Últimos dias</h2><span class="tag" id="evolucaoTag">Em atraso</span></div>
             <div id="evolucaoChart" class="evolucao-chart"></div>
+          </div>
+          <div class="card sla-card" style="max-width:230px;">
+            <div class="card-head"><h2>SLA do mês</h2></div>
+            <div class="sla-numero" id="slaPercentual">—</div>
+            <div class="sla-legenda" id="slaLegenda">Sem ordens concluídas neste mês ainda</div>
           </div>
         </div>
 
@@ -1758,6 +1769,21 @@ function tipoNormalizado(t){
   return t.trim();
 }
 
+// Padroniza nomes vindos em CAIXA ALTA (ou minúsculas) para o formato normal de nome próprio,
+// mantendo conectores (de, da, do, dos, das, e) em minúsculo, exceto quando é a primeira palavra.
+const CONECTORES_NOME = new Set(['de','da','do','dos','das','e']);
+function padronizarNomeProprio(nome){
+  if(!nome) return nome;
+  const partes = nome.trim().toLowerCase().split(/\s+/);
+  const resultado = partes.map((palavra, i)=>{
+    if(!palavra) return palavra;
+    if(i > 0 && CONECTORES_NOME.has(palavra)) return palavra;
+    // capitaliza primeira letra, preservando hífen (ex: "maria-eduarda")
+    return palavra.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('-');
+  });
+  return resultado.join(' ');
+}
+
 async function loadData(){
   try{
     const TAMANHO_PAGINA = 1000;
@@ -1832,7 +1858,7 @@ async function salvarNovaOrdem(){
   const placa = document.getElementById('novaPlaca').value.trim().toUpperCase();
   const tecnico = document.getElementById('novaTecnico').value.trim();
   const tipo = document.getElementById('novaTipo').value;
-  const associado = document.getElementById('novaAssociado').value.trim();
+  const associado = padronizarNomeProprio(document.getElementById('novaAssociado').value.trim());
   const abertura = document.getElementById('novaAbertura').value;
   const erroBox = document.getElementById('novaOrdemErro');
   erroBox.style.display = 'none';
@@ -1864,7 +1890,7 @@ async function confirmarCadastroDuplicado(){
   const placa = document.getElementById('novaPlaca').value.trim().toUpperCase();
   const tecnico = document.getElementById('novaTecnico').value.trim();
   const tipo = document.getElementById('novaTipo').value;
-  const associado = document.getElementById('novaAssociado').value.trim();
+  const associado = padronizarNomeProprio(document.getElementById('novaAssociado').value.trim());
   const abertura = document.getElementById('novaAbertura').value;
   await finalizarSalvarNovaOrdem(placa, tecnico, tipo, associado, abertura);
 }
@@ -2653,7 +2679,7 @@ function handleFile(file){
 
           const tecnico = (instalador||'').toString().trim();
           const tipo = tipoNormalizado(tipoServico);
-          const associado = (cliente||'').toString().trim();
+          const associado = padronizarNomeProprio((cliente||'').toString().trim());
           const placaClean = String(placa).trim().toUpperCase();
           const aberturaISO = paraISOLocal(dt);
           const key = placaClean+'|'+aberturaISO+'|'+tecnico;
@@ -2827,7 +2853,7 @@ function handleFileAcessos(file){
 
           const tecnico = (instalador||'').toString().trim();
           const tipo = tipoNormalizado(tipoServico);
-          const associado = (cliente||'').toString().trim();
+          const associado = padronizarNomeProprio((cliente||'').toString().trim());
           const placaClean = String(placa).trim().toUpperCase();
           const aberturaISO = paraISOLocal(dt);
           const key = placaClean+'|'+aberturaISO+'|'+tecnico;
@@ -2904,6 +2930,36 @@ async function salvarSnapshotDoDia(){
       data: hoje, total, atrasadas, criticas, no_prazo: noPrazo, concluidas
     }, { onConflict: 'data' });
   }catch(e){ console.error('Erro ao salvar snapshot', e); }
+}
+
+function renderSlaDoMes(){
+  const elNumero = document.getElementById('slaPercentual');
+  const elLegenda = document.getElementById('slaLegenda');
+  if(!elNumero) return;
+
+  const hoje = new Date();
+  const inicioMesISO = paraISOLocal(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+
+  const concluidasNoMes = ORDENS.filter(o => o.statusOs === 'Concluída' && o.concluidaEm && o.concluidaEm >= inicioMesISO);
+
+  if(concluidasNoMes.length === 0){
+    elNumero.textContent = '—';
+    elNumero.className = 'sla-numero';
+    elLegenda.textContent = 'Sem ordens concluídas neste mês ainda';
+    return;
+  }
+
+  const dentroDoPrazo = concluidasNoMes.filter(o=>{
+    const abertura = new Date(o.aberturaISO+'T00:00:00');
+    const conclusao = new Date(o.concluidaEm+'T00:00:00');
+    const dias = Math.round((conclusao - abertura) / 86400000);
+    return dias <= prazoParaTipo(o.tipo);
+  });
+
+  const pct = Math.round((dentroDoPrazo.length / concluidasNoMes.length) * 100);
+  elNumero.textContent = pct + '%';
+  elNumero.className = 'sla-numero ' + (pct >= 90 ? 'sla-otimo' : pct >= 70 ? 'sla-atencao' : 'sla-critico');
+  elLegenda.textContent = `${dentroDoPrazo.length} de ${concluidasNoMes.length} ordens concluídas este mês dentro do prazo`;
 }
 
 async function renderEvolucaoChart(){
@@ -3336,6 +3392,7 @@ function renderAll(){
     document.getElementById('dashContent').style.display = 'block';
     document.getElementById('dashMeta').innerHTML = `<span><b>${total}</b> ordens na base</span><span><b>${tecnicosSet.size}</b> técnicos ativos</span><span>Prazo padrão: <b>${PRAZO_DIAS} dias</b></span>`;
     renderEvolucaoChart();
+    renderSlaDoMes();
 
     const statusCount = {'Aberta':0,'Em Andamento':0,'Aguardando Peça':0,'Concluída':0,'Cancelada':0};
     list.forEach(o=>{ const s = o.statusOs || 'Aberta'; if(statusCount[s]===undefined) statusCount[s]=0; statusCount[s]++; });
