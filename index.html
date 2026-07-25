@@ -97,7 +97,7 @@
     color:var(--text);
     font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing:antialiased;
-    font-size:14px;
+    font-size:13.5px;
   }
   h1, h2, h3,
   .brand-txt b,
@@ -114,10 +114,10 @@
 
   /* ===== SIDEBAR ===== */
   .sidebar{
-    width:258px; flex-shrink:0;
+    width:216px; flex-shrink:0;
     background:linear-gradient(165deg, #23262e 0%, #191b21 55%, #101114 100%);
     border-right:none;
-    padding:20px 12px;
+    padding:16px 10px;
     display:flex; flex-direction:column;
     position:sticky; top:0; height:100vh;
     box-shadow:2px 0 24px rgba(0,0,0,.18);
@@ -167,7 +167,7 @@
   .evolucao-label{ font-size:10.5px; color:var(--text-dim); font-weight:700; text-align:center; }
   .evolucao-value{ font-size:11px; color:var(--text-mute); font-weight:700; }
   .brand-mark{
-    width:38px;height:38px;border-radius:11px;
+    width:32px;height:32px;border-radius:9px;
     background:linear-gradient(145deg, #d4a34e, #b8863a);
     display:flex;align-items:center;justify-content:center;
     flex-shrink:0; position:relative;
@@ -184,12 +184,12 @@
 
   .nav-label{ font-size:9.5px; text-transform:uppercase; letter-spacing:.09em; color:rgba(255,255,255,.4); font-weight:700; margin:14px 10px 7px;}
   .nav-item{
-    padding:10px 10px; border-radius:13px; font-size:12px; color:rgba(255,255,255,.7);
-    font-weight:600; cursor:pointer; display:flex; align-items:center; gap:9px;
-    border:1px solid transparent; transition:.14s; position:relative; margin-bottom:3px;
+    padding:8px 9px; border-radius:11px; font-size:11.5px; color:rgba(255,255,255,.7);
+    font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px;
+    border:1px solid transparent; transition:.14s; position:relative; margin-bottom:2px;
   }
-  .nav-ic{ width:17px; height:17px; display:flex; align-items:center; justify-content:center; flex-shrink:0; opacity:.85; transition:opacity .15s; }
-  .nav-ic svg{ width:16px; height:16px; }
+  .nav-ic{ width:16px; height:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; opacity:.85; transition:opacity .15s; }
+  .nav-ic svg{ width:15px; height:15px; }
   .nav-item:hover .nav-ic{ opacity:1; }
   .nav-item.active .nav-ic{ opacity:1; }
   .nav-txt{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -210,8 +210,8 @@
   .status-dot{ width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
 
   .user-card{
-    margin-top:12px; padding:9px 10px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
-    border-radius:14px; display:flex; align-items:center; gap:9px;
+    margin-top:8px; padding:7px 9px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
+    border-radius:12px; display:flex; align-items:center; gap:8px;
   }
   .user-avatar{
     width:30px; height:30px; border-radius:9px; flex-shrink:0;
@@ -231,7 +231,7 @@
   .form-label{ font-size:11.5px; font-weight:700; color:var(--text-dim); display:block; margin-bottom:6px; }
 
   /* ===== MAIN ===== */
-  .main{ flex:1; min-width:0; padding:18px 20px 30px; max-width:1600px; }
+  .main{ flex:1; min-width:0; padding:16px 18px 26px; max-width:1600px; }
   .topbar{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:22px; flex-wrap:wrap; gap:12px;}
   .dash-header-banner{
     background:linear-gradient(120deg, var(--panel) 0%, var(--panel-2) 100%);
@@ -686,7 +686,7 @@
     </button>
     <div class="brand">
       <div class="brand-mark" id="brandMarkContainer">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" fill="white" fill-opacity="0.16"/>
           <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" stroke="white" stroke-width="1.4"/>
           <circle cx="12" cy="10" r="3.1" fill="white"/>
@@ -2468,7 +2468,7 @@ function aplicarLogoNaSidebar(url){
   if(url){
     brandMark.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover; border-radius:11px;">`;
   } else {
-    brandMark.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    brandMark.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" fill="white" fill-opacity="0.16"/>
       <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" stroke="white" stroke-width="1.4"/>
       <circle cx="12" cy="10" r="3.1" fill="white"/>
