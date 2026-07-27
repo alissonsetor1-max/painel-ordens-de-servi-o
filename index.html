@@ -881,7 +881,7 @@
       <div class="filters">
         <div class="search-box">
           <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
-          <input type="search" id="fSearch" autocomplete="off" placeholder="Buscar placa, técnico ou associado...">
+          <input type="search" id="fSearch" autocomplete="off" placeholder="Buscar placa, técnico, associado — ou várias placas de uma vez" title="Cole várias placas de uma vez (uma por linha, ou separadas por vírgula/espaço) para buscar todas juntas.">
         </div>
         <select id="fTipo" autocomplete="off"><option value="">Tipo de serviço (todos)</option></select>
         <select id="fTecnico" autocomplete="off"><option value="">Técnico (todos)</option></select>
@@ -3262,7 +3262,7 @@ function renderConcluidas(){
   });
 
   let filtradas = concluidas.filter(o=>{
-    if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
+    if(search && !correspondeBuscaMultipla(search, o)) return false;
     if(tipo && o.tipo !== tipo) return false;
     if(tecnico && o.tecnico !== tecnico) return false;
     if(dataInicio && (o.concluidaEm||'') < dataInicio) return false;
@@ -3792,6 +3792,26 @@ function populateFilterOptions(list){
   document.getElementById(id).addEventListener('change', ()=>{ PAGINA_ATUAL_ORDENS = 1; applyFilters(); });
 });
 
+// Campos de busca de uma linha só costumam "engolir" quebras de linha ao colar,
+// o que quebraria a colagem de várias placas (uma por linha, copiadas do Excel).
+// Aqui a gente intercepta o "colar" e troca as quebras de linha por vírgula,
+// preservando cada placa separadamente.
+function interceptarColagemMultiplasPlacas(input){
+  input.addEventListener('paste', function(e){
+    const texto = (e.clipboardData || window.clipboardData).getData('text');
+    if(texto && /[\r\n]/.test(texto)){
+      e.preventDefault();
+      const tratado = texto.split(/[\r\n]+/).map(t=>t.trim()).filter(Boolean).join(', ');
+      input.value = tratado;
+      input.dispatchEvent(new Event('input', {bubbles:true}));
+    }
+  });
+}
+['fSearch','fSearchConcluidas','fSearchRetiradasConcluidas'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) interceptarColagemMultiplasPlacas(el);
+});
+
 function limparFiltroData(){
   document.getElementById('fDataInicio').value = '';
   document.getElementById('fDataFim').value = '';
@@ -3823,7 +3843,7 @@ function renderRetiradasConcluidas(){
   });
 
   let filtradas = retiradas.filter(o=>{
-    if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
+    if(search && !correspondeBuscaMultipla(search, o)) return false;
     if(tecnico && o.tecnico !== tecnico) return false;
     if(dataInicio && (o.concluidaEm||'') < dataInicio) return false;
     if(dataFim && (o.concluidaEm||'') > dataFim) return false;
@@ -3955,6 +3975,18 @@ function alternarOrdenacaoAbertura(){
   applyFilters();
 }
 
+// Aceita busca de um termo só (placa/técnico/associado) OU uma lista de várias placas
+// coladas de uma vez — separadas por linha, vírgula, ponto-e-vírgula ou espaço.
+function correspondeBuscaMultipla(searchRaw, o){
+  const tokens = searchRaw.split(/[\n,;]+|\s+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
+  if(tokens.length <= 1){
+    const termo = tokens[0] || '';
+    return o.placa.toLowerCase().includes(termo) || o.tecnico.toLowerCase().includes(termo) || o.associado.toLowerCase().includes(termo);
+  }
+  // múltiplas placas coladas: casa se a placa da ordem bater com qualquer uma da lista
+  return tokens.some(t => o.placa.toLowerCase().includes(t));
+}
+
 function applyFilters(){
   const list = computeStats();
   const search = document.getElementById('fSearch').value.trim().toLowerCase();
@@ -3970,7 +4002,7 @@ function applyFilters(){
   let filtered = list.filter(o=>{
     if(o.statusOs === 'Concluída') return false; // concluídas ficam na aba própria "Concluídas"
     if(o.filaAcesso) return false; // ordens na fila de Acesso Enviado ficam só na aba própria
-    if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
+    if(search && !correspondeBuscaMultipla(search, o)) return false;
     if(tipo && o.tipo !== tipo) return false;
     if(tecnico && o.tecnico !== tecnico) return false;
     if(status === 'atraso' && !o.atrasada) return false;
@@ -4266,7 +4298,7 @@ function obterListaParaExportacao(){
   let filtered = list.filter(o=>{
     if(o.statusOs === 'Concluída') return false;
     if(o.filaAcesso) return false; // ordens na fila de Acesso Enviado ficam só na aba própria
-    if(search && !(o.placa.toLowerCase().includes(search) || o.tecnico.toLowerCase().includes(search) || o.associado.toLowerCase().includes(search))) return false;
+    if(search && !correspondeBuscaMultipla(search, o)) return false;
     if(tipo && o.tipo !== tipo) return false;
     if(tecnico && o.tecnico !== tecnico) return false;
     if(status === 'atraso' && !o.atrasada) return false;
