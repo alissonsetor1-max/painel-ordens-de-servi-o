@@ -647,6 +647,27 @@
 .skel-kpi{ flex:1; min-width:150px; height:74px; border-radius:14px; }
 .skel-card{ height:260px; border-radius:14px; }
 
+/* ===== AUDITORIA — TIMELINE AGRUPADA POR DIA ===== */
+.aud-dia-header{
+  display:flex; align-items:center; gap:10px; margin:20px 0 10px; font-size:11.5px; font-weight:800;
+  color:var(--text-mute); text-transform:uppercase; letter-spacing:.05em;
+}
+.aud-dia-header:first-child{ margin-top:0; }
+.aud-dia-linha{ flex:1; height:1px; background:var(--line); }
+.aud-item{
+  display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:var(--panel);
+  border:1px solid var(--line); border-radius:11px; margin-bottom:8px; box-shadow:var(--shadow-card);
+}
+.aud-item-hora{ font-size:11px; color:var(--text-mute); font-weight:700; min-width:44px; padding-top:2px; flex-shrink:0; }
+.aud-item-ic{
+  width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; font-size:13px;
+}
+.aud-item-body{ flex:1; min-width:0; }
+.aud-item-topo{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:3px; }
+.aud-item-usuario{ font-weight:800; font-size:12.5px; color:var(--text); }
+.aud-item-acao{ font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:20px; }
+.aud-item-detalhe{ font-size:12px; color:var(--text-dim); line-height:1.5; }
 </style>
 </head>
 <body>
@@ -1355,33 +1376,17 @@
       </div>
       </div>
 
+      <div class="dash-kpis" id="auditoriaResumo" style="margin-bottom:14px;"></div>
+
       <div class="filters">
-        <div class="search-box">
-          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
-          <input type="search" id="fSearchAuditoria" autocomplete="off" placeholder="Buscar por placa, usuário ou ação..." oninput="filtrarAuditoria()">
-        </div>
+        <select id="fAcaoAuditoria" onchange="filtrarAuditoria()"><option value="">Todas as ações</option></select>
+        <select id="fUsuarioAuditoria" onchange="filtrarAuditoria()"><option value="">Todos os usuários</option></select>
       </div>
 
-      <div class="table-wrap">
-        <table>
-          <colgroup>
-            <col style="width:150px;">
-            <col style="width:140px;">
-            <col style="width:180px;">
-            <col>
-          </colgroup>
-          <thead>
-            <tr>
-              <th>Data / Hora</th>
-              <th style="text-align:left;">Usuário</th>
-              <th style="text-align:left;">Ação</th>
-              <th style="text-align:left;">Detalhe</th>
-            </tr>
-          </thead>
-          <tbody id="auditoriaBody">
-            <tr><td colspan="4" style="padding:12px 16px;"><div class="skel" style="height:14px; width:55%;"></div></td></tr><tr><td colspan="4" style="padding:12px 16px;"><div class="skel" style="height:14px; width:72%;"></div></td></tr><tr><td colspan="4" style="padding:12px 16px;"><div class="skel" style="height:14px; width:89%;"></div></td></tr><tr><td colspan="4" style="padding:12px 16px;"><div class="skel" style="height:14px; width:71%;"></div></td></tr><tr><td colspan="4" style="padding:12px 16px;"><div class="skel" style="height:14px; width:88%;"></div></td></tr>
-          </tbody>
-        </table>
+      <div id="auditoriaLista">
+        <div class="skel" style="height:14px; width:55%; margin-bottom:12px;"></div>
+        <div class="skel" style="height:14px; width:72%; margin-bottom:12px;"></div>
+        <div class="skel" style="height:14px; width:89%; margin-bottom:12px;"></div>
       </div>
     </section>
 
@@ -2550,59 +2555,142 @@ async function salvarPrazosConfiguraveis(){
 
 let AUDITORIA_CACHE = [];
 
+// mapeia palavras-chave da ação pra uma categoria visual (cor + ícone)
+function categoriaAuditoria(acao){
+  const a = (acao||'').toLowerCase();
+  if(a.includes('exclu') || a.includes('remov')) return { cor:'red', icone:'🗑️', label:'Exclusão' };
+  if(a.includes('cria')) return { cor:'green', icone:'➕', label:'Criação' };
+  if(a.includes('concl')) return { cor:'green', icone:'✅', label:'Conclusão' };
+  if(a.includes('revert')) return { cor:'amber', icone:'↩️', label:'Reversão' };
+  if(a.includes('edit') || a.includes('alter') || a.includes('senha')) return { cor:'blue', icone:'✏️', label:'Edição' };
+  if(a.includes('logo') || a.includes('config') || a.includes('prazo')) return { cor:'violet', icone:'⚙️', label:'Configuração' };
+  return { cor:'blue', icone:'📌', label:'Ação' };
+}
+
 async function carregarAuditoria(){
-  const tbody = document.getElementById('auditoriaBody');
-  tbody.innerHTML = linhasSkeleton(4);
+  const lista = document.getElementById('auditoriaLista');
+  lista.innerHTML = '<div class="skel" style="height:14px; width:55%; margin-bottom:12px;"></div><div class="skel" style="height:14px; width:72%; margin-bottom:12px;"></div><div class="skel" style="height:14px; width:89%; margin-bottom:12px;"></div>';
 
   const { data, error } = await sb.from('auditoria').select('*').order('criado_em', {ascending:false}).limit(300);
   if(error || !data || data.length === 0){
-    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhum registro de auditoria ainda.</td></tr>';
+    lista.innerHTML = '<div class="empty" style="padding:40px 20px;"><div class="icon">🔍</div><h3>Nenhum registro de auditoria ainda</h3><p>Assim que alguma ação for feita no sistema, ela aparece aqui.</p></div>';
+    document.getElementById('auditoriaResumo').innerHTML = '';
     AUDITORIA_CACHE = [];
     return;
   }
 
   AUDITORIA_CACHE = data;
-  document.getElementById('fSearchAuditoria').value = '';
+  popularFiltrosAuditoria(data);
+  renderResumoAuditoria(data);
   renderAuditoriaFiltrada(data);
 }
 
+function popularFiltrosAuditoria(data){
+  const acaoSel = document.getElementById('fAcaoAuditoria');
+  const usuSel = document.getElementById('fUsuarioAuditoria');
+  const acoesAtuais = new Set(Array.from(acaoSel.options).map(o=>o.value));
+  const usersAtuais = new Set(Array.from(usuSel.options).map(o=>o.value));
+  [...new Set(data.map(a=>a.acao))].sort().forEach(a=>{
+    if(!acoesAtuais.has(a)){ const opt = document.createElement('option'); opt.value=a; opt.textContent=a; acaoSel.appendChild(opt); }
+  });
+  [...new Set(data.map(a=>a.usuario))].sort().forEach(u=>{
+    if(!usersAtuais.has(u)){ const opt = document.createElement('option'); opt.value=u; opt.textContent=u; usuSel.appendChild(opt); }
+  });
+}
+
+function renderResumoAuditoria(data){
+  const hojeISO = paraISOLocal(new Date());
+  const acoesHoje = data.filter(a => a.criado_em.slice(0,10) === hojeISO).length;
+
+  const contagemPorUsuario = {};
+  data.forEach(a => { contagemPorUsuario[a.usuario] = (contagemPorUsuario[a.usuario]||0) + 1; });
+  const usuarioMaisAtivo = Object.entries(contagemPorUsuario).sort((a,b)=>b[1]-a[1])[0];
+
+  const exclusoes = data.filter(a => categoriaAuditoria(a.acao).label === 'Exclusão').length;
+
+  document.getElementById('auditoriaResumo').innerHTML = `
+    <div class="dash-kpi">
+      <div class="ic" style="background:var(--blue-bg); color:var(--blue);">📋</div>
+      <div class="txt"><div class="n">${data.length}</div><div class="l">Total de registros</div></div>
+    </div>
+    <div class="dash-kpi">
+      <div class="ic" style="background:var(--amber-bg); color:var(--amber);">📅</div>
+      <div class="txt"><div class="n">${acoesHoje}</div><div class="l">Ações hoje</div></div>
+    </div>
+    <div class="dash-kpi">
+      <div class="ic" style="background:var(--green-bg); color:var(--green);">👤</div>
+      <div class="txt"><div class="n" style="font-size:14px;">${usuarioMaisAtivo ? usuarioMaisAtivo[0] : '—'}</div><div class="l">Usuário mais ativo</div></div>
+    </div>
+    <div class="dash-kpi">
+      <div class="ic" style="background:var(--red-bg); color:var(--red);">🗑️</div>
+      <div class="txt"><div class="n">${exclusoes}</div><div class="l">Exclusões registradas</div></div>
+    </div>
+  `;
+}
+
 function filtrarAuditoria(){
-  const termo = (document.getElementById('fSearchAuditoria').value || '').trim().toLowerCase();
-  if(!termo){
-    renderAuditoriaFiltrada(AUDITORIA_CACHE);
-    return;
-  }
-  const filtrado = AUDITORIA_CACHE.filter(a =>
-    (a.usuario||'').toLowerCase().includes(termo) ||
-    (a.acao||'').toLowerCase().includes(termo) ||
-    (a.detalhe||'').toLowerCase().includes(termo)
-  );
-  renderAuditoriaFiltrada(filtrado, AUDITORIA_CACHE.length);
+  const acaoFiltro = document.getElementById('fAcaoAuditoria').value;
+  const usuarioFiltro = document.getElementById('fUsuarioAuditoria').value;
+
+  let filtrado = AUDITORIA_CACHE;
+  if(acaoFiltro) filtrado = filtrado.filter(a => a.acao === acaoFiltro);
+  if(usuarioFiltro) filtrado = filtrado.filter(a => a.usuario === usuarioFiltro);
+
+  renderAuditoriaFiltrada(filtrado, (acaoFiltro || usuarioFiltro) ? AUDITORIA_CACHE.length : undefined);
 }
 
 function renderAuditoriaFiltrada(lista, totalGeral){
-  const tbody = document.getElementById('auditoriaBody');
+  const container = document.getElementById('auditoriaLista');
   const total = totalGeral !== undefined ? totalGeral : AUDITORIA_CACHE.length;
 
   document.getElementById('auditoriaMeta').textContent = totalGeral !== undefined
-    ? `${lista.length} de ${total} registro(s) — filtrado pela busca`
+    ? `${lista.length} de ${total} registro(s) — filtrado`
     : `${total} registro(s) — mostrando os mais recentes`;
 
   if(lista.length === 0){
-    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhum registro encontrado para essa busca.</td></tr>';
+    container.innerHTML = '<div class="empty" style="padding:40px 20px;"><div class="icon">🔍</div><h3>Nenhum registro encontrado</h3><p>Tente ajustar os filtros selecionados.</p></div>';
     return;
   }
 
-  tbody.innerHTML = lista.map(a=>{
-    const dt = new Date(a.criado_em);
-    const dataFmt = dt.toLocaleDateString('pt-BR') + ' às ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-    return `<tr>
-      <td style="white-space:nowrap;">${dataFmt}</td>
-      <td style="text-align:left; font-weight:700;">${a.usuario}</td>
-      <td style="text-align:left;"><span class="badge" style="background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue-line);">${a.acao}</span></td>
-      <td style="text-align:left; color:var(--text-dim);">${a.detalhe || '—'}</td>
-    </tr>`;
-  }).join('');
+  // agrupa por dia
+  const grupos = {};
+  lista.forEach(a=>{
+    const diaISO = a.criado_em.slice(0,10);
+    if(!grupos[diaISO]) grupos[diaISO] = [];
+    grupos[diaISO].push(a);
+  });
+
+  const hojeISO = paraISOLocal(new Date());
+  const ontemISO = paraISOLocal(new Date(Date.now() - 86400000));
+
+  let html = '';
+  Object.keys(grupos).sort((a,b)=>b.localeCompare(a)).forEach(diaISO=>{
+    const dt = new Date(diaISO+'T00:00:00');
+    let labelDia = formatDateBR(dt);
+    if(diaISO === hojeISO) labelDia = `Hoje · ${labelDia}`;
+    else if(diaISO === ontemISO) labelDia = `Ontem · ${labelDia}`;
+
+    html += `<div class="aud-dia-header">${labelDia}<div class="aud-dia-linha"></div></div>`;
+
+    grupos[diaISO].forEach(a=>{
+      const dtCompleta = new Date(a.criado_em);
+      const hora = dtCompleta.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+      const cat = categoriaAuditoria(a.acao);
+      html += `<div class="aud-item">
+        <div class="aud-item-hora">${hora}</div>
+        <div class="aud-item-ic" style="background:var(--${cat.cor}-bg); color:var(--${cat.cor});">${cat.icone}</div>
+        <div class="aud-item-body">
+          <div class="aud-item-topo">
+            <span class="aud-item-usuario">${a.usuario}</span>
+            <span class="aud-item-acao" style="background:var(--${cat.cor}-bg); color:var(--${cat.cor});">${a.acao}</span>
+          </div>
+          <div class="aud-item-detalhe">${a.detalhe || '—'}</div>
+        </div>
+      </div>`;
+    });
+  });
+
+  container.innerHTML = html;
 }
 
 async function carregarUsuarios(){
