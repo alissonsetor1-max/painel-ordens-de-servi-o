@@ -2961,6 +2961,7 @@ function handleFile(file){
           return updateOrdemRemote(o.id, {status_os:'Concluída', concluida_em: hojeISO});
         })
       ]).then(async ()=>{
+        registrarAuditoria('Excel importado', `${novas} nova(s), ${atualizadas} já existente(s) mantida(s)${ordensParaConcluir.length > 0 ? `, ${ordensParaConcluir.length} concluída(s) automaticamente` : ''}`);
         if(ordensParaConcluir.length > 0){
           registrarAuditoria('Conclusão automática', `${ordensParaConcluir.length} ordem(ns) marcada(s) como Concluída automaticamente (não constavam na nova planilha)`);
         }
@@ -4119,6 +4120,11 @@ function updateTreat(sel){
   registrarHistorico(id, sel.value, ordem.obs);
   if(sel.value === 'concluido'){
     registrarAuditoria('Ordem concluída manualmente', `Marcou a ordem ${ordem.placa} (${ordem.associado}) como Concluída`);
+  } else if(sel.value !== 'acesso'){
+    const rotulosTreat = {none:'Sem tratamento', amarelo:'Mensagem enviada', vermelho:'Sem retorno técnico', verde:'Retorno recebido', azul:'Sem retorno associado'};
+    registrarAuditoria('Tratamento alterado', `Ordem ${ordem.placa} (${ordem.associado}) → ${rotulosTreat[sel.value] || sel.value}`);
+  } else {
+    registrarAuditoria('Acesso enviado', `Marcou a ordem ${ordem.placa} (${ordem.associado}) como Acesso enviado ao associado`);
   }
   renderAll();
 }
@@ -4133,6 +4139,7 @@ function updateObs(input){
     return;
   }
   registrarHistoricoObs(id, texto);
+  registrarAuditoria('Observação adicionada', `Ordem ${ordem.placa} (${ordem.associado}): "${texto.length > 80 ? texto.slice(0,80)+'...' : texto}"`);
   ordem.obs = '';
   updateOrdemRemote(id, {obs: ''});
   input.value = '';
@@ -4146,6 +4153,7 @@ function updateStatusOs(sel){
   if(!ordem) return;
   ordem.statusOs = sel.value;
   updateOrdemRemote(id, {status_os: sel.value});
+  registrarAuditoria('Status OS alterado', `Ordem ${ordem.placa} (${ordem.associado}) → ${sel.value}`);
   renderAll();
 }
 
