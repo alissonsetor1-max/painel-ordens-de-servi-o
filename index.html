@@ -90,6 +90,9 @@
   *{box-sizing:border-box; margin:0; padding:0;}
   html,body{height:100%; background:var(--bg);}
   html{ min-height:100%; }
+  @media (min-width: 861px){
+    html{ zoom: 0.9; }
+  }
   body{
     background:
       radial-gradient(1200px 500px at 100% -10%, rgba(91,141,239,.06), transparent 60%),
@@ -111,9 +114,6 @@
   ::-webkit-scrollbar-track{background:transparent;}
 
   .shell{ display:flex; min-height:100vh; }
-  @media (min-width: 861px){
-    .shell{ zoom: 0.9; }
-  }
 
   /* ===== SIDEBAR ===== */
   .sidebar{
