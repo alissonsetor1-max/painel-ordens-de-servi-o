@@ -127,7 +127,7 @@
   .sidebar::-webkit-scrollbar{ width:5px; }
   .sidebar::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.25); border-radius:10px; }
   .sidebar::-webkit-scrollbar-track{ background:transparent; }
-  .brand{ display:flex; align-items:center; gap:11px; padding:2px 6px 16px; border-bottom:1px solid rgba(255,255,255,.14); margin-bottom:12px; position:relative; }
+  .brand{ display:flex; align-items:center; gap:9px; padding:0 6px 10px; border-bottom:1px solid rgba(255,255,255,.14); margin-bottom:8px; position:relative; }
   .brand-txt{ flex:1; min-width:0; }
 
   /* ===== SINO DE NOTIFICAÇÕES ===== */
@@ -160,7 +160,7 @@
   .bell-empty{ padding:24px 14px; text-align:center; font-size:12px; color:var(--text-mute); }
 
   /* ===== GRÁFICO DE EVOLUÇÃO ===== */
-  .evolucao-chart{ display:flex; align-items:flex-end; gap:10px; height:110px; padding:10px 6px 0; }
+  .evolucao-chart{ display:flex; align-items:flex-end; gap:8px; height:85px; padding:6px 6px 0; }
   .evolucao-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end; }
   .evolucao-track{ width:100%; max-width:44px; height:120px; display:flex; align-items:flex-end; background:var(--panel-2); border-radius:6px 6px 0 0; overflow:hidden; }
   .evolucao-fill{ width:100%; border-radius:6px 6px 0 0; background:var(--blue); min-height:3px; transition:height .3s; }
@@ -182,7 +182,7 @@
   .brand-txt b{ font-size:14.5px; display:block; color:#fff; letter-spacing:.02em; font-weight:800;}
   .brand-txt span{ font-size:9.5px; color:rgba(255,255,255,.55); font-weight:700; letter-spacing:.08em;}
 
-  .nav-label{ font-size:9.5px; text-transform:uppercase; letter-spacing:.09em; color:rgba(255,255,255,.4); font-weight:700; margin:14px 10px 7px;}
+  .nav-label{ font-size:9px; text-transform:uppercase; letter-spacing:.09em; color:rgba(255,255,255,.4); font-weight:700; margin:10px 10px 5px;}
   .nav-item{
     padding:8px 9px; border-radius:11px; font-size:11.5px; color:rgba(255,255,255,.7);
     font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px;
@@ -205,7 +205,7 @@
     background:rgba(227,99,79,.25); color:#ff9d8c; flex-shrink:0; min-width:16px; text-align:center;
   }
   .sidebar-foot{ margin-top:auto; padding:12px 10px 0; border-top:1px solid rgba(255,255,255,.14); font-size:10.5px; color:rgba(255,255,255,.5);}
-  .sidebar-foot-block{ margin-top:auto; padding-top:14px; border-top:1px solid rgba(255,255,255,.14); display:flex; flex-direction:column; gap:6px; }
+  .sidebar-foot-block{ margin-top:auto; padding-top:10px; border-top:1px solid rgba(255,255,255,.14); display:flex; flex-direction:column; gap:5px; }
   .status-line{ display:flex; align-items:center; gap:7px; font-size:10.5px; font-weight:600; color:rgba(255,255,255,.55); padding:0 6px; }
   .status-dot{ width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; }
 
@@ -235,7 +235,7 @@
   .topbar{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:22px; flex-wrap:wrap; gap:12px;}
   .dash-header-banner{
     background:linear-gradient(120deg, var(--panel) 0%, var(--panel-2) 100%);
-    border:1px solid var(--line); border-radius:14px; padding:14px 20px; margin-bottom:14px;
+    border:1px solid var(--line); border-radius:12px; padding:10px 16px; margin-bottom:10px;
     position:relative; overflow:hidden;
   }
   .dash-header-banner::before{
@@ -278,7 +278,7 @@
   .grid-2 > .card:first-child{ flex:1.5; min-width:0; }
   .grid-2 > .card:last-child{ flex:1; min-width:0; }
 
-  .card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:13px 15px; box-shadow:var(--shadow-card); transition:box-shadow .18s ease, border-color .18s ease; }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:10px 13px; box-shadow:var(--shadow-card); transition:box-shadow .18s ease, border-color .18s ease; }
   .card:hover{ border-color:var(--blue-line); }
   .card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap; padding-bottom:8px; border-bottom:1px solid var(--line);}
   .card-head h2{ font-size:13.5px; font-weight:800; display:flex; align-items:center; gap:8px;}
@@ -473,13 +473,13 @@
 
   /* ===== NOVO DASHBOARD ===== */
   .dash-kpis{ display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
-  .dash-kpi{ flex:1; min-width:140px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:11px 14px; display:flex; align-items:center; gap:10px; box-shadow:var(--shadow-card); transition:transform .18s ease, box-shadow .18s ease; }
+  .dash-kpi{ flex:1; min-width:135px; background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:8px 12px; display:flex; align-items:center; gap:9px; box-shadow:var(--shadow-card); transition:transform .18s ease, box-shadow .18s ease; }
   .dash-kpi:hover{ transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.12); }
   .dash-kpi .ic{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; box-shadow:inset 0 1px 0 rgba(255,255,255,.15); }
   .dash-kpi .txt .n{ font-size:17px; font-weight:800; line-height:1.1; }
   .dash-kpi .txt .l{ font-size:10px; color:var(--text-dim); font-weight:600; margin-top:1px; }
 
-  .dash-row{ display:flex; gap:12px; margin-bottom:12px; align-items:stretch; flex-wrap:wrap; }
+  .dash-row{ display:flex; gap:10px; margin-bottom:10px; align-items:stretch; flex-wrap:wrap; }
   .dash-row > .card{ flex:1; min-width:280px; }
 
   .donut-wrap{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; justify-content:center; padding:4px 0; }
@@ -487,7 +487,7 @@
   .donut-legend-item{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; }
   .donut-legend-item .sw{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
 
-  .barchart-wrap{ display:flex; align-items:flex-end; gap:10px; height:110px; padding:8px 6px 0; }
+  .barchart-wrap{ display:flex; align-items:flex-end; gap:8px; height:85px; padding:6px 6px 0; }
   .barchart-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end; }
   .barchart-track{ width:100%; max-width:56px; height:130px; display:flex; align-items:flex-end; }
   .barchart-fill{ width:100%; border-radius:6px 6px 0 0; background:var(--blue); min-height:3px; transition:height .3s; }
@@ -516,7 +516,7 @@
     padding:8px; background:rgba(255,255,255,.08); border-radius:14px; border:1px solid rgba(255,255,255,.12);
   }
   .theme-toggle-top{
-    margin:0 0 16px; padding:0; background:transparent; border:none;
+    margin:0 0 10px; padding:0; background:transparent; border:none;
     display:flex; align-items:center; justify-content:center; gap:6px;
     opacity:.55;
   }
@@ -802,7 +802,7 @@
           <div class="card">
             <div class="card-head"><h2>Distribuição por Status</h2></div>
             <div class="donut-wrap">
-              <svg id="donutChart" width="130" height="130" viewBox="0 0 180 180"></svg>
+              <svg id="donutChart" width="100" height="100" viewBox="0 0 180 180"></svg>
               <div class="donut-legend" id="donutLegend"></div>
             </div>
           </div>
