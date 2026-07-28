@@ -1362,6 +1362,26 @@
         </div>
         <div class="footnote">O status "Crítico" é calculado automaticamente como o dobro do prazo definido para cada tipo.</div>
       </div>
+
+      <div class="card" style="max-width:520px; margin-top:16px;">
+        <div class="card-head"><h2>Integração com IA</h2></div>
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div>
+            <label class="form-label">Nome da integração</label>
+            <input type="text" id="iaNome" placeholder="Ex: Assistente Prosulsat" style="width:100%; padding:9px 12px;">
+          </div>
+          <div id="iaStatusBox" style="display:flex; align-items:center; gap:8px; font-size:11.5px; font-weight:700;">
+            <span id="iaStatusDot" style="width:8px; height:8px; border-radius:50%; background:var(--text-mute); display:inline-block;"></span>
+            <span id="iaStatusTxt" style="color:var(--text-mute);">Verificando conexão...</span>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="salvarNomeIA()">Salvar nome</button>
+            <button class="btn btn-ghost btn-sm" onclick="testarConexaoIA()">Testar conexão</button>
+          </div>
+          <div id="iaMsg" style="display:none; font-size:11.5px; font-weight:700;"></div>
+        </div>
+        <div class="footnote">A chave de API fica armazenada de forma segura no backend (Supabase Secrets) e nunca é exposta neste painel.</div>
+      </div>
     </section>
 
     <!-- ============ AUDITORIA ============ -->
@@ -2547,6 +2567,59 @@ async function carregarLogoPersonalizada(){
       document.getElementById('logoPreviewSvg').style.display = 'none';
     }
   }catch(e){ /* silencioso — usa a logo padrão */ }
+}
+
+async function carregarNomeIA(){
+  try{
+    const { data } = await sb.from('configuracoes_gerais').select('valor').eq('chave', 'ia_nome').single();
+    const campo = document.getElementById('iaNome');
+    if(campo && data && data.valor) campo.value = data.valor;
+  }catch(e){ /* usa vazio, sem integração nomeada ainda */ }
+}
+
+async function salvarNomeIA(){
+  const nome = (document.getElementById('iaNome').value || '').trim();
+  const msg = document.getElementById('iaMsg');
+  if(!nome){
+    msg.style.display = 'block';
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Digite um nome para a integração.';
+    return;
+  }
+  await sb.from('configuracoes_gerais').upsert({ chave: 'ia_nome', valor: nome }, { onConflict: 'chave' });
+  msg.style.display = 'block';
+  msg.style.color = 'var(--green)';
+  msg.textContent = `Nome salvo: "${nome}"`;
+  registrarAuditoria('Integração IA renomeada', `Integração de IA renomeada para "${nome}"`);
+}
+
+async function testarConexaoIA(){
+  const dot = document.getElementById('iaStatusDot');
+  const txt = document.getElementById('iaStatusTxt');
+  dot.style.background = 'var(--text-mute)';
+  txt.style.color = 'var(--text-mute)';
+  txt.textContent = 'Testando conexão...';
+  try{
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/assistente-ia`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: 'Responda apenas com a palavra: OK' })
+    });
+    const result = await resp.json();
+    if(!resp.ok || result.error){
+      dot.style.background = 'var(--red)';
+      txt.style.color = 'var(--red)';
+      txt.textContent = 'Falha na conexão: ' + (result.error || 'erro desconhecido');
+      return;
+    }
+    dot.style.background = 'var(--green)';
+    txt.style.color = 'var(--green)';
+    txt.textContent = 'Conectado — resposta recebida da IA com sucesso.';
+  }catch(e){
+    dot.style.background = 'var(--red)';
+    txt.style.color = 'var(--red)';
+    txt.textContent = 'Erro de conexão: ' + e.message;
+  }
 }
 
 function preencherFormularioPrazos(){
@@ -4609,6 +4682,8 @@ function resetarFiltros(){
   await loadData();
   await carregarPrazosConfiguraveis();
   await carregarLogoPersonalizada();
+  await carregarNomeIA();
+  testarConexaoIA();
   await salvarSnapshotDoDia();
   renderAll();
   if(ORDENS.length > 0) checkOverdueAndAlert(false);
