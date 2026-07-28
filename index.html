@@ -797,6 +797,8 @@
       </div>
 
       <div id="dashContent" style="display:none;">
+        <!-- MÓDULOS DE IA EM STAND BY — remover o display:none abaixo para reativar -->
+        <div id="blocoIADashboard" style="display:none;">
         <div class="card" style="margin-bottom:16px;">
           <div class="card-head">
             <h2 id="iaResumoTitulo">Resumo Inteligente</h2>
@@ -825,6 +827,8 @@
           </div>
           <div id="perguntaIAResposta" style="font-size:12.5px; color:var(--text-dim); line-height:1.7; white-space:pre-wrap;"></div>
         </div>
+        </div>
+        <!-- FIM DOS MÓDULOS DE IA -->
 
         <div class="dash-kpis">
           <div class="dash-kpi">
@@ -1392,7 +1396,7 @@
         <div class="footnote">O status "Crítico" é calculado automaticamente como o dobro do prazo definido para cada tipo.</div>
       </div>
 
-      <div class="card" style="max-width:520px; margin-top:16px;">
+      <div class="card" style="max-width:520px; margin-top:16px; display:none;" id="blocoIAConfiguracoes">
         <div class="card-head"><h2>Integração com IA</h2></div>
         <div style="display:flex; flex-direction:column; gap:14px;">
           <div>
@@ -1736,7 +1740,7 @@
       </div>
     </div>
     <div class="modal-body" id="histBody" style="padding:16px 20px;"></div>
-    <div style="padding:0 20px 16px;">
+    <div style="padding:0 20px 16px; display:none;" id="blocoIAHistorico">
       <button class="btn btn-ghost btn-sm" id="btnSugestaoIA" onclick="gerarSugestaoResumoIA()">✨ Sugerir resumo com IA</button>
       <div id="sugestaoIABox" style="display:none; margin-top:10px; background:var(--bg-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px;">
         <div id="sugestaoIATexto" style="font-size:12px; color:var(--text-dim); line-height:1.6; margin-bottom:8px; white-space:pre-wrap;"></div>
