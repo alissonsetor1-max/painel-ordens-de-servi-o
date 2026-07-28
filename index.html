@@ -807,6 +807,25 @@
           </div>
         </div>
 
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-head">
+            <h2>Detecção de Padrões de Atraso</h2>
+            <button class="btn btn-ghost btn-sm" id="btnPadroesIA" onclick="gerarPadroesAtrasoIA()">🔍 Analisar padrões</button>
+          </div>
+          <div id="padroesIAConteudo" style="font-size:12.5px; color:var(--text-dim); line-height:1.7;">
+            Identifica se os atrasos estão concentrados em algum técnico ou tipo de serviço específico.
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-head"><h2>Pergunte sobre suas ordens</h2></div>
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <input type="text" id="perguntaIAInput" placeholder='Ex: quais ordens do técnico Wesley estão atrasadas?' style="flex:1; padding:9px 12px;" onkeydown="if(event.key==='Enter'){ perguntarIA(); }">
+            <button class="btn btn-primary btn-sm" id="btnPerguntaIA" onclick="perguntarIA()">Perguntar</button>
+          </div>
+          <div id="perguntaIAResposta" style="font-size:12.5px; color:var(--text-dim); line-height:1.7; white-space:pre-wrap;"></div>
+        </div>
+
         <div class="dash-kpis">
           <div class="dash-kpi">
             <div class="ic" style="background:var(--blue-bg); color:var(--blue);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h6"/></svg></div>
@@ -1717,6 +1736,13 @@
       </div>
     </div>
     <div class="modal-body" id="histBody" style="padding:16px 20px;"></div>
+    <div style="padding:0 20px 16px;">
+      <button class="btn btn-ghost btn-sm" id="btnSugestaoIA" onclick="gerarSugestaoResumoIA()">✨ Sugerir resumo com IA</button>
+      <div id="sugestaoIABox" style="display:none; margin-top:10px; background:var(--bg-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px;">
+        <div id="sugestaoIATexto" style="font-size:12px; color:var(--text-dim); line-height:1.6; margin-bottom:8px; white-space:pre-wrap;"></div>
+        <button class="btn btn-primary btn-sm" onclick="salvarSugestaoComoObs()">Salvar como observação</button>
+      </div>
+    </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="document.getElementById('histModal').classList.remove('show')">Fechar</button>
     </div>
@@ -2295,12 +2321,15 @@ async function verHistorico(ordemId, placa){
   document.getElementById('histTitle').textContent = `Histórico — ${placa}`;
   document.getElementById('histBody').innerHTML = '<div style="color:var(--text-mute); font-size:12.5px;">Carregando...</div>';
   document.getElementById('histModal').classList.add('show');
+  document.getElementById('sugestaoIABox').style.display = 'none';
+  ORDEM_HISTORICO_ATUAL = { id: ordemId, placa: placa, entradas: [] };
 
   const { data, error } = await sb.from('ordens_historico').select('*').eq('ordem_id', ordemId).order('criado_em', {ascending:false});
   if(error || !data || data.length === 0){
     document.getElementById('histBody').innerHTML = '<div style="color:var(--text-mute); font-size:12.5px; text-align:center; padding:20px 0;">Nenhum histórico registrado ainda para esta ordem.</div>';
     return;
   }
+  ORDEM_HISTORICO_ATUAL.entradas = data;
   document.getElementById('histBody').innerHTML = data.map(h=>{
     const dt = new Date(h.criado_em);
     const dataFmt = dt.toLocaleDateString('pt-BR') + ' às ' + dt.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
@@ -2353,6 +2382,60 @@ async function editarObsHistorico(histId){
   txt.style.display = 'inline';
   input.style.display = 'none';
   btn.textContent = '✏️';
+}
+
+var ORDEM_HISTORICO_ATUAL = null;
+
+async function gerarSugestaoResumoIA(){
+  if(!ORDEM_HISTORICO_ATUAL || ORDEM_HISTORICO_ATUAL.entradas.length === 0){
+    alert('Esta ordem ainda não tem histórico suficiente para gerar um resumo.');
+    return;
+  }
+  const btn = document.getElementById('btnSugestaoIA');
+  const box = document.getElementById('sugestaoIABox');
+  const txtBox = document.getElementById('sugestaoIATexto');
+  btn.disabled = true;
+  btn.textContent = 'Gerando...';
+
+  try{
+    const contexto = ORDEM_HISTORICO_ATUAL.entradas.map(h=>({
+      data: h.criado_em,
+      acao: h.treat,
+      observacao: h.obs,
+      usuario: h.usuario
+    })).reverse(); // ordem cronológica
+
+    const prompt = `Esta é a linha do tempo de tratamento da ordem de serviço ${ORDEM_HISTORICO_ATUAL.placa}. Escreva um resumo objetivo (2-4 frases, português do Brasil, tom profissional) do que aconteceu do início ao fim, adequado para registrar como observação final de encerramento. Não invente fatos que não estão na linha do tempo.`;
+
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/assistente-ia`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, contexto })
+    });
+    const result = await resp.json();
+
+    if(!resp.ok || result.error){
+      alert('Não foi possível gerar a sugestão: ' + (result.error || 'erro desconhecido'));
+      return;
+    }
+
+    txtBox.textContent = result.resposta || '';
+    box.style.display = 'block';
+  }catch(e){
+    alert('Erro de conexão: ' + e.message);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '✨ Sugerir resumo com IA';
+  }
+}
+
+async function salvarSugestaoComoObs(){
+  const texto = document.getElementById('sugestaoIATexto').textContent.trim();
+  if(!texto || !ORDEM_HISTORICO_ATUAL) return;
+  await registrarHistoricoObs(ORDEM_HISTORICO_ATUAL.id, texto);
+  registrarAuditoria('Observação gerada por IA', `Resumo sugerido pela IA salvo na ordem ${ORDEM_HISTORICO_ATUAL.placa}`);
+  document.getElementById('sugestaoIABox').style.display = 'none';
+  verHistorico(ORDEM_HISTORICO_ATUAL.id, ORDEM_HISTORICO_ATUAL.placa);
 }
 
 /* =========================================================
@@ -2668,6 +2751,132 @@ function montarContextoResumoIA(){
     top_5_tecnicos_por_volume: rankingTecnicos,
     exemplos_de_ordens_atrasadas: exemplosAtrasadas
   };
+}
+
+async function gerarPadroesAtrasoIA(){
+  const btn = document.getElementById('btnPadroesIA');
+  const box = document.getElementById('padroesIAConteudo');
+  if(ORDENS.length === 0){
+    box.textContent = 'Nenhuma ordem carregada ainda — importe o Excel primeiro.';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Analisando...';
+  box.style.color = 'var(--text-dim)';
+  box.textContent = 'Cruzando dados de atraso por técnico e tipo de serviço...';
+
+  try{
+    const ativas = ORDENS.filter(o => (o.statusOs||'Aberta') !== 'Concluída');
+    const porTecnico = {};
+    const porTipo = {};
+
+    ativas.forEach(o=>{
+      const dt = new Date(o.aberturaISO+'T00:00:00');
+      const dias = diasEmAberto(dt);
+      const prazo = PRAZOS_POR_TIPO[o.tipo] || 10;
+      const atrasada = dias > prazo;
+
+      if(!porTecnico[o.tecnico]) porTecnico[o.tecnico] = { total: 0, atrasadas: 0 };
+      porTecnico[o.tecnico].total++;
+      if(atrasada) porTecnico[o.tecnico].atrasadas++;
+
+      if(!porTipo[o.tipo]) porTipo[o.tipo] = { total: 0, atrasadas: 0 };
+      porTipo[o.tipo].total++;
+      if(atrasada) porTipo[o.tipo].atrasadas++;
+    });
+
+    const resumoTecnicos = Object.entries(porTecnico)
+      .filter(([,v])=>v.total >= 3) // ignora técnicos com poucas ordens, não é padrão estatisticamente relevante
+      .map(([nome,v])=>`${nome}: ${v.atrasadas}/${v.total} ordens atrasadas (${Math.round(v.atrasadas/v.total*100)}%)`)
+      .sort((a,b)=> b.localeCompare(a));
+
+    const resumoTipos = Object.entries(porTipo)
+      .map(([tipo,v])=>`${tipo}: ${v.atrasadas}/${v.total} ordens atrasadas (${Math.round(v.atrasadas/v.total*100)}%)`);
+
+    const contexto = { atraso_por_tecnico: resumoTecnicos, atraso_por_tipo_de_servico: resumoTipos };
+    const prompt = 'Com base nos percentuais de atraso por técnico e por tipo de serviço fornecidos, identifique em até 4 frases (português do Brasil, tom direto) se existe concentração de atraso em algum técnico ou tipo específico que mereça atenção da gestão. Se os dados estiverem equilibrados, diga isso claramente ao invés de forçar um padrão. Não invente números.';
+
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/assistente-ia`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, contexto })
+    });
+    const result = await resp.json();
+
+    if(!resp.ok || result.error){
+      box.style.color = 'var(--red)';
+      box.textContent = 'Não foi possível analisar: ' + (result.error || 'erro desconhecido');
+      return;
+    }
+
+    box.style.color = 'var(--text-dim)';
+    box.textContent = result.resposta || 'A IA não retornou conteúdo.';
+  }catch(e){
+    box.style.color = 'var(--red)';
+    box.textContent = 'Erro de conexão: ' + e.message;
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '🔍 Analisar padrões';
+  }
+}
+
+async function perguntarIA(){
+  const input = document.getElementById('perguntaIAInput');
+  const pergunta = input.value.trim();
+  const box = document.getElementById('perguntaIAResposta');
+  const btn = document.getElementById('btnPerguntaIA');
+
+  if(!pergunta) return;
+  if(ORDENS.length === 0){
+    box.style.color = 'var(--red)';
+    box.textContent = 'Nenhuma ordem carregada ainda — importe o Excel primeiro.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '...';
+  box.style.color = 'var(--text-dim)';
+  box.textContent = 'Consultando...';
+
+  try{
+    // envia uma lista enxuta das ordens (só os campos necessários) para a IA poder responder perguntas específicas
+    const contexto = ORDENS.map(o=>{
+      const dt = new Date(o.aberturaISO+'T00:00:00');
+      return {
+        placa: o.placa,
+        tecnico: o.tecnico,
+        tipo: o.tipo,
+        associado: o.associado,
+        abertura: o.aberturaISO,
+        dias_em_aberto: diasEmAberto(dt),
+        status: o.statusOs || 'Aberta'
+      };
+    });
+
+    const prompt = `Responda à pergunta do usuário usando apenas os dados de ordens de serviço fornecidos no contexto. Seja direto e cite placas/técnicos/quantidades específicas quando fizer sentido. Se a pergunta não puder ser respondida com os dados disponíveis, diga isso claramente. Pergunta do usuário: "${pergunta}"`;
+
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/assistente-ia`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, contexto })
+    });
+    const result = await resp.json();
+
+    if(!resp.ok || result.error){
+      box.style.color = 'var(--red)';
+      box.textContent = 'Não foi possível responder: ' + (result.error || 'erro desconhecido');
+      return;
+    }
+
+    box.style.color = 'var(--text-dim)';
+    box.textContent = result.resposta || 'A IA não retornou conteúdo.';
+  }catch(e){
+    box.style.color = 'var(--red)';
+    box.textContent = 'Erro de conexão: ' + e.message;
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Perguntar';
+  }
 }
 
 async function gerarResumoIA(){
