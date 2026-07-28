@@ -3287,10 +3287,10 @@ function handleFile(file){
     try{
       const data = new Uint8Array(e.target.result);
       const wb = XLSX.read(data, {type:'array'});
-      let novas = 0, atualizadas = 0, ignoradas = 0;
-      const existentesKey = new Set(ORDENS.map(o => o.placa+'|'+o.aberturaISO+'|'+o.tecnico));
+      let novas = 0, atualizadas = 0, ignoradas = 0, tecnicosAlterados = 0;
+      const existentesPorChave = new Map(ORDENS.map(o => [o.placa+'|'+o.aberturaISO, o]));
       const novasOrdens = [];
-      const chavesNaPlanilhaNova = new Set(); // todas as chaves que vieram nesta planilha
+      const chavesNaPlanilhaNova = new Set(); // todas as chaves (placa+data) que vieram nesta planilha
 
       wb.SheetNames.forEach(sheetName=>{
         const ws = wb.Sheets[sheetName];
@@ -3310,15 +3310,23 @@ function handleFile(file){
           const dt = parseDataBR(abertura);
           if(!dt) { ignoradas++; return; }
 
-          const tecnico = padronizarNomeProprio((instalador||'').toString().trim());
+          const tecnico = padronizarNomeProprio((instalador||'').toString().trim()) || 'Não informado';
           const tipo = tipoNormalizado(tipoServico);
           const associado = padronizarNomeProprio((cliente||'').toString().trim());
           const placaClean = String(placa).trim().toUpperCase();
           const aberturaISO = paraISOLocal(dt);
-          const key = placaClean+'|'+aberturaISO+'|'+tecnico;
+          const key = placaClean+'|'+aberturaISO; // identidade da ordem = placa + data de abertura (técnico pode mudar sem duplicar)
           chavesNaPlanilhaNova.add(key);
 
-          if(existentesKey.has(key)){
+          const existente = existentesPorChave.get(key);
+          if(existente){
+            if(existente.tecnico !== tecnico){
+              const tecnicoAnterior = existente.tecnico;
+              existente.tecnico = tecnico;
+              updateOrdemRemote(existente.id, { tecnico: tecnico });
+              registrarAuditoria('Técnico atualizado via importação', `Ordem ${placaClean}: técnico alterado de "${tecnicoAnterior}" para "${tecnico}" (conforme planilha)`);
+              tecnicosAlterados++;
+            }
             atualizadas++;
             return; // mantém tratamento/observação já existentes
           }
@@ -3326,7 +3334,7 @@ function handleFile(file){
           const novaOrdem = {
             id: key.replace(/[^a-zA-Z0-9]/g,'_'),
             placa: placaClean,
-            tecnico: tecnico || 'Não informado',
+            tecnico: tecnico,
             tipo: tipo,
             associado: associado || 'Não informado',
             aberturaISO: aberturaISO,
@@ -3336,7 +3344,7 @@ function handleFile(file){
           };
           ORDENS.push(novaOrdem);
           novasOrdens.push(novaOrdem);
-          existentesKey.add(key);
+          existentesPorChave.set(key, novaOrdem);
           novas++;
         });
       });
@@ -3345,7 +3353,7 @@ function handleFile(file){
       // (a planilha semanal só traz o que ainda está aberto no sistema de origem;
       //  se uma ordem não aparece mais, é porque foi concluída)
       const ordensParaConcluir = ORDENS.filter(o=>{
-        const key = o.placa+'|'+o.aberturaISO+'|'+o.tecnico;
+        const key = o.placa+'|'+o.aberturaISO;
         const statusAtual = o.statusOs || 'Aberta';
         const aindaAtiva = statusAtual === 'Aberta' || statusAtual === 'Em Andamento';
         return aindaAtiva && !chavesNaPlanilhaNova.has(key) && !o.id.startsWith('manual_');
@@ -3407,6 +3415,7 @@ function handleFile(file){
         mostrarResultadoImportacao(true,
           `<b>${novas}</b> ordem(ns) nova(s) adicionada(s)<br>` +
           `<b>${atualizadas}</b> ordem(ns) já existente(s) mantida(s) (tratamento preservado)<br>` +
+          (tecnicosAlterados ? `<b>${tecnicosAlterados}</b> ordem(ns) com técnico atualizado conforme a planilha<br>` : '') +
           `<b>${ordensParaConcluir.length}</b> ordem(ns) marcada(s) como <b>Concluída</b> automaticamente (não vieram nesta planilha)` +
           (ignoradas ? `<br><b>${ignoradas}</b> linha(s) ignorada(s) por data inválida` : '') +
           `<br><br>Base total agora: <b>${ORDENS.length}</b> ordens.` +
@@ -3484,7 +3493,7 @@ function handleFileAcessos(file){
       const data = new Uint8Array(e.target.result);
       const wb = XLSX.read(data, {type:'array'});
       let novas = 0, jaExistiamMarcadas = 0, ignoradas = 0;
-      const existentesMap = new Map(ORDENS.map(o => [o.placa+'|'+o.aberturaISO+'|'+o.tecnico, o]));
+      const existentesMap = new Map(ORDENS.map(o => [o.placa+'|'+o.aberturaISO, o]));
       const novasOrdens = [];
       const atualizacoesRemotas = [];
 
@@ -3511,10 +3520,14 @@ function handleFileAcessos(file){
           const associado = padronizarNomeProprio((cliente||'').toString().trim());
           const placaClean = String(placa).trim().toUpperCase();
           const aberturaISO = paraISOLocal(dt);
-          const key = placaClean+'|'+aberturaISO+'|'+tecnico;
+          const key = placaClean+'|'+aberturaISO;
 
           const existente = existentesMap.get(key);
           if(existente){
+            if(existente.tecnico !== tecnico && tecnico){
+              existente.tecnico = tecnico;
+              updateOrdemRemote(existente.id, { tecnico: tecnico });
+            }
             if(!existente.filaAcesso){
               existente.filaAcesso = true;
               atualizacoesRemotas.push(existente.id);
@@ -4467,7 +4480,9 @@ function applyFilters(){
     return `<tr class="row-treat t-${treatVal} ${o.critica?'critico':''}">
       <td><input type="checkbox" class="row-check" data-id="${o.id}" onchange="atualizarSelecao()"></td>
       <td><span class="placa-chip">${o.placa}</span></td>
-      <td>${o.tecnico}</td>
+      <td class="tecnico-cell" data-id="${o.id}" onclick="editarTecnico(this,'${o.id}')" title="Clique para trocar o técnico" style="cursor:pointer;">
+        <span class="tecnico-nome">${o.tecnico}</span> <span style="opacity:.5; font-size:10px;">✏️</span>
+      </td>
       <td>${o.tipo}</td>
       <td>
         <select class="status-select" data-id="${o.id}" onchange="updateStatusOs(this)">
@@ -4508,6 +4523,46 @@ function applyFilters(){
     </tr>`;
   }).join('');
   atualizarSelecao();
+}
+
+function editarTecnico(td, ordemId){
+  const ordem = ORDENS.find(o=>o.id===ordemId);
+  if(!ordem) return;
+  if(td.querySelector('input')) return; // já está em modo de edição
+
+  const tecnicosUnicos = [...new Set(ORDENS.map(o=>o.tecnico).filter(Boolean))].sort();
+  const datalistId = 'listaTecnicos';
+  if(!document.getElementById(datalistId)){
+    const dl = document.createElement('datalist');
+    dl.id = datalistId;
+    dl.innerHTML = tecnicosUnicos.map(t=>`<option value="${t.replace(/"/g,'&quot;')}">`).join('');
+    document.body.appendChild(dl);
+  }
+
+  const tecnicoAtual = ordem.tecnico;
+  td.innerHTML = `<input type="text" class="tecnico-edit-input" list="${datalistId}" value="${tecnicoAtual.replace(/"/g,'&quot;')}" style="width:150px; padding:5px 8px; font-size:12px;" autocomplete="off">`;
+  const input = td.querySelector('input');
+  input.focus();
+  input.select();
+
+  const salvar = async ()=>{
+    const novoNome = padronizarNomeProprio(input.value.trim());
+    if(!novoNome || novoNome === tecnicoAtual){
+      td.innerHTML = `<span class="tecnico-nome">${tecnicoAtual}</span> <span style="opacity:.5; font-size:10px;">✏️</span>`;
+      return;
+    }
+    ordem.tecnico = novoNome;
+    await updateOrdemRemote(ordemId, { tecnico: novoNome });
+    registrarAuditoria('Técnico alterado', `Ordem ${ordem.placa}: técnico alterado de "${tecnicoAtual}" para "${novoNome}"`);
+    td.innerHTML = `<span class="tecnico-nome">${novoNome}</span> <span style="opacity:.5; font-size:10px;">✏️</span>`;
+    renderAll();
+  };
+
+  input.addEventListener('blur', salvar);
+  input.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); input.blur(); }
+    if(e.key === 'Escape'){ input.removeEventListener('blur', salvar); td.innerHTML = `<span class="tecnico-nome">${tecnicoAtual}</span> <span style="opacity:.5; font-size:10px;">✏️</span>`; }
+  });
 }
 
 function updateTreat(sel){
