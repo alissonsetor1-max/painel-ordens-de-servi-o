@@ -797,6 +797,16 @@
       </div>
 
       <div id="dashContent" style="display:none;">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-head">
+            <h2 id="iaResumoTitulo">Resumo Inteligente</h2>
+            <button class="btn btn-ghost btn-sm" id="btnGerarResumoIA" onclick="gerarResumoIA()">✨ Gerar resumo com IA</button>
+          </div>
+          <div id="iaResumoConteudo" style="font-size:12.5px; color:var(--text-dim); line-height:1.7;">
+            Clique em "Gerar resumo com IA" para uma análise automática das ordens de serviço de hoje.
+          </div>
+        </div>
+
         <div class="dash-kpis">
           <div class="dash-kpi">
             <div class="ic" style="background:var(--blue-bg); color:var(--blue);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><path d="M9 12h6M9 16h6"/></svg></div>
@@ -2574,6 +2584,8 @@ async function carregarNomeIA(){
     const { data } = await sb.from('configuracoes_gerais').select('valor').eq('chave', 'ia_nome').single();
     const campo = document.getElementById('iaNome');
     if(campo && data && data.valor) campo.value = data.valor;
+    const titulo = document.getElementById('iaResumoTitulo');
+    if(titulo && data && data.valor) titulo.textContent = `Resumo Inteligente — ${data.valor}`;
   }catch(e){ /* usa vazio, sem integração nomeada ainda */ }
 }
 
@@ -2619,6 +2631,82 @@ async function testarConexaoIA(){
     dot.style.background = 'var(--red)';
     txt.style.color = 'var(--red)';
     txt.textContent = 'Erro de conexão: ' + e.message;
+  }
+}
+
+function montarContextoResumoIA(){
+  const ativas = ORDENS.filter(o => (o.statusOs||'Aberta') !== 'Concluída');
+  const porTipo = {};
+  const porTecnico = {};
+  let atrasadas = 0;
+  const exemplosAtrasadas = [];
+
+  ativas.forEach(o=>{
+    porTipo[o.tipo] = (porTipo[o.tipo]||0) + 1;
+    porTecnico[o.tecnico] = (porTecnico[o.tecnico]||0) + 1;
+    const dt = new Date(o.aberturaISO+'T00:00:00');
+    const dias = diasEmAberto(dt);
+    const prazo = PRAZOS_POR_TIPO[o.tipo] || 10;
+    if(dias > prazo){
+      atrasadas++;
+      if(exemplosAtrasadas.length < 8){
+        exemplosAtrasadas.push(`${o.placa} (${o.tipo}, técnico ${o.tecnico}, ${dias} dias em aberto)`);
+      }
+    }
+  });
+
+  const rankingTecnicos = Object.entries(porTecnico)
+    .sort((a,b)=>b[1]-a[1]).slice(0,5)
+    .map(([nome,qtd])=>`${nome}: ${qtd} ordens ativas`);
+
+  return {
+    total_ordens: ORDENS.length,
+    ordens_ativas: ativas.length,
+    ordens_concluidas: ORDENS.length - ativas.length,
+    ordens_em_atraso: atrasadas,
+    distribuicao_por_tipo: porTipo,
+    top_5_tecnicos_por_volume: rankingTecnicos,
+    exemplos_de_ordens_atrasadas: exemplosAtrasadas
+  };
+}
+
+async function gerarResumoIA(){
+  const btn = document.getElementById('btnGerarResumoIA');
+  const box = document.getElementById('iaResumoConteudo');
+  if(ORDENS.length === 0){
+    box.textContent = 'Nenhuma ordem carregada ainda — importe o Excel primeiro.';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Gerando...';
+  box.style.color = 'var(--text-dim)';
+  box.textContent = 'Analisando as ordens de serviço...';
+
+  try{
+    const contexto = montarContextoResumoIA();
+    const prompt = 'Você é um assistente de gestão de operações de campo. Com base nos dados de ordens de serviço fornecidos, escreva um resumo executivo curto (máximo 5 frases, em português do Brasil, tom direto e profissional, sem saudação) destacando: volume total, situação de atrasos, e qualquer ponto de atenção relevante (ex: técnico sobrecarregado, tipo de serviço concentrando atrasos). Não invente números que não estão nos dados.';
+
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/assistente-ia`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, contexto })
+    });
+    const result = await resp.json();
+
+    if(!resp.ok || result.error){
+      box.style.color = 'var(--red)';
+      box.textContent = 'Não foi possível gerar o resumo: ' + (result.error || 'erro desconhecido');
+      return;
+    }
+
+    box.style.color = 'var(--text-dim)';
+    box.textContent = result.resposta || 'A IA não retornou conteúdo.';
+  }catch(e){
+    box.style.color = 'var(--red)';
+    box.textContent = 'Erro de conexão: ' + e.message;
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '✨ Gerar resumo com IA';
   }
 }
 
