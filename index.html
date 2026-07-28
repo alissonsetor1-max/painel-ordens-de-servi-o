@@ -1875,6 +1875,34 @@ function atualizarBadgeUsuario(){
   document.getElementById('userAvatar').textContent = iniciais || '—';
 }
 
+function localizarColunasRelatorio(rows){
+  // Acha a linha de cabeçalho real (contém "Placa" na coluna A) e mapeia
+  // os nomes das colunas que importam para o índice correto naquela planilha.
+  // Isso evita quebrar a importação quando o relatório de origem muda a ordem/quantidade de colunas.
+  const linhaCabecalho = rows.find(r => String(r[0]||'').trim() === 'Placa');
+  const defaults = { placa:0, tipo:3, instalador:4, cliente:5, abertura:8 };
+  if(!linhaCabecalho) return defaults;
+
+  const norm = s => String(s||'').trim().toLowerCase();
+  const idx = {};
+  linhaCabecalho.forEach((val, i)=>{
+    const v = norm(val);
+    if(v === 'placa') idx.placa = i;
+    else if(v === 'tipo de serviço') idx.tipo = i;
+    else if(v === 'instalador') idx.instalador = i;
+    else if(v === 'cliente') idx.cliente = i;
+    else if(v === 'abertura') idx.abertura = i;
+  });
+
+  return {
+    placa: idx.placa ?? defaults.placa,
+    tipo: idx.tipo ?? defaults.tipo,
+    instalador: idx.instalador ?? defaults.instalador,
+    cliente: idx.cliente ?? defaults.cliente,
+    abertura: idx.abertura ?? defaults.abertura
+  };
+}
+
 function parseDataBR(str){
   // "20-07-2026 08:52:35" -> Date, mantendo só a data
   if(!str) return null;
@@ -2893,16 +2921,17 @@ function handleFile(file){
       wb.SheetNames.forEach(sheetName=>{
         const ws = wb.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''});
+        const colIdx = localizarColunasRelatorio(rows);
         rows.forEach(row=>{
-          const placa = row[0];
+          const placa = row[colIdx.placa];
           if(!placa || String(placa).trim()==='' ) return;
           if(String(placa).trim().toLowerCase().startsWith('técnico')) return;
           if(String(placa).trim() === 'Placa') return; // linha de cabeçalho repetida
 
-          const tipoServico = row[3];
-          const instalador = row[4];
-          const cliente = row[5];
-          const abertura = row[6];
+          const tipoServico = row[colIdx.tipo];
+          const instalador = row[colIdx.instalador];
+          const cliente = row[colIdx.cliente];
+          const abertura = row[colIdx.abertura];
 
           const dt = parseDataBR(abertura);
           if(!dt) { ignoradas++; return; }
@@ -3088,16 +3117,17 @@ function handleFileAcessos(file){
       wb.SheetNames.forEach(sheetName=>{
         const ws = wb.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''});
+        const colIdx = localizarColunasRelatorio(rows);
         rows.forEach(row=>{
-          const placa = row[0];
+          const placa = row[colIdx.placa];
           if(!placa || String(placa).trim()==='' ) return;
           if(String(placa).trim().toLowerCase().startsWith('técnico')) return;
           if(String(placa).trim() === 'Placa') return;
 
-          const tipoServico = row[3];
-          const instalador = row[4];
-          const cliente = row[5];
-          const abertura = row[6];
+          const tipoServico = row[colIdx.tipo];
+          const instalador = row[colIdx.instalador];
+          const cliente = row[colIdx.cliente];
+          const abertura = row[colIdx.abertura];
 
           const dt = parseDataBR(abertura);
           if(!dt) { ignoradas++; return; }
