@@ -4669,8 +4669,13 @@ function checkOverdueAndAlert(force){
   const list = computeStats();
   const atrasadas = list.filter(o=>o.atrasada).sort((a,b)=>b.dias-a.dias);
   if(atrasadas.length === 0) return;
+
+  const hojeISO = paraISOLocal(new Date());
+  const dispensadoEm = localStorage.getItem('popupAtrasoDispensadoEm');
+
   if(!force){
     if(jaAlertouOrdensView) return;
+    if(dispensadoEm === hojeISO) return; // já foi fechado hoje, não mostra de novo até amanhã
     jaAlertouOrdensView = true;
   }
 
@@ -4688,7 +4693,10 @@ function checkOverdueAndAlert(force){
 
   document.getElementById('alertModal').classList.add('show');
 }
-function closeModal(){ document.getElementById('alertModal').classList.remove('show'); }
+function closeModal(){
+  document.getElementById('alertModal').classList.remove('show');
+  localStorage.setItem('popupAtrasoDispensadoEm', paraISOLocal(new Date()));
+}
 
 /* =========================================================
    EXPORTAÇÃO CSV
