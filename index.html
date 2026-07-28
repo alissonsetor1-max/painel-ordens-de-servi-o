@@ -4481,7 +4481,7 @@ function applyFilters(){
       <td><input type="checkbox" class="row-check" data-id="${o.id}" onchange="atualizarSelecao()"></td>
       <td><span class="placa-chip">${o.placa}</span></td>
       <td class="tecnico-cell" data-id="${o.id}" onclick="editarTecnico(this,'${o.id}')" title="Clique para trocar o técnico" style="cursor:pointer;">
-        <span class="tecnico-nome">${o.tecnico}</span> <span style="opacity:.5; font-size:10px;">✏️</span>
+        <span style="display:inline-flex; align-items:center; gap:5px;"><span class="tecnico-nome">${o.tecnico}</span><span style="opacity:.5; font-size:10px; flex-shrink:0;">✏️</span></span>
       </td>
       <td>${o.tipo}</td>
       <td>
@@ -4548,20 +4548,20 @@ function editarTecnico(td, ordemId){
   const salvar = async ()=>{
     const novoNome = padronizarNomeProprio(input.value.trim());
     if(!novoNome || novoNome === tecnicoAtual){
-      td.innerHTML = `<span class="tecnico-nome">${tecnicoAtual}</span> <span style="opacity:.5; font-size:10px;">✏️</span>`;
+      td.innerHTML = `<span style="display:inline-flex; align-items:center; gap:5px;"><span class="tecnico-nome">${tecnicoAtual}</span><span style="opacity:.5; font-size:10px; flex-shrink:0;">✏️</span></span>`;
       return;
     }
     ordem.tecnico = novoNome;
     await updateOrdemRemote(ordemId, { tecnico: novoNome });
     registrarAuditoria('Técnico alterado', `Ordem ${ordem.placa}: técnico alterado de "${tecnicoAtual}" para "${novoNome}"`);
-    td.innerHTML = `<span class="tecnico-nome">${novoNome}</span> <span style="opacity:.5; font-size:10px;">✏️</span>`;
+    td.innerHTML = `<span style="display:inline-flex; align-items:center; gap:5px;"><span class="tecnico-nome">${novoNome}</span><span style="opacity:.5; font-size:10px; flex-shrink:0;">✏️</span></span>`;
     renderAll();
   };
 
   input.addEventListener('blur', salvar);
   input.addEventListener('keydown', (e)=>{
     if(e.key === 'Enter'){ e.preventDefault(); input.blur(); }
-    if(e.key === 'Escape'){ input.removeEventListener('blur', salvar); td.innerHTML = `<span class="tecnico-nome">${tecnicoAtual}</span> <span style="opacity:.5; font-size:10px;">✏️</span>`; }
+    if(e.key === 'Escape'){ input.removeEventListener('blur', salvar); td.innerHTML = `<span style="display:inline-flex; align-items:center; gap:5px;"><span class="tecnico-nome">${tecnicoAtual}</span><span style="opacity:.5; font-size:10px; flex-shrink:0;">✏️</span></span>`; }
   });
 }
 
