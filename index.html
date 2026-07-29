@@ -1464,7 +1464,7 @@
       </div>
       <div>
         <label class="form-label">Senha</label>
-        <input type="password" id="loginSenha" placeholder="••••••••" style="width:100%; padding:10px 12px;" onkeydown="if(event.key==='Enter'){ entrarComSenha(); }">
+        <input type="password" id="loginSenha" placeholder="••••••••" style="width:100%; padding:10px 12px;" autocomplete="off" data-lpignore="true" onkeydown="if(event.key==='Enter'){ entrarComSenha(); }">
       </div>
       <div id="loginErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700; margin-top:10px;"></div>
       <div style="margin-top:14px; text-align:center; font-size:11.5px; color:var(--text-mute);">
@@ -1507,7 +1507,7 @@
       </div>
       <div>
         <label class="form-label">Senha inicial</label>
-        <input type="password" id="cadSenha" placeholder="Mínimo 6 caracteres" style="width:100%; padding:10px 12px;">
+        <input type="password" id="cadSenha" placeholder="Mínimo 6 caracteres" style="width:100%; padding:10px 12px;" autocomplete="new-password" data-lpignore="true">
       </div>
       <div id="cadastroErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700; margin-top:10px;"></div>
     </div>
@@ -1650,7 +1650,7 @@
     </div>
     <div class="modal-body" style="padding:18px 20px;">
       <label class="form-label">Nova senha</label>
-      <input type="password" id="novaSenhaInput" placeholder="Mínimo 6 caracteres" style="width:100%; padding:10px 12px;">
+      <input type="password" id="novaSenhaInput" placeholder="Mínimo 6 caracteres" style="width:100%; padding:10px 12px;" autocomplete="new-password" data-lpignore="true">
       <div id="redefinirSenhaErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700; margin-top:10px;"></div>
     </div>
     <div class="modal-foot">
@@ -2352,7 +2352,7 @@ async function verHistorico(ordemId, placa){
         <div style="flex:1; min-width:0;">
           <b>${h.treat||''}</b>
           <span id="histObsTxt-${h.id}">${h.obs ? ` · ${h.obs}` : ''}</span>
-          <input type="text" id="histObsInput-${h.id}" value="${(h.obs||'').replace(/"/g,'&quot;')}" style="display:none; width:100%; margin-top:4px; font-size:12px; padding:5px 8px;" onkeydown="if(event.key==='Enter'){ editarObsHistorico(${h.id}); }">
+          <input type="text" id="histObsInput-${h.id}" value="${(h.obs||'').replace(/"/g,'&quot;')}" style="display:none; width:100%; margin-top:4px; font-size:12px; padding:5px 8px;" autocomplete="off" name="histobs-${h.id}" data-lpignore="true" data-form-type="other" onkeydown="if(event.key==='Enter'){ editarObsHistorico(${h.id}); }">
         </div>
         <button class="hist-edit-btn" id="histEditBtn-${h.id}" onclick="editarObsHistorico(${h.id})" title="Editar observação">✏️</button>
       </div>
