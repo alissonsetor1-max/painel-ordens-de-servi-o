@@ -392,6 +392,11 @@
   .marca-pessoal-ic:hover{ border-color:var(--green); }
   .marca-pessoal-ic svg{ width:11px; height:11px; }
   .marca-pessoal-ic.ativa{ background:var(--green); border-color:var(--green); color:#fff; }
+
+  /* esconde a coluna/filtro de Tratamento para logins de Técnico (aplicarRestricoesDePapel adiciona a classe no body) */
+  body.papel-tecnico .col-tratamento{ display:none; }
+  body.papel-tecnico td:has(.treat-select){ display:none; }
+  body.papel-tecnico #fTreat{ display:none; }
   .hist-btn:hover{ text-decoration:underline; }
   .hist-entry{ padding:10px 12px; border-left:2px solid var(--line); margin-left:6px; position:relative; }
   .hist-entry::before{ content:''; position:absolute; left:-5px; top:14px; width:8px; height:8px; border-radius:50%; background:var(--blue); }
@@ -2011,6 +2016,7 @@ function aplicarRestricoesDePapel(){
   document.querySelectorAll('[data-admin-only]').forEach(el=>{
     el.style.display = ehTecnico ? 'none' : '';
   });
+  document.body.classList.toggle('papel-tecnico', ehTecnico);
   if(ehTecnico) goTo('ordens');
 }
 
