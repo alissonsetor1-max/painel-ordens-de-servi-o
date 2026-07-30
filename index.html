@@ -382,6 +382,16 @@
   .row-treat.critico{ border-left-width:3px; }
   .dias-num.super-crit{ color:#fff; background:var(--red); padding:1px 5px; border-radius:5px; font-size:10.5px; }
   .hist-btn{ background:none; border:none; color:#d4a34e; cursor:pointer; font-size:10px; font-weight:700; padding:2px 0; white-space:nowrap; }
+
+  /* marcação pessoal (só local, não sincroniza com ninguém) */
+  .marca-pessoal-ic{
+    width:17px; height:17px; border-radius:50%; border:1.5px solid var(--line); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    color:transparent; transition:all .15s ease;
+  }
+  .marca-pessoal-ic:hover{ border-color:var(--green); }
+  .marca-pessoal-ic svg{ width:11px; height:11px; }
+  .marca-pessoal-ic.ativa{ background:var(--green); border-color:var(--green); color:#fff; }
   .hist-btn:hover{ text-decoration:underline; }
   .hist-entry{ padding:10px 12px; border-left:2px solid var(--line); margin-left:6px; position:relative; }
   .hist-entry::before{ content:''; position:absolute; left:-5px; top:14px; width:8px; height:8px; border-radius:50%; background:var(--blue); }
@@ -999,7 +1009,7 @@
               <th id="thAbertura" style="cursor:pointer; user-select:none;" onclick="alternarOrdenacaoAbertura()">Abertura <span id="setaAbertura">▾</span></th>
               <th>Dias</th>
               <th>Status</th>
-              <th>Tratamento</th>
+              <th class="col-tratamento">Tratamento</th>
               <th>Últ. contato</th>
               <th>Observação</th>
               <th>Histórico</th>
@@ -1125,7 +1135,7 @@
               <th>Tipo</th>
               <th>Associado</th>
               <th>Abertura</th>
-              <th>Tratamento</th>
+              <th class="col-tratamento">Tratamento</th>
               <th>Observação</th>
               <th>Histórico</th>
               <th>Ação</th>
@@ -1206,7 +1216,7 @@
               <th>Associado</th>
               <th>Abertura</th>
               <th>Concluída em</th>
-              <th>Tratamento</th>
+              <th class="col-tratamento">Tratamento</th>
               <th>Observação</th>
               <th>Histórico</th>
               <th>Ação</th>
@@ -1283,7 +1293,7 @@
               <th>Associado</th>
               <th>Abertura</th>
               <th>Concluída em</th>
-              <th>Tratamento</th>
+              <th class="col-tratamento">Tratamento</th>
               <th>Observação</th>
               <th>Histórico</th>
               <th>Ação</th>
@@ -1823,6 +1833,28 @@ function prazoParaTipo(tipo){
 }
 let ORDENS = []; // { id, placa, tecnico, tipo, associado, aberturaISO, treat, obs, atualizadoPor, dataUltimoContato }
 
+// ---- ORGANIZAÇÃO PESSOAL (só local, no navegador — nunca é enviado ao Supabase,
+// nunca aparece em auditoria, nunca muda status/tratamento da OS para ninguém) ----
+let MARCAS_PESSOAIS = new Set();
+function chaveMarcasPessoais(){
+  return `prosulsat_marcas_pessoais_${USUARIO_ID_ATUAL || 'anon'}`;
+}
+function carregarMarcasPessoais(){
+  try{
+    const raw = localStorage.getItem(chaveMarcasPessoais());
+    MARCAS_PESSOAIS = new Set(raw ? JSON.parse(raw) : []);
+  }catch(e){ MARCAS_PESSOAIS = new Set(); }
+}
+function salvarMarcasPessoais(){
+  try{ localStorage.setItem(chaveMarcasPessoais(), JSON.stringify([...MARCAS_PESSOAIS])); }catch(e){}
+}
+function toggleMarcaPessoal(id){
+  if(MARCAS_PESSOAIS.has(id)) MARCAS_PESSOAIS.delete(id);
+  else MARCAS_PESSOAIS.add(id);
+  salvarMarcasPessoais();
+  applyFilters(); // só re-renderiza a tabela local; nenhuma escrita remota acontece aqui
+}
+
 const SUPABASE_URL = 'https://ywedgwmalzrdprpyorph.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3ZWRnd21hbHpyZHBycHlvcnBoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxMDY3MzIsImV4cCI6MjA5OTY4MjczMn0.8gU0FVbNl9R5KPjmYXsZrJW6ofnOuMqgCaj4sIKbZsE';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1969,6 +2001,7 @@ async function carregarPerfilLogado(userId){
   }
   atualizarBadgeUsuario();
   aplicarRestricoesDePapel();
+  carregarMarcasPessoais();
 }
 
 // Esconde da navegação as áreas administrativas quando o usuário logado é um Técnico —
@@ -4665,7 +4698,14 @@ function applyFilters(){
     else statusBadge = '<span class="badge ok">No prazo</span>';
     return `<tr class="row-treat t-${treatVal} ${o.critica?'critico':''}">
       <td><input type="checkbox" class="row-check" data-id="${o.id}" onchange="atualizarSelecao()"></td>
-      <td><span class="placa-chip">${o.placa}</span></td>
+      <td>
+        <span style="display:inline-flex; align-items:center; gap:6px;">
+          <span class="marca-pessoal-ic ${MARCAS_PESSOAIS.has(o.id)?'ativa':''}" title="Marcar como feito (só para sua organização — não afeta ninguém)" onclick="toggleMarcaPessoal('${o.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <span class="placa-chip">${o.placa}</span>
+        </span>
+      </td>
       <td class="tecnico-cell" data-id="${o.id}" onclick="editarTecnico(this,'${o.id}')" title="Clique para trocar o técnico" style="cursor:pointer;">
         <span style="display:inline-flex; align-items:center; gap:5px;"><span class="tecnico-nome">${o.tecnico}</span><span style="opacity:.5; font-size:10px; flex-shrink:0;">✏️</span></span>
       </td>
