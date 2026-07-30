@@ -672,9 +672,46 @@
 .aud-item-usuario{ font-weight:800; font-size:12.5px; color:var(--text); }
 .aud-item-acao{ font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:20px; }
 .aud-item-detalhe{ font-size:12px; color:var(--text-dim); line-height:1.5; }
+
+/* ===== IMPRESSÃO DE ORDEM DE SERVIÇO ===== */
+#printOSContainer{ display:none; }
+#printOSSheet{
+  width:190mm; margin:0 auto; background:#fff; color:#1c2430; font-family:'Segoe UI',Arial,sans-serif;
+}
+#printOSSheet .os-print-head{
+  display:flex; align-items:center; justify-content:space-between; padding-bottom:14px; border-bottom:3px solid #c9840f; margin-bottom:18px;
+}
+#printOSSheet .os-print-brand{ display:flex; align-items:center; gap:10px; }
+#printOSSheet .os-print-logo{ width:34px; height:34px; border-radius:8px; background:#232d3b; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; }
+#printOSSheet .os-print-brand-name{ font-size:16px; font-weight:800; color:#1c2430; letter-spacing:.3px; }
+#printOSSheet .os-print-brand-sub{ font-size:10px; color:#6b7789; letter-spacing:.5px; text-transform:uppercase; }
+#printOSSheet .os-print-numero{ text-align:right; }
+#printOSSheet .os-print-numero .lbl{ font-size:9.5px; color:#8b95a5; text-transform:uppercase; letter-spacing:.5px; }
+#printOSSheet .os-print-numero .val{ font-size:20px; font-weight:800; color:#c9840f; font-family:'Courier New',monospace; }
+#printOSSheet .os-print-section{ margin-bottom:16px; }
+#printOSSheet .os-print-section-title{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#c9840f; border-bottom:1px solid #e6e9ee; padding-bottom:5px; margin-bottom:10px; }
+#printOSSheet .os-print-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 22px; }
+#printOSSheet .os-print-field{ font-size:12.5px; }
+#printOSSheet .os-print-field .lbl{ display:block; font-size:9.5px; color:#8b95a5; text-transform:uppercase; letter-spacing:.4px; margin-bottom:2px; }
+#printOSSheet .os-print-field .val{ font-weight:700; color:#1c2430; }
+#printOSSheet .os-print-field.full{ grid-column:1 / -1; }
+#printOSSheet .os-print-obs{ min-height:60px; border:1px solid #e6e9ee; border-radius:6px; padding:10px; font-size:12px; color:#1c2430; }
+#printOSSheet .os-print-sign{ display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:34px; }
+#printOSSheet .os-print-sign-line{ border-top:1px solid #1c2430; padding-top:6px; text-align:center; font-size:11px; color:#4a5568; }
+#printOSSheet .os-print-foot{ margin-top:22px; padding-top:10px; border-top:1px solid #e6e9ee; display:flex; justify-content:space-between; font-size:9.5px; color:#8b95a5; }
+
+@media print{
+  body *{ visibility:hidden; }
+  #printOSContainer, #printOSContainer *{ visibility:visible; }
+  #printOSContainer{ display:block; position:absolute; top:0; left:0; width:100%; margin:0; padding:0; }
+  #printOSSheet{ width:100%; }
+  @page{ size:A4; margin:14mm; }
+}
 </style>
 </head>
 <body>
+
+<div id="printOSContainer"><div id="printOSSheet"></div></div>
 
 <div class="mobile-overlay" id="mobileOverlay" onclick="fecharMenuMobile()"></div>
 <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="abrirMenuMobile()">
@@ -725,20 +762,20 @@
     </div>
 
     <div class="nav-label">Geral</div>
-    <div class="nav-item active" data-view="dashboard"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span><span class="nav-txt">Dashboard</span></div>
+    <div class="nav-item active" data-view="dashboard" data-admin-only><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span><span class="nav-txt">Dashboard</span></div>
     <div class="nav-item" data-view="ordens"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l1.5-4.5A2 2 0 0 1 6.4 7h11.2a2 2 0 0 1 1.9 1.5L21 13"/><path d="M3 13h18v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5Z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg></span><span class="nav-txt">Ordens de Serviço</span><span class="nav-badge" id="navBadgeOrdens">0</span></div>
-    <div class="nav-item" data-view="ranking"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a1 1 0 0 0-1 1 5 5 0 0 0 4 4.9M17 6h3a1 1 0 0 1 1 1 5 5 0 0 1-4 4.9"/></svg></span><span class="nav-txt">Ranking de Técnicos</span></div>
+    <div class="nav-item" data-view="ranking" data-admin-only><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a1 1 0 0 0-1 1 5 5 0 0 0 4 4.9M17 6h3a1 1 0 0 1 1 1 5 5 0 0 1-4 4.9"/></svg></span><span class="nav-txt">Ranking de Técnicos</span></div>
     <div class="nav-item" data-view="acessos"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.5 12.5 20 3M20 3h-4M20 3v4M17 6l2 2"/></svg></span><span class="nav-txt">Acesso Enviado</span><span class="nav-badge" id="navBadgeAcessos" style="background:var(--teal-bg); color:var(--teal);">0</span></div>
     <div class="nav-item" data-view="concluidas"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg></span><span class="nav-txt">Concluídas</span><span class="nav-badge" id="navBadgeConcluidas" style="background:var(--green-bg); color:var(--green);">0</span></div>
     <div class="nav-item" data-view="retiradasConcluidas"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M12 4l8 8-8 8"/></svg></span><span class="nav-txt">Retiradas Concluídas</span><span class="nav-badge" id="navBadgeRetiradasConcluidas" style="background:var(--amber-bg); color:var(--amber);">0</span></div>
 
     <div class="nav-label">Dados</div>
-    <div class="nav-item" data-view="importar"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg></span><span class="nav-txt">Importar Excel</span></div>
+    <div class="nav-item" data-view="importar" data-admin-only><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg></span><span class="nav-txt">Importar Excel</span></div>
 
     <div class="nav-label">Sistema</div>
-    <div class="nav-item" data-view="usuarios"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="nav-txt">Usuários</span></div>
-    <div class="nav-item" data-view="configuracoes"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-txt">Configurações</span></div>
-    <div class="nav-item" data-view="auditoria"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span><span class="nav-txt">Auditoria</span></div>
+    <div class="nav-item" data-view="usuarios" data-admin-only><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="nav-txt">Usuários</span></div>
+    <div class="nav-item" data-view="configuracoes" data-admin-only><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-txt">Configurações</span></div>
+    <div class="nav-item" data-view="auditoria" data-admin-only><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span><span class="nav-txt">Auditoria</span></div>
 
     <div class="sidebar-foot-block">
       <div class="status-line">
@@ -1331,7 +1368,7 @@
           <div class="meta"><span id="usuariosMeta">Contas cadastradas no sistema</span></div>
         </div>
         <div style="display:flex; gap:8px;">
-          <button class="btn btn-primary btn-sm" onclick="document.getElementById('cadastroErro').style.display='none'; document.getElementById('novoUsuarioModal').classList.add('show')">➕ Novo usuário</button>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('cadastroErro').style.display='none'; document.getElementById('cadPapel').value='Supervisor'; document.getElementById('cadTecnicoVinculadoWrap').style.display='none'; document.getElementById('novoUsuarioModal').classList.add('show')">➕ Novo usuário</button>
           <button class="btn btn-ghost btn-sm" onclick="carregarUsuarios()">🔄 Atualizar lista</button>
         </div>
       </div>
@@ -1512,11 +1549,16 @@
       </div>
       <div style="margin-bottom:12px;">
         <label class="form-label">Perfil</label>
-        <select id="cadPapel" style="width:100%; padding:10px 12px;">
+        <select id="cadPapel" style="width:100%; padding:10px 12px;" onchange="alternarCampoTecnicoVinculado('cadPapel','cadTecnicoVinculadoWrap')">
           <option value="Supervisor">Supervisor</option>
           <option value="Técnico">Técnico</option>
           <option value="Gestor">Gestor</option>
         </select>
+      </div>
+      <div id="cadTecnicoVinculadoWrap" style="margin-bottom:12px; display:none;">
+        <label class="form-label">Técnico vinculado</label>
+        <select id="cadTecnicoVinculado" style="width:100%; padding:10px 12px;"></select>
+        <div style="font-size:10.5px; color:var(--text-mute); margin-top:4px;">Esta conta só verá as ordens deste técnico.</div>
       </div>
       <div style="margin-bottom:12px;">
         <label class="form-label">E-mail</label>
@@ -1620,11 +1662,16 @@
       </div>
       <div style="margin-bottom:12px;">
         <label class="form-label">Perfil</label>
-        <select id="editPapel" style="width:100%; padding:10px 12px;">
+        <select id="editPapel" style="width:100%; padding:10px 12px;" onchange="alternarCampoTecnicoVinculado('editPapel','editTecnicoVinculadoWrap')">
           <option value="Supervisor">Supervisor</option>
           <option value="Técnico">Técnico</option>
           <option value="Gestor">Gestor</option>
         </select>
+      </div>
+      <div id="editTecnicoVinculadoWrap" style="margin-bottom:12px; display:none;">
+        <label class="form-label">Técnico vinculado</label>
+        <select id="editTecnicoVinculado" style="width:100%; padding:10px 12px;"></select>
+        <div style="font-size:10.5px; color:var(--text-mute); margin-top:4px;">Esta conta só verá as ordens deste técnico.</div>
       </div>
       <div>
         <label class="form-label">E-mail</label>
@@ -1870,6 +1917,28 @@ async function entrarComSenha(){
   await refreshData();
 }
 
+function listaTecnicosConhecidos(){
+  const nomes = new Set(ORDENS.map(o=>o.tecnico).filter(Boolean));
+  return [...nomes].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+
+function popularSelectTecnicoVinculado(selectId, valorAtual){
+  const sel = document.getElementById(selectId);
+  const tecnicos = listaTecnicosConhecidos();
+  sel.innerHTML = tecnicos.map(t=>`<option value="${t}" ${t===valorAtual?'selected':''}>${t}</option>`).join('') || '<option value="">Nenhum técnico na base ainda</option>';
+}
+
+function alternarCampoTecnicoVinculado(papelSelectId, wrapId){
+  const papel = document.getElementById(papelSelectId).value;
+  const wrap = document.getElementById(wrapId);
+  const ehTecnico = papel === 'Técnico';
+  wrap.style.display = ehTecnico ? 'block' : 'none';
+  if(ehTecnico){
+    const selId = wrapId === 'cadTecnicoVinculadoWrap' ? 'cadTecnicoVinculado' : 'editTecnicoVinculado';
+    popularSelectTecnicoVinculado(selId);
+  }
+}
+
 async function criarConta(){
   const nome = document.getElementById('cadNome').value.trim();
   const papel = document.getElementById('cadPapel').value;
@@ -1888,12 +1957,18 @@ async function criarConta(){
     erroBox.style.display = 'block';
     return;
   }
+  const tecnicoVinculado = papel === 'Técnico' ? document.getElementById('cadTecnicoVinculado').value : null;
+  if(papel === 'Técnico' && !tecnicoVinculado){
+    erroBox.textContent = 'Selecione o técnico vinculado a esta conta.';
+    erroBox.style.display = 'block';
+    return;
+  }
 
   try{
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/criar-usuario`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: senha, nome, papel })
+      body: JSON.stringify({ email, password: senha, nome, papel, tecnicoVinculado })
     });
     const result = await resp.json();
     if(!resp.ok || result.error){
@@ -1906,7 +1981,8 @@ async function criarConta(){
     document.getElementById('cadNome').value = '';
     document.getElementById('cadEmail').value = '';
     document.getElementById('cadSenha').value = '';
-    registrarAuditoria('Conta criada', `Nova conta criada: ${nome} (${papel}) — ${email}`);
+    document.getElementById('cadTecnicoVinculadoWrap').style.display = 'none';
+    registrarAuditoria('Conta criada', `Nova conta criada: ${nome} (${papel}${tecnicoVinculado ? ' — '+tecnicoVinculado : ''}) — ${email}`);
     carregarUsuarios();
   }catch(e){
     erroBox.textContent = 'Erro de conexão: ' + e.message;
@@ -1918,11 +1994,22 @@ async function carregarPerfilLogado(userId){
   USUARIO_ID_ATUAL = userId;
   const { data, error } = await sb.from('perfis_usuarios').select('*').eq('id', userId).single();
   if(error || !data){
-    USUARIO_ATUAL = { nome: 'Usuário', papel: 'Técnico' };
+    USUARIO_ATUAL = { nome: 'Usuário', papel: 'Técnico', tecnicoVinculado: null };
   } else {
-    USUARIO_ATUAL = { nome: data.nome, papel: data.papel };
+    USUARIO_ATUAL = { nome: data.nome, papel: data.papel, tecnicoVinculado: data.tecnico_vinculado || null };
   }
   atualizarBadgeUsuario();
+  aplicarRestricoesDePapel();
+}
+
+// Esconde da navegação as áreas administrativas quando o usuário logado é um Técnico —
+// a segurança de fato é garantida pelas políticas RLS no Supabase; isto é só a camada visual.
+function aplicarRestricoesDePapel(){
+  const ehTecnico = USUARIO_ATUAL.papel === 'Técnico';
+  document.querySelectorAll('[data-admin-only]').forEach(el=>{
+    el.style.display = ehTecnico ? 'none' : '';
+  });
+  if(ehTecnico) goTo('ordens');
 }
 
 async function checarSessao(){
@@ -1957,7 +2044,7 @@ function localizarColunasRelatorio(rows){
   // os nomes das colunas que importam para o índice correto naquela planilha.
   // Isso evita quebrar a importação quando o relatório de origem muda a ordem/quantidade de colunas.
   const linhaCabecalho = rows.find(r => String(r[0]||'').trim() === 'Placa');
-  const defaults = { placa:0, tipo:3, instalador:4, cliente:5, abertura:8 };
+  const defaults = { placa:0, tipo:3, instalador:4, cliente:5, telefone:6, abertura:8, endereco:19, cep:20 };
   if(!linhaCabecalho) return defaults;
 
   const norm = s => String(s||'').trim().toLowerCase();
@@ -1968,7 +2055,10 @@ function localizarColunasRelatorio(rows){
     else if(v === 'tipo de serviço') idx.tipo = i;
     else if(v === 'instalador') idx.instalador = i;
     else if(v === 'cliente') idx.cliente = i;
+    else if(v === 'telefone do cliente') idx.telefone = i;
     else if(v === 'abertura') idx.abertura = i;
+    else if(v === 'endereço' || v === 'endereco') idx.endereco = i;
+    else if(v === 'cep') idx.cep = i;
   });
 
   return {
@@ -1976,7 +2066,10 @@ function localizarColunasRelatorio(rows){
     tipo: idx.tipo ?? defaults.tipo,
     instalador: idx.instalador ?? defaults.instalador,
     cliente: idx.cliente ?? defaults.cliente,
-    abertura: idx.abertura ?? defaults.abertura
+    telefone: idx.telefone ?? defaults.telefone,
+    abertura: idx.abertura ?? defaults.abertura,
+    endereco: idx.endereco ?? defaults.endereco,
+    cep: idx.cep ?? defaults.cep
   };
 }
 
@@ -2041,7 +2134,11 @@ async function loadData(){
     while(true){
       const inicio = pagina * TAMANHO_PAGINA;
       const fim = inicio + TAMANHO_PAGINA - 1;
-      const { data, error } = await sb.from('ordens_servico').select('*').order('abertura_iso', {ascending:false}).range(inicio, fim);
+      // Observação: telefone_cliente, endereco e cep são propositalmente omitidos aqui.
+      // Esses dados do cliente só são buscados sob demanda, no momento da impressão da OS (ver imprimirOS()).
+      const { data, error } = await sb.from('ordens_servico')
+        .select('id,placa,tecnico,tipo,associado,abertura_iso,treat,obs,atualizado_por,data_ultimo_contato,status_os,fila_acesso,concluida_em')
+        .order('abertura_iso', {ascending:false}).range(inicio, fim);
       if(error){ console.error(error); break; }
       if(!data || data.length === 0) break;
       todosDados = todosDados.concat(data);
@@ -2065,7 +2162,8 @@ async function insertOrdens(novasOrdens){
   const rows = novasOrdens.map(o=>({
     id:o.id, placa:o.placa, tecnico:o.tecnico, tipo:o.tipo,
     associado:o.associado, abertura_iso:o.aberturaISO, treat:o.treat, obs:o.obs, status_os: o.statusOs || 'Aberta',
-    fila_acesso: o.filaAcesso || false
+    fila_acesso: o.filaAcesso || false,
+    telefone_cliente: o.telefoneCliente || null, endereco: o.endereco || null, cep: o.cep || null
   }));
   const { error } = await sb.from('ordens_servico').insert(rows);
   if(error) console.error('Erro ao inserir ordens', error);
@@ -3159,6 +3257,9 @@ function abrirEditarUsuario(userId){
   document.getElementById('editPapel').value = u.papel || 'Supervisor';
   document.getElementById('editEmail').value = u.email || '';
   document.getElementById('editUsuarioErro').style.display = 'none';
+  const ehTecnico = (u.papel || 'Supervisor') === 'Técnico';
+  document.getElementById('editTecnicoVinculadoWrap').style.display = ehTecnico ? 'block' : 'none';
+  if(ehTecnico) popularSelectTecnicoVinculado('editTecnicoVinculado', u.tecnico_vinculado || '');
   document.getElementById('editUsuarioModal').classList.add('show');
 }
 
@@ -3175,12 +3276,18 @@ async function salvarEdicaoUsuario(){
     erroBox.style.display = 'block';
     return;
   }
+  const tecnicoVinculado = papel === 'Técnico' ? document.getElementById('editTecnicoVinculado').value : null;
+  if(papel === 'Técnico' && !tecnicoVinculado){
+    erroBox.textContent = 'Selecione o técnico vinculado a esta conta.';
+    erroBox.style.display = 'block';
+    return;
+  }
 
   try{
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/editar-usuario`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, nome, papel, email })
+      body: JSON.stringify({ userId, nome, papel, email, tecnicoVinculado })
     });
     const result = await resp.json();
     if(!resp.ok || result.error){
@@ -3189,7 +3296,7 @@ async function salvarEdicaoUsuario(){
       return;
     }
     document.getElementById('editUsuarioModal').classList.remove('show');
-    registrarAuditoria('Usuário editado', `Editou o usuário ${nome} (${papel}) — ${email}`);
+    registrarAuditoria('Usuário editado', `Editou o usuário ${nome} (${papel}${tecnicoVinculado ? ' — '+tecnicoVinculado : ''}) — ${email}`);
     if(userId === USUARIO_ID_ATUAL){
       USUARIO_ATUAL = { nome, papel };
       atualizarBadgeUsuario();
@@ -3323,6 +3430,9 @@ function handleFile(file){
           const instalador = row[colIdx.instalador];
           const cliente = row[colIdx.cliente];
           const abertura = row[colIdx.abertura];
+          const telefoneCliente = String(row[colIdx.telefone]||'').trim();
+          const endereco = String(row[colIdx.endereco]||'').trim();
+          const cep = String(row[colIdx.cep]||'').trim();
 
           const dt = parseDataBR(abertura);
           if(!dt) { ignoradas++; return; }
@@ -3344,6 +3454,16 @@ function handleFile(file){
               registrarAuditoria('Técnico atualizado via importação', `Ordem ${placaClean}: técnico alterado de "${tecnicoAnterior}" para "${tecnico}" (conforme planilha)`);
               tecnicosAlterados++;
             }
+            // sincroniza telefone/endereço/CEP com o que veio na planilha (inclusive ordens antigas
+            // que ainda não tinham esses dados); esses campos não ficam em memória por privacidade,
+            // então a atualização é feita direto no banco sem comparar valor anterior
+            const camposCliente = {};
+            if(telefoneCliente) camposCliente.telefone_cliente = telefoneCliente;
+            if(endereco) camposCliente.endereco = endereco;
+            if(cep) camposCliente.cep = cep;
+            if(Object.keys(camposCliente).length > 0){
+              updateOrdemRemote(existente.id, camposCliente);
+            }
             atualizadas++;
             return; // mantém tratamento/observação já existentes
           }
@@ -3357,7 +3477,10 @@ function handleFile(file){
             aberturaISO: aberturaISO,
             treat: 'none',
             obs: '',
-            statusOs: 'Aberta'
+            statusOs: 'Aberta',
+            telefoneCliente: telefoneCliente,
+            endereco: endereco,
+            cep: cep
           };
           ORDENS.push(novaOrdem);
           novasOrdens.push(novaOrdem);
@@ -4612,7 +4735,10 @@ function applyFilters(){
         </div>
       </td>
       <td>
-        <button class="hist-btn" onclick="verHistorico('${o.id}','${o.placa}')">Ver histórico</button>
+        <div style="display:flex; gap:6px; justify-content:center;">
+          <button class="hist-btn" onclick="verHistorico('${o.id}','${o.placa}')">Ver histórico</button>
+          <button class="hist-btn" title="Imprimir OS" onclick="imprimirOS('${o.id}')"><svg style="width:13px; height:13px; vertical-align:-2px; margin-right:3px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir</button>
+        </div>
       </td>
     </tr>`;
   }).join('');
@@ -5107,6 +5233,87 @@ function exportPDF(){
   }
 
   doc.save(`relatorio-os-prosulsat-${paraISOLocal(new Date())}.pdf`);
+}
+
+/* =========================================================
+   IMPRESSÃO DE OS INDIVIDUAL
+   Os dados sensíveis do cliente (telefone, endereço, CEP) NÃO ficam
+   carregados na tela — são buscados no Supabase só neste momento,
+   direto para o documento impresso.
+========================================================= */
+async function imprimirOS(id){
+  const o = ORDENS.find(x=>x.id===id);
+  if(!o) return;
+
+  const { data, error } = await sb.from('ordens_servico')
+    .select('telefone_cliente,endereco,cep')
+    .eq('id', id).maybeSingle();
+
+  if(error){
+    alert('Não foi possível carregar os dados do cliente para impressão.');
+    console.error(error);
+    return;
+  }
+
+  const dt = new Date(o.aberturaISO+'T00:00:00');
+  const geradoEm = new Date();
+  const geradoFmt = `${String(geradoEm.getDate()).padStart(2,'0')}/${String(geradoEm.getMonth()+1).padStart(2,'0')}/${geradoEm.getFullYear()} às ${String(geradoEm.getHours()).padStart(2,'0')}:${String(geradoEm.getMinutes()).padStart(2,'0')}`;
+  const esc = s => String(s||'—').replace(/</g,'&lt;');
+
+  const html = `
+    <div class="os-print-head">
+      <div class="os-print-brand">
+        <div class="os-print-logo">PS</div>
+        <div>
+          <div class="os-print-brand-name">PROSULSAT</div>
+          <div class="os-print-brand-sub">Ordem de Serviço</div>
+        </div>
+      </div>
+      <div class="os-print-numero">
+        <div class="lbl">Placa</div>
+        <div class="val">${esc(o.placa)}</div>
+      </div>
+    </div>
+
+    <div class="os-print-section">
+      <div class="os-print-section-title">Dados do Cliente</div>
+      <div class="os-print-grid">
+        <div class="os-print-field"><span class="lbl">Nome</span><span class="val">${esc(o.associado)}</span></div>
+        <div class="os-print-field"><span class="lbl">Telefone</span><span class="val">${esc(data && data.telefone_cliente)}</span></div>
+        <div class="os-print-field full"><span class="lbl">Endereço</span><span class="val">${esc(data && data.endereco)}</span></div>
+        <div class="os-print-field"><span class="lbl">CEP</span><span class="val">${esc(data && data.cep)}</span></div>
+      </div>
+    </div>
+
+    <div class="os-print-section">
+      <div class="os-print-section-title">Dados do Serviço</div>
+      <div class="os-print-grid">
+        <div class="os-print-field"><span class="lbl">Tipo de Serviço</span><span class="val">${esc(o.tipo)}</span></div>
+        <div class="os-print-field"><span class="lbl">Status</span><span class="val">${esc(o.statusOs||'Aberta')}</span></div>
+        <div class="os-print-field"><span class="lbl">Técnico Responsável</span><span class="val">${esc(o.tecnico)}</span></div>
+        <div class="os-print-field"><span class="lbl">Data de Abertura</span><span class="val">${formatDateBR(dt)}</span></div>
+      </div>
+    </div>
+
+    <div class="os-print-section">
+      <div class="os-print-section-title">Observações</div>
+      <div class="os-print-obs">${esc(o.obs) === '—' ? '' : esc(o.obs)}</div>
+    </div>
+
+    <div class="os-print-sign">
+      <div class="os-print-sign-line">Assinatura do Técnico</div>
+      <div class="os-print-sign-line">Assinatura do Cliente</div>
+    </div>
+
+    <div class="os-print-foot">
+      <span>PROSULSAT · Sistema de Ordens de Serviço</span>
+      <span>Gerado em ${geradoFmt} por ${esc(USUARIO_ATUAL.nome || 'Usuário')}</span>
+    </div>
+  `;
+
+  document.getElementById('printOSSheet').innerHTML = html;
+  registrarAuditoria('OS impressa', `Ordem ${o.placa} (${o.associado}) impressa por ${USUARIO_ATUAL.nome || 'Usuário'}`);
+  setTimeout(()=> window.print(), 50);
 }
 
 /* =========================================================
