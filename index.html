@@ -381,7 +381,7 @@
   .row-treat.t-none{ border-left-color:#2a3547; }
   .row-treat.critico{ border-left-width:3px; }
   .dias-num.super-crit{ color:#fff; background:var(--red); padding:1px 5px; border-radius:5px; font-size:10.5px; }
-  .hist-btn{ background:none; border:none; color:#d4a34e; cursor:pointer; font-size:10px; font-weight:700; padding:2px 0; }
+  .hist-btn{ background:none; border:none; color:#d4a34e; cursor:pointer; font-size:10px; font-weight:700; padding:2px 0; white-space:nowrap; }
   .hist-btn:hover{ text-decoration:underline; }
   .hist-entry{ padding:10px 12px; border-left:2px solid var(--line); margin-left:6px; position:relative; }
   .hist-entry::before{ content:''; position:absolute; left:-5px; top:14px; width:8px; height:8px; border-radius:50%; background:var(--blue); }
@@ -4704,9 +4704,9 @@ function applyFilters(){
         </div>
       </td>
       <td>
-        <div style="display:flex; gap:6px; justify-content:center;">
+        <div style="display:flex; flex-direction:column; gap:2px; align-items:center; white-space:nowrap;">
           <button class="hist-btn" onclick="verHistorico('${o.id}','${o.placa}')">Ver histórico</button>
-          <button class="hist-btn" title="Imprimir OS" onclick="imprimirOS('${o.id}')"><svg style="width:13px; height:13px; vertical-align:-2px; margin-right:3px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir</button>
+          <button class="hist-btn" title="Imprimir OS" onclick="imprimirOS('${o.id}')"><svg style="width:11px; height:11px; vertical-align:-1.5px; margin-right:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir</button>
         </div>
       </td>
     </tr>`;
