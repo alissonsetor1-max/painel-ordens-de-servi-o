@@ -394,8 +394,10 @@
   .marca-pessoal-ic.ativa{ background:var(--green); border-color:var(--green); color:#fff; }
 
   /* esconde a coluna/filtro de Tratamento para logins de Técnico (aplicarRestricoesDePapel adiciona a classe no body) */
-  body.papel-tecnico .col-tratamento{ display:none; }
-  body.papel-tecnico td:has(.treat-select){ display:none; }
+  /* usa visibility:collapse no <col> — é o jeito correto de colapsar uma coluna inteira
+     sem desalinhar o colgroup/larguras das demais colunas (display:none nas células quebraria isso) */
+  body.papel-tecnico col.col-tratamento{ visibility:collapse; }
+  body.papel-tecnico th.col-tratamento, body.papel-tecnico td:has(.treat-select){ visibility:hidden; padding:0; border:0; }
   body.papel-tecnico #fTreat{ display:none; }
   .hist-btn:hover{ text-decoration:underline; }
   .hist-entry{ padding:10px 12px; border-left:2px solid var(--line); margin-left:6px; position:relative; }
@@ -998,7 +1000,7 @@
             <col style="width:68px;">
             <col style="width:40px;">
             <col style="width:68px;">
-            <col style="width:120px;">
+            <col class="col-tratamento" style="width:120px;">
             <col style="width:62px;">
             <col style="width:150px;">
             <col style="width:55px;">
@@ -1127,7 +1129,7 @@
             <col style="width:80px;">
             <col style="width:140px;">
             <col style="width:80px;">
-            <col style="width:150px;">
+            <col class="col-tratamento" style="width:150px;">
             <col style="width:150px;">
             <col style="width:80px;">
             <col style="width:90px;">
@@ -1207,7 +1209,7 @@
             <col style="width:130px;">
             <col style="width:70px;">
             <col style="width:80px;">
-            <col style="width:120px;">
+            <col class="col-tratamento" style="width:120px;">
             <col style="width:140px;">
             <col style="width:65px;">
             <col style="width:85px;">
@@ -1285,7 +1287,7 @@
             <col style="width:140px;">
             <col style="width:70px;">
             <col style="width:80px;">
-            <col style="width:120px;">
+            <col class="col-tratamento" style="width:120px;">
             <col style="width:150px;">
             <col style="width:65px;">
             <col style="width:85px;">
