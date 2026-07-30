@@ -281,6 +281,10 @@
   .card{ background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:10px 13px; box-shadow:var(--shadow-card); transition:box-shadow .18s ease, border-color .18s ease; }
   .card:hover{ border-color:var(--blue-line); }
   .card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap; padding-bottom:8px; border-bottom:1px solid var(--line);}
+  .rank-toggle{ display:flex; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:2px; gap:2px; }
+  .rank-toggle-btn{ border:none; background:transparent; color:var(--text-dim); font-size:11px; font-weight:700; padding:5px 10px; border-radius:6px; cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .rank-toggle-btn:hover{ color:var(--text); }
+  .rank-toggle-btn.active{ background:var(--amber); color:#1a1408; }
   .card-head h2{ font-size:13.5px; font-weight:800; display:flex; align-items:center; gap:8px;}
   .card-head h2::before{ content:''; width:4px; height:14px; border-radius:3px; background:#d4a34e; display:inline-block; }
   .tag{ font-size:10.5px; color:var(--text-dim); background:var(--panel-2); padding:3px 9px; border-radius:20px; font-weight:700;}
@@ -881,7 +885,16 @@
 
         <div class="dash-row">
           <div class="card">
-            <div class="card-head"><h2>Ranking de Técnicos</h2><span class="see-all" onclick="goTo('ranking')">Ver todos →</span></div>
+            <div class="card-head">
+              <h2>Ranking de Técnicos</h2>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div class="rank-toggle" id="rankToggle">
+                  <button type="button" class="rank-toggle-btn active" data-modo="total" onclick="setRankModo('total')">Mais OS</button>
+                  <button type="button" class="rank-toggle-btn" data-modo="atraso" onclick="setRankModo('atraso')">Mais Atrasadas</button>
+                </div>
+                <span class="see-all" onclick="goTo('ranking')">Ver todos →</span>
+              </div>
+            </div>
             <div id="rankList"></div>
           </div>
           <div class="card">
@@ -999,6 +1012,10 @@
         <div>
           <h1>Ranking de Técnicos</h1>
           <div class="meta"><span>Volume de ordens, por tipo e status de atraso</span></div>
+        </div>
+        <div class="rank-toggle" id="rankingViewToggle">
+          <button type="button" class="rank-toggle-btn active" data-modo="total" onclick="setRankingViewModo('total')">Mais OS</button>
+          <button type="button" class="rank-toggle-btn" data-modo="atraso" onclick="setRankingViewModo('atraso')">Mais Atrasadas</button>
         </div>
       </div>
       </div>
@@ -4126,14 +4143,8 @@ function renderAll(){
       porTecnico[o.tecnico].total++;
       if(o.atrasada) porTecnico[o.tecnico].atraso++;
     });
-    const rankArr = Object.entries(porTecnico).sort((a,b)=> b[1].total - a[1].total);
-    document.getElementById('rankList').innerHTML = rankArr.slice(0,4).map(([nome,d],i)=>`
-      <div class="rank-list-item" style="cursor:pointer;" onclick="abrirDetalheTecnico('${nome.replace(/'/g,"\\'")}')">
-        <div class="rank-num ${i===0?'top1':''}">${i+1}</div>
-        <div class="nome" style="text-decoration:underline; text-decoration-color:var(--blue-line);">${nome}</div>
-        <div class="qtd">${d.total} OS</div>
-      </div>
-    `).join('') || '<div style="color:var(--text-mute); font-size:12px;">Sem dados</div>';
+    ULTIMO_PORTECNICO_DASH = porTecnico;
+    renderRankList();
 
     // ---- ORDENS RECENTES ----
     const statusBadgeCores = {'Aberta':'blue','Em Andamento':'amber','Aguardando Peça':'violet','Concluída':'green','Cancelada':'mute'};
@@ -4169,21 +4180,43 @@ function renderAll(){
       if(o.atrasada) porTecnicoFull[o.tecnico].atraso++;
       if(porTecnicoFull[o.tecnico][o.tipo] !== undefined) porTecnicoFull[o.tecnico][o.tipo]++;
     });
-    const arr = Object.entries(porTecnicoFull).sort((a,b)=> b[1].total - a[1].total);
-    document.getElementById('rankingBody').innerHTML = arr.map(([nome,d],i)=>{
-      const iniciais = nome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
-      return `<tr>
-        <td>${i+1}</td>
-        <td style="text-align:left;"><div class="tech-cell" style="cursor:pointer;" onclick="abrirDetalheTecnico('${nome.replace(/'/g,"\\'")}')"><div class="avatar">${iniciais}</div><span style="text-decoration:underline; text-decoration-color:var(--blue-line);">${nome}</span></div></td>
-        <td><b>${d.total}</b></td>
-        <td>${d.Instalação||0}</td>
-        <td>${d.Manutenção||0}</td>
-        <td>${d.Retirada||0}</td>
-        <td>${d.atraso}</td>
-        <td>${d.atraso>0 ? '<span class="badge atraso">Atenção</span>' : '<span class="badge ok">Em dia</span>'}</td>
-      </tr>`;
-    }).join('');
+    ULTIMO_PORTECNICO_RANKING = porTecnicoFull;
+    renderRankingView();
   }
+}
+
+let RANK_MODO_VIEW = 'total';
+let ULTIMO_PORTECNICO_RANKING = {};
+
+function setRankingViewModo(modo){
+  RANK_MODO_VIEW = modo;
+  document.querySelectorAll('#rankingViewToggle .rank-toggle-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.modo === modo);
+  });
+  renderRankingView();
+}
+
+function renderRankingView(){
+  const tbody = document.getElementById('rankingBody');
+  if(!tbody) return;
+  const entries = Object.entries(ULTIMO_PORTECNICO_RANKING);
+  const arr = RANK_MODO_VIEW === 'atraso'
+    ? [...entries].sort((a,b)=> b[1].atraso - a[1].atraso)
+    : [...entries].sort((a,b)=> b[1].total - a[1].total);
+  tbody.innerHTML = arr.map(([nome,d],i)=>{
+    const iniciais = nome.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    const nomeEsc = nome.replace(/'/g,"\\'");
+    return `<tr>
+      <td>${i+1}</td>
+      <td style="text-align:left;"><div class="tech-cell" style="cursor:pointer;" onclick="abrirDetalheTecnico('${nomeEsc}')"><div class="avatar">${iniciais}</div><span style="text-decoration:underline; text-decoration-color:var(--blue-line);">${nome}</span></div></td>
+      <td><b>${d.total}</b></td>
+      <td>${d.Instalação||0}</td>
+      <td>${d.Manutenção||0}</td>
+      <td>${d.Retirada||0}</td>
+      <td>${d.atraso>0 ? `<span style="cursor:pointer; text-decoration:underline; text-decoration-color:var(--red-line);" onclick="filtrarOrdensPorTecnico('${nomeEsc}', true)">${d.atraso}</span>` : d.atraso}</td>
+      <td>${d.atraso>0 ? '<span class="badge atraso">Atenção</span>' : '<span class="badge ok">Em dia</span>'}</td>
+    </tr>`;
+  }).join('');
 }
 
 function populateFilterOptions(list){
@@ -4360,6 +4393,59 @@ function limparFiltroDataRetiradasConcluidas(){
 
 let ordenacaoAbertura = null; // null = padrão (mais atrasado primeiro), 'desc' = mais novo primeiro, 'asc' = mais velho primeiro
 let PAGINA_ATUAL_ORDENS = 1;
+let RANK_MODO_DASH = 'total'; // 'total' = mais OS, 'atraso' = mais atrasadas
+let ULTIMO_PORTECNICO_DASH = {};
+
+function setRankModo(modo){
+  RANK_MODO_DASH = modo;
+  document.querySelectorAll('#rankToggle .rank-toggle-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.modo === modo);
+  });
+  renderRankList();
+}
+
+function renderRankList(){
+  const el = document.getElementById('rankList');
+  if(!el) return;
+  const entries = Object.entries(ULTIMO_PORTECNICO_DASH);
+  if(entries.length === 0){
+    el.innerHTML = '<div style="color:var(--text-mute); font-size:12px;">Sem dados</div>';
+    return;
+  }
+  const modo = RANK_MODO_DASH;
+  let rankArr;
+  if(modo === 'atraso'){
+    rankArr = entries.filter(([,d])=> d.atraso > 0).sort((a,b)=> b[1].atraso - a[1].atraso);
+  } else {
+    rankArr = entries.sort((a,b)=> b[1].total - a[1].total);
+  }
+  if(rankArr.length === 0){
+    el.innerHTML = '<div style="color:var(--text-mute); font-size:12px;">Nenhum técnico com ordens em atraso</div>';
+    return;
+  }
+  el.innerHTML = rankArr.slice(0,4).map(([nome,d],i)=>{
+    const nomeEsc = nome.replace(/'/g,"\\'");
+    const qtdLabel = modo === 'atraso' ? `${d.atraso} atrasada${d.atraso===1?'':'s'}` : `${d.total} OS`;
+    const clickAction = modo === 'atraso'
+      ? `filtrarOrdensPorTecnico('${nomeEsc}', true)`
+      : `filtrarOrdensPorTecnico('${nomeEsc}', false)`;
+    return `
+      <div class="rank-list-item" style="cursor:pointer;" onclick="${clickAction}">
+        <div class="rank-num ${i===0?'top1':''}">${i+1}</div>
+        <div class="nome" style="text-decoration:underline; text-decoration-color:var(--blue-line);">${nome}</div>
+        <div class="qtd">${qtdLabel}</div>
+      </div>`;
+  }).join('');
+}
+
+function filtrarOrdensPorTecnico(nomeTecnico, apenasAtrasadas){
+  goTo('ordens');
+  document.getElementById('fTecnico').value = nomeTecnico;
+  document.getElementById('fStatus').value = apenasAtrasadas ? 'atraso' : '';
+  document.getElementById('fSearch').value = '';
+  PAGINA_ATUAL_ORDENS = 1;
+  applyFilters();
+}
 
 function renderPaginacaoOrdens(totalPaginas, searchAtivo){
   const el = document.getElementById('paginacaoOrdens');
