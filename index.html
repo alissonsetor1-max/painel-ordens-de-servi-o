@@ -4481,11 +4481,19 @@ function alternarOrdenacaoAbertura(){
 // Aceita busca de um termo só (placa/técnico/associado) OU uma lista de várias placas
 // coladas de uma vez — separadas por linha, vírgula, ponto-e-vírgula ou espaço.
 function correspondeBuscaMultipla(searchRaw, o){
+  const termoCompleto = searchRaw.trim().toLowerCase();
   const tokens = searchRaw.split(/[\n,;]+|\s+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
+
   if(tokens.length <= 1){
     const termo = tokens[0] || '';
     return o.placa.toLowerCase().includes(termo) || o.tecnico.toLowerCase().includes(termo) || o.associado.toLowerCase().includes(termo);
   }
+
+  // nome composto (técnico ou associado) buscado por extenso: compara a frase inteira
+  if(o.tecnico.toLowerCase().includes(termoCompleto) || o.associado.toLowerCase().includes(termoCompleto)){
+    return true;
+  }
+
   // múltiplas placas coladas: casa se a placa da ordem bater com qualquer uma da lista
   return tokens.some(t => o.placa.toLowerCase().includes(t));
 }
