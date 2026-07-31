@@ -1002,8 +1002,8 @@
             <col style="width:68px;">
             <col class="col-tratamento" style="width:120px;">
             <col style="width:62px;">
-            <col style="width:150px;">
-            <col style="width:55px;">
+            <col class="col-observacao" style="width:150px;">
+            <col class="col-historico" style="width:55px;">
           </colgroup>
           <thead>
             <tr>
@@ -1130,9 +1130,9 @@
             <col style="width:140px;">
             <col style="width:80px;">
             <col class="col-tratamento" style="width:150px;">
-            <col style="width:150px;">
-            <col style="width:80px;">
-            <col style="width:90px;">
+            <col class="col-observacao" style="width:150px;">
+            <col class="col-historico" style="width:80px;">
+            <col class="col-acao" style="width:90px;">
           </colgroup>
           <thead>
             <tr>
@@ -1210,9 +1210,9 @@
             <col style="width:70px;">
             <col style="width:80px;">
             <col class="col-tratamento" style="width:120px;">
-            <col style="width:140px;">
-            <col style="width:65px;">
-            <col style="width:85px;">
+            <col class="col-observacao" style="width:140px;">
+            <col class="col-historico" style="width:65px;">
+            <col class="col-acao" style="width:85px;">
           </colgroup>
           <thead>
             <tr>
@@ -1288,9 +1288,9 @@
             <col style="width:70px;">
             <col style="width:80px;">
             <col class="col-tratamento" style="width:120px;">
-            <col style="width:150px;">
-            <col style="width:65px;">
-            <col style="width:85px;">
+            <col class="col-observacao" style="width:150px;">
+            <col class="col-historico" style="width:65px;">
+            <col class="col-acao" style="width:85px;">
           </colgroup>
           <thead>
             <tr>
@@ -2019,7 +2019,21 @@ function aplicarRestricoesDePapel(){
     el.style.display = ehTecnico ? 'none' : '';
   });
   document.body.classList.toggle('papel-tecnico', ehTecnico);
+  redistribuirLarguraColunas(ehTecnico);
   if(ehTecnico) goTo('ordens');
+}
+
+// Quando a coluna Tratamento é colapsada (login Técnico), reaproveita o espaço que ela
+// liberava jogando um pouco a mais para Observação/Histórico/Ação, em vez de deixar vazio à direita.
+function redistribuirLarguraColunas(ehTecnico){
+  const extras = { 'col-observacao': 95, 'col-historico': 22, 'col-acao': 18 };
+  Object.entries(extras).forEach(([classe, extra])=>{
+    document.querySelectorAll(`col.${classe}`).forEach(col=>{
+      if(!col.dataset.origWidth) col.dataset.origWidth = col.style.width;
+      const origPx = parseInt(col.dataset.origWidth, 10) || 0;
+      col.style.width = ehTecnico ? (origPx + extra) + 'px' : col.dataset.origWidth;
+    });
+  });
 }
 
 async function checarSessao(){
