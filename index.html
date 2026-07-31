@@ -993,7 +993,7 @@
           <colgroup>
             <col style="width:26px;">
             <col style="width:78px;">
-            <col style="width:105px;">
+            <col class="col-tecnico" style="width:105px;">
             <col style="width:75px;">
             <col style="width:90px;">
             <col style="width:120px;">
@@ -1125,7 +1125,7 @@
           <colgroup>
             <col style="width:26px;">
             <col style="width:90px;">
-            <col style="width:120px;">
+            <col class="col-tecnico" style="width:120px;">
             <col style="width:80px;">
             <col style="width:140px;">
             <col style="width:80px;">
@@ -1204,7 +1204,7 @@
           <colgroup>
             <col style="width:26px;">
             <col style="width:85px;">
-            <col style="width:110px;">
+            <col class="col-tecnico" style="width:110px;">
             <col style="width:75px;">
             <col style="width:130px;">
             <col style="width:70px;">
@@ -1283,7 +1283,7 @@
           <colgroup>
             <col style="width:26px;">
             <col style="width:85px;">
-            <col style="width:120px;">
+            <col class="col-tecnico" style="width:120px;">
             <col style="width:140px;">
             <col style="width:70px;">
             <col style="width:80px;">
@@ -2026,7 +2026,7 @@ function aplicarRestricoesDePapel(){
 // Quando a coluna Tratamento é colapsada (login Técnico), reaproveita o espaço que ela
 // liberava jogando um pouco a mais para Observação/Histórico/Ação, em vez de deixar vazio à direita.
 function redistribuirLarguraColunas(ehTecnico){
-  const extras = { 'col-observacao': 95, 'col-historico': 22, 'col-acao': 18 };
+  const extras = { 'col-tecnico': 55, 'col-observacao': 45, 'col-historico': 15, 'col-acao': 15 };
   Object.entries(extras).forEach(([classe, extra])=>{
     document.querySelectorAll(`col.${classe}`).forEach(col=>{
       if(!col.dataset.origWidth) col.dataset.origWidth = col.style.width;
