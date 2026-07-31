@@ -2025,13 +2025,24 @@ function aplicarRestricoesDePapel(){
 
 // Quando a coluna Tratamento é colapsada (login Técnico), reaproveita o espaço que ela
 // liberava jogando um pouco a mais para Observação/Histórico/Ação, em vez de deixar vazio à direita.
+// Quando a coluna Tratamento é colapsada (login Técnico), a tabela passa a usar larguras em %
+// (em vez de px fixo), preenchendo 100% do espaço disponível de forma proporcional —
+// sem sobrar vazio à direita e sem espremer a coluna do técnico.
+const PERCENTUAIS_COLUNAS_TECNICO = {
+  ordensTableWrap:              [3, 8, 13, 7, 9, 13, 7, 5, 7, 0, 6, 16, 6],
+  acessosTableWrap:             [3, 9, 14, 8, 14, 9, 0, 24, 9, 10],
+  concluidasTableWrap:          [3, 8, 13, 7, 13, 8, 8, 0, 24, 8, 8],
+  retiradasConcluidasTableWrap: [3, 9, 15, 16, 9, 9, 0, 24, 8, 7]
+};
+
 function redistribuirLarguraColunas(ehTecnico){
-  const extras = { 'col-tecnico': 55, 'col-observacao': 45, 'col-historico': 15, 'col-acao': 15 };
-  Object.entries(extras).forEach(([classe, extra])=>{
-    document.querySelectorAll(`col.${classe}`).forEach(col=>{
+  Object.entries(PERCENTUAIS_COLUNAS_TECNICO).forEach(([wrapId, percentuais])=>{
+    const wrap = document.getElementById(wrapId);
+    if(!wrap) return;
+    const cols = wrap.querySelectorAll('colgroup col');
+    cols.forEach((col, i)=>{
       if(!col.dataset.origWidth) col.dataset.origWidth = col.style.width;
-      const origPx = parseInt(col.dataset.origWidth, 10) || 0;
-      col.style.width = ehTecnico ? (origPx + extra) + 'px' : col.dataset.origWidth;
+      col.style.width = ehTecnico ? (percentuais[i] ?? 0) + '%' : col.dataset.origWidth;
     });
   });
 }
