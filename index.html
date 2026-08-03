@@ -3446,7 +3446,7 @@ function handleFile(file){
     try{
       const data = new Uint8Array(e.target.result);
       const wb = XLSX.read(data, {type:'array'});
-      let novas = 0, atualizadas = 0, ignoradas = 0, tecnicosAlterados = 0;
+      let novas = 0, atualizadas = 0, ignoradas = 0, tecnicosAlterados = 0, reabertas = 0;
       const existentesPorChave = new Map(ORDENS.map(o => [o.placa+'|'+o.aberturaISO, o]));
       const novasOrdens = [];
       const chavesNaPlanilhaNova = new Set(); // todas as chaves (placa+data) que vieram nesta planilha
@@ -3488,6 +3488,16 @@ function handleFile(file){
               updateOrdemRemote(existente.id, { tecnico: tecnico });
               registrarAuditoria('Técnico atualizado via importação', `Ordem ${placaClean}: técnico alterado de "${tecnicoAnterior}" para "${tecnico}" (conforme planilha)`);
               tecnicosAlterados++;
+            }
+            // se a ordem estava Cancelada (ou Concluída) mas voltou a aparecer na planilha
+            // nova, significa que ela está ativa de novo no sistema de origem — reabre a ordem
+            if(existente.statusOs === 'Cancelada' || existente.statusOs === 'Concluída'){
+              const statusAnterior = existente.statusOs;
+              existente.statusOs = 'Aberta';
+              existente.concluidaEm = null;
+              updateOrdemRemote(existente.id, { status_os: 'Aberta', concluida_em: null });
+              registrarAuditoria('Ordem reaberta via importação', `Ordem ${placaClean}: estava "${statusAnterior}" e voltou a aparecer na planilha, reaberta como "Aberta"`);
+              reabertas++;
             }
             // sincroniza telefone/endereço/CEP com o que veio na planilha (inclusive ordens antigas
             // que ainda não tinham esses dados); esses campos não ficam em memória por privacidade,
@@ -3547,7 +3557,7 @@ function handleFile(file){
           return updateOrdemRemote(o.id, {status_os:'Concluída', concluida_em: hojeISO});
         })
       ]).then(async ()=>{
-        registrarAuditoria('Excel importado', `${novas} nova(s), ${atualizadas} já existente(s) mantida(s)${ordensParaConcluir.length > 0 ? `, ${ordensParaConcluir.length} concluída(s) automaticamente` : ''}`);
+        registrarAuditoria('Excel importado', `${novas} nova(s), ${atualizadas} já existente(s) mantida(s)${ordensParaConcluir.length > 0 ? `, ${ordensParaConcluir.length} concluída(s) automaticamente` : ''}${reabertas > 0 ? `, ${reabertas} reaberta(s) automaticamente` : ''}`);
         if(ordensParaConcluir.length > 0){
           registrarAuditoria('Conclusão automática', `${ordensParaConcluir.length} ordem(ns) marcada(s) como Concluída automaticamente (não constavam na nova planilha)`);
         }
@@ -3584,13 +3594,14 @@ function handleFile(file){
           htmlComparativo = `<br><br><b>Comparado à última importação:</b><br>${linhas}`;
         }
 
-        log.innerHTML = `Importação concluída: <b>${novas}</b> ordens novas, <b>${atualizadas}</b> já existentes mantidas, <b>${ordensParaConcluir.length}</b> marcadas como concluídas automaticamente. Base total: <b>${ORDENS.length}</b> ordens.`;
+        log.innerHTML = `Importação concluída: <b>${novas}</b> ordens novas, <b>${atualizadas}</b> já existentes mantidas, <b>${ordensParaConcluir.length}</b> marcadas como concluídas automaticamente${reabertas > 0 ? `, <b>${reabertas}</b> reabertas automaticamente` : ''}. Base total: <b>${ORDENS.length}</b> ordens.`;
         renderAll();
         checkOverdueAndAlert(true);
         mostrarResultadoImportacao(true,
           `<b>${novas}</b> ordem(ns) nova(s) adicionada(s)<br>` +
           `<b>${atualizadas}</b> ordem(ns) já existente(s) mantida(s) (tratamento preservado)<br>` +
           (tecnicosAlterados ? `<b>${tecnicosAlterados}</b> ordem(ns) com técnico atualizado conforme a planilha<br>` : '') +
+          (reabertas ? `<b>${reabertas}</b> ordem(ns) reaberta(s) automaticamente (estavam Canceladas/Concluídas e voltaram a aparecer na planilha)<br>` : '') +
           `<b>${ordensParaConcluir.length}</b> ordem(ns) marcada(s) como <b>Concluída</b> automaticamente (não vieram nesta planilha)` +
           (ignoradas ? `<br><b>${ignoradas}</b> linha(s) ignorada(s) por data inválida` : '') +
           `<br><br>Base total agora: <b>${ORDENS.length}</b> ordens.` +
