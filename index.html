@@ -2079,7 +2079,7 @@ function localizarColunasRelatorio(rows){
   // os nomes das colunas que importam para o índice correto naquela planilha.
   // Isso evita quebrar a importação quando o relatório de origem muda a ordem/quantidade de colunas.
   const linhaCabecalho = rows.find(r => String(r[0]||'').trim() === 'Placa');
-  const defaults = { placa:0, tipo:3, instalador:4, cliente:5, telefone:6, abertura:8, endereco:19, cep:20, statusAgendamento:-1, modelo:-1, bairro:-1, cidade:-1, estado:-1, email:-1 };
+  const defaults = { placa:0, tipo:3, instalador:4, cliente:5, telefone:6, abertura:8, endereco:19, cep:20, statusAgendamento:-1, statusOS:-1, modelo:-1, bairro:-1, cidade:-1, estado:-1, email:-1 };
   if(!linhaCabecalho) return defaults;
 
   const norm = s => String(s||'').trim().toLowerCase();
@@ -2096,6 +2096,7 @@ function localizarColunasRelatorio(rows){
     else if(v === 'endereço' || v === 'endereco') idx.endereco = i;
     else if(v === 'cep') idx.cep = i;
     else if(v === 'status' || v === 'situação' || v === 'situacao' || v === 'status do agendamento' || v === 'status agendamento') idx.statusAgendamento = i;
+    else if(v === 'status da ordem de serviço' || v === 'status da ordem de servico' || v === 'status os' || v === 'status da os') idx.statusOS = i;
     else if(v === 'modelo do veículo' || v === 'modelo do veiculo' || v === 'modelo') idx.modelo = i;
     else if(v === 'bairro') idx.bairro = i;
     else if(v === 'cidade') idx.cidade = i;
@@ -2112,6 +2113,7 @@ function localizarColunasRelatorio(rows){
     endereco: idx.endereco ?? defaults.endereco,
     cep: idx.cep ?? defaults.cep,
     statusAgendamento: idx.statusAgendamento ?? defaults.statusAgendamento,
+    statusOS: idx.statusOS ?? defaults.statusOS,
     modelo: idx.modelo ?? defaults.modelo,
     bairro: idx.bairro ?? defaults.bairro,
     cidade: idx.cidade ?? defaults.cidade,
@@ -3527,6 +3529,8 @@ function handleFile(file){
           const cidade = colIdx.cidade >= 0 ? String(row[colIdx.cidade]||'').trim() : '';
           const estado = colIdx.estado >= 0 ? String(row[colIdx.estado]||'').trim() : '';
           const emailCliente = colIdx.email >= 0 ? String(row[colIdx.email]||'').trim() : '';
+          const statusOSRaw = colIdx.statusOS >= 0 ? String(row[colIdx.statusOS]||'').trim().toLowerCase() : '';
+          const veioCanceladaNaOrigem = statusOSRaw.startsWith('cancel');
 
           const dt = parseDataBR(abertura);
           if(!dt) { ignoradas++; return; }
@@ -3541,9 +3545,18 @@ function handleFile(file){
 
           const existente = existentesPorChave.get(key);
           if(existente){
-            // ordens Canceladas não são tocadas pela importação: técnico, telefone, endereço etc.
-            // permanecem como estavam, e o status não muda
+            // ordens já Canceladas no nosso sistema não são tocadas pela importação
             if(existente.statusOs === 'Cancelada'){
+              canceladasIgnoradas++;
+              return;
+            }
+            // a planilha indica que a OS foi cancelada na origem: sincroniza o status pra
+            // Cancelada aqui também, em vez de deixar ela "sumir" e ser concluída por engano
+            // na reconciliação (o sumiço, nesse caso, é cancelamento, não conclusão)
+            if(veioCanceladaNaOrigem){
+              existente.statusOs = 'Cancelada';
+              updateOrdemRemote(existente.id, { status_os: 'Cancelada' });
+              registrarAuditoria('Ordem cancelada via importação', `Ordem ${placaClean}: planilha indica cancelamento na origem, status sincronizado para Cancelada`);
               canceladasIgnoradas++;
               return;
             }
@@ -3582,7 +3595,7 @@ function handleFile(file){
             aberturaISO: aberturaISO,
             treat: 'none',
             obs: '',
-            statusOs: 'Aberta',
+            statusOs: veioCanceladaNaOrigem ? 'Cancelada' : 'Aberta',
             telefoneCliente: telefoneCliente,
             endereco: endereco,
             cep: cep,
