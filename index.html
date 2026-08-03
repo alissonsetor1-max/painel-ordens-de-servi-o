@@ -2079,7 +2079,7 @@ function localizarColunasRelatorio(rows){
   // os nomes das colunas que importam para o índice correto naquela planilha.
   // Isso evita quebrar a importação quando o relatório de origem muda a ordem/quantidade de colunas.
   const linhaCabecalho = rows.find(r => String(r[0]||'').trim() === 'Placa');
-  const defaults = { placa:0, tipo:3, instalador:4, cliente:5, telefone:6, abertura:8, endereco:19, cep:20, statusAgendamento:-1, modelo:-1, bairro:-1, cidade:-1, estado:-1 };
+  const defaults = { placa:0, tipo:3, instalador:4, cliente:5, telefone:6, abertura:8, endereco:19, cep:20, statusAgendamento:-1, modelo:-1, bairro:-1, cidade:-1, estado:-1, email:-1 };
   if(!linhaCabecalho) return defaults;
 
   const norm = s => String(s||'').trim().toLowerCase();
@@ -2091,6 +2091,7 @@ function localizarColunasRelatorio(rows){
     else if(v === 'instalador') idx.instalador = i;
     else if(v === 'cliente') idx.cliente = i;
     else if(v === 'telefone do cliente') idx.telefone = i;
+    else if(v === 'e-mail do cliente' || v === 'email do cliente') idx.email = i;
     else if(v === 'abertura') idx.abertura = i;
     else if(v === 'endereço' || v === 'endereco') idx.endereco = i;
     else if(v === 'cep') idx.cep = i;
@@ -2114,7 +2115,8 @@ function localizarColunasRelatorio(rows){
     modelo: idx.modelo ?? defaults.modelo,
     bairro: idx.bairro ?? defaults.bairro,
     cidade: idx.cidade ?? defaults.cidade,
-    estado: idx.estado ?? defaults.estado
+    estado: idx.estado ?? defaults.estado,
+    email: idx.email ?? defaults.email
   };
 }
 
@@ -2210,7 +2212,8 @@ async function insertOrdens(novasOrdens){
     associado:o.associado, abertura_iso:o.aberturaISO, treat:o.treat, obs:o.obs, status_os: o.statusOs || 'Aberta',
     fila_acesso: o.filaAcesso || false,
     telefone_cliente: o.telefoneCliente || null, endereco: o.endereco || null, cep: o.cep || null,
-    modelo: o.modelo || null, bairro: o.bairro || null, cidade: o.cidade || null, estado: o.estado || null
+    modelo: o.modelo || null, bairro: o.bairro || null, cidade: o.cidade || null, estado: o.estado || null,
+    email_cliente: o.emailCliente || null
   }));
   const { error } = await sb.from('ordens_servico').insert(rows);
   if(error) console.error('Erro ao inserir ordens', error);
@@ -3523,6 +3526,7 @@ function handleFile(file){
           const bairro = colIdx.bairro >= 0 ? String(row[colIdx.bairro]||'').trim() : '';
           const cidade = colIdx.cidade >= 0 ? String(row[colIdx.cidade]||'').trim() : '';
           const estado = colIdx.estado >= 0 ? String(row[colIdx.estado]||'').trim() : '';
+          const emailCliente = colIdx.email >= 0 ? String(row[colIdx.email]||'').trim() : '';
 
           const dt = parseDataBR(abertura);
           if(!dt) { ignoradas++; return; }
@@ -3561,6 +3565,7 @@ function handleFile(file){
             if(bairro) camposCliente.bairro = bairro;
             if(cidade) camposCliente.cidade = cidade;
             if(estado) camposCliente.estado = estado;
+            if(emailCliente) camposCliente.email_cliente = emailCliente;
             if(Object.keys(camposCliente).length > 0){
               updateOrdemRemote(existente.id, camposCliente);
             }
@@ -3584,7 +3589,8 @@ function handleFile(file){
             modelo: modelo,
             bairro: bairro,
             cidade: cidade,
-            estado: estado
+            estado: estado,
+            emailCliente: emailCliente
           };
           ORDENS.push(novaOrdem);
           novasOrdens.push(novaOrdem);
@@ -4886,11 +4892,48 @@ function applyFilters(){
         <div style="display:flex; flex-direction:column; gap:2px; align-items:center; white-space:nowrap;">
           <button class="hist-btn" onclick="verHistorico('${o.id}','${o.placa}')">Ver histórico</button>
           <button class="hist-btn" title="Imprimir OS" onclick="imprimirOS('${o.id}')"><svg style="width:11px; height:11px; vertical-align:-1.5px; margin-right:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir</button>
+          <button class="hist-btn" title="Chamar associado no WhatsApp" onclick="chamarWhatsApp('${o.id}')" style="color:#25D366;"><svg style="width:11px; height:11px; vertical-align:-1.5px; margin-right:2px;" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.44.79 3.06 1.2 4.72 1.2h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.18 8.18 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24 2.2 0 4.27.86 5.83 2.42a8.19 8.19 0 0 1 2.41 5.83c0 4.55-3.7 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.17.24-.64.81-.78.97-.15.17-.29.19-.54.06-.25-.12-1.04-.38-1.99-1.22-.73-.65-1.23-1.46-1.37-1.71-.15-.24-.02-.37.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.25-.41.08-.17.04-.31-.02-.44-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31s-.88.86-.88 2.09.9 2.42 1.02 2.59c.13.17 1.78 2.71 4.31 3.8.6.26 1.07.41 1.44.53.6.19 1.15.16 1.59.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.16-.48-.28z"/></svg>WhatsApp</button>
         </div>
       </td>
     </tr>`;
   }).join('');
   atualizarSelecao();
+}
+
+async function chamarWhatsApp(id){
+  const o = ORDENS.find(x=>x.id===id);
+  if(!o) return;
+  const { data, error } = await sb.from('ordens_servico')
+    .select('telefone_cliente,email_cliente')
+    .eq('id', id).maybeSingle();
+  if(error || !data || !data.telefone_cliente){
+    alert('Não há telefone cadastrado para esse associado.');
+    return;
+  }
+  // limpa o número, deixando só dígitos, e garante o DDI 55 (Brasil) se não vier informado
+  let numero = String(data.telefone_cliente).replace(/\D/g,'');
+  if(numero.length <= 11) numero = '55' + numero;
+
+  const emailAssociado = data.email_cliente || 'não informado';
+  const mensagem = `Olá! 🤝
+
+Confira abaixo seus novos dados de login:
+👤 Usuário: ${emailAssociado}
+🔑 Senha: 12345678
+🚗 Placa: ${o.placa}
+
+Baixe o novo aplicativo ou acesse a plataforma:
+💻 Acesso Web: https://www.tracknme.com.br/monitoring/login
+🍎 Versão para iOS (iPhone): https://apps.apple.com/br/app/prosulsat/id6742657140
+🤖 Versão para Android: https://play.google.com/store/apps/details?id=br.com.tracknme.admin.prosulsat&hl=pt_BR
+
+Se precisar de suporte ou tiver qualquer dúvida, é só nos chamar por aqui!
+
+Atenciosamente,
+Equipe PROSULSAT`;
+
+  window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`, '_blank');
+  registrarAuditoria('WhatsApp acionado', `Ordem ${o.placa} (${o.associado}): abriu conversa no WhatsApp com o associado (mensagem de dados de acesso)`);
 }
 
 function editarTecnico(td, ordemId){
