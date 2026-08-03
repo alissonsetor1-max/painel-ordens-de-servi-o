@@ -422,6 +422,7 @@
   .treat-select.t-azul{ background:var(--blue-bg); color:var(--blue); border-color:var(--blue-line);}
   .treat-select.t-acesso{ background:var(--teal-bg); color:var(--teal); border-color:var(--teal-line);}
   .treat-select.t-concluido{ background:var(--green-bg); color:var(--green); border-color:var(--green-line);}
+  .treat-select.t-cancelado{ background:var(--red-bg); color:var(--red); border-color:var(--red-line);}
   .treat-select.t-none{ color:var(--text-mute); font-weight:600; }
 
   .obs-input{ width:100%; max-width:190px; font-size:11px; padding:7px 9px; border-radius:7px; }
@@ -4222,6 +4223,7 @@ function renderAcessos(){
           <option value="vermelho" ${treatVal==='vermelho'?'selected':''}>🔴 Sem retorno técnico</option>
           <option value="verde" ${treatVal==='verde'?'selected':''}>🟢 Retorno recebido</option>
           <option value="azul" ${treatVal==='azul'?'selected':''}>🔵 Sem retorno associado</option>
+          <option value="cancelado" ${treatVal==='cancelado'?'selected':''}>🚫 Cancelado</option>
         </select>
       </td>
       <td style="text-align:left;">
@@ -4894,6 +4896,7 @@ function applyFilters(){
           <option value="azul" ${treatVal==='azul'?'selected':''}>🔵 Sem retorno associado</option>
           <option value="acesso" ${treatVal==='acesso'?'selected':''}>🔑 Acesso enviado</option>
           <option value="concluido" ${treatVal==='concluido'?'selected':''}>✅ Concluído</option>
+          <option value="cancelado" ${treatVal==='cancelado'?'selected':''}>🚫 Cancelado</option>
         </select>
       </td>
       <td style="white-space:nowrap;">
@@ -5010,6 +5013,14 @@ function updateTreat(sel){
     }
   }
 
+  if(sel.value === 'cancelado'){
+    const confirmado = confirm(`Marcar a ordem ${ordem.placa} (${ordem.associado}) como CANCELADA?\n\nO Status OS dela vai mudar para "Cancelada" e ela para de ser tocada pelas próximas importações.`);
+    if(!confirmado){
+      sel.value = ordem.treat || 'none';
+      return;
+    }
+  }
+
   const hojeISO = paraISOLocal(new Date());
   ordem.treat = sel.value;
   ordem.atualizadoPor = USUARIO_ATUAL.nome || 'Não identificado';
@@ -5026,6 +5037,11 @@ function updateTreat(sel){
     camposRemotos.concluida_em = hojeISO;
   }
 
+  if(sel.value === 'cancelado'){
+    ordem.statusOs = 'Cancelada';
+    camposRemotos.status_os = 'Cancelada';
+  }
+
   if(sel.value === 'acesso'){
     ordem.filaAcesso = true;
     camposRemotos.fila_acesso = true;
@@ -5035,6 +5051,8 @@ function updateTreat(sel){
   registrarHistorico(id, sel.value, ordem.obs);
   if(sel.value === 'concluido'){
     registrarAuditoria('Ordem concluída manualmente', `Marcou a ordem ${ordem.placa} (${ordem.associado}) como Concluída`);
+  } else if(sel.value === 'cancelado'){
+    registrarAuditoria('Ordem cancelada manualmente', `Marcou a ordem ${ordem.placa} (${ordem.associado}) como Cancelada`);
   } else if(sel.value !== 'acesso'){
     const rotulosTreat = {none:'Sem tratamento', amarelo:'Mensagem enviada', vermelho:'Sem retorno técnico', verde:'Retorno recebido', azul:'Sem retorno associado'};
     registrarAuditoria('Tratamento alterado', `Ordem ${ordem.placa} (${ordem.associado}) → ${rotulosTreat[sel.value] || sel.value}`);
