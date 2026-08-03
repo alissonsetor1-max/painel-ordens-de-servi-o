@@ -5547,15 +5547,11 @@ async function imprimirOS(id){
   <script>
     window.onload = function(){
       // pequeno atraso garante que o layout (grid/fontes) termine de renderizar
-      // antes do diálogo de impressão abrir — sem isso, o "Salvar como PDF" do
-      // Chrome pode travar esperando um layout que ainda está sendo montado
+      // antes do diálogo de impressão abrir
       setTimeout(function(){
         window.focus();
         window.print();
       }, 150);
-    };
-    window.onafterprint = function(){
-      window.close();
     };
   <\/script>
 </body>
