@@ -2196,7 +2196,8 @@ async function loadData(){
       atualizadoPor: r.atualizado_por || '', dataUltimoContato: r.data_ultimo_contato || '',
       statusOs: r.status_os || 'Aberta',
       filaAcesso: r.fila_acesso || false,
-      concluidaEm: r.concluida_em || null
+      concluidaEm: r.concluida_em || null,
+      ausenteDesde: r.ausente_desde || null
     }));
   }catch(e){ console.error('Erro ao carregar', e); ORDENS = []; }
 }
@@ -3595,29 +3596,64 @@ function handleFile(file){
       // ---- RECONCILIAÇÃO: ordens que estavam abertas mas sumiram desta planilha ----
       // (a planilha semanal só traz o que ainda está aberto no sistema de origem;
       //  se uma ordem não aparece mais, é porque foi concluída)
-      const ordensParaConcluir = ORDENS.filter(o=>{
-        const key = o.placa+'|'+o.aberturaISO;
+      //
+      // Margem de segurança: uma ordem só é marcada Concluída se ela sumir da planilha
+      // em DUAS importações seguidas. Isso evita que uma exportação incompleta/parcial
+      // pontual (relatório cortado, filtro diferente etc.) conclua ordens que continuam
+      // abertas de verdade na plataforma.
+      const ordensAindaAtivas = ORDENS.filter(o=>{
         const statusAtual = o.statusOs || 'Aberta';
-        const aindaAtiva = statusAtual === 'Aberta' || statusAtual === 'Em Andamento';
-        return aindaAtiva && !chavesNaPlanilhaNova.has(key) && !o.id.startsWith('manual_');
+        return (statusAtual === 'Aberta' || statusAtual === 'Em Andamento') && !o.id.startsWith('manual_');
+      });
+
+      const hojeISO = paraISOLocal(new Date());
+      const ordensParaConcluir = [];
+      const ordensParaMarcarAusente = [];
+      const ordensParaLimparAusencia = [];
+
+      ordensAindaAtivas.forEach(o=>{
+        const key = o.placa+'|'+o.aberturaISO;
+        const presente = chavesNaPlanilhaNova.has(key);
+        if(presente){
+          if(o.ausenteDesde) ordensParaLimparAusencia.push(o);
+        } else {
+          if(o.ausenteDesde){
+            // já estava ausente numa importação anterior -> agora sim conclui
+            ordensParaConcluir.push(o);
+          } else {
+            // primeira vez que some -> só marca como "ausente", não conclui ainda
+            ordensParaMarcarAusente.push(o);
+          }
+        }
       });
 
       const log = document.getElementById('importLog');
       log.classList.add('show');
       log.innerHTML = `Enviando ${novas} ordens novas para o banco compartilhado...`;
 
-      const hojeISO = paraISOLocal(new Date());
       Promise.all([
         insertOrdens(novasOrdens),
         ...ordensParaConcluir.map(o=>{
           o.statusOs = 'Concluída';
           o.concluidaEm = hojeISO;
-          return updateOrdemRemote(o.id, {status_os:'Concluída', concluida_em: hojeISO});
+          o.ausenteDesde = null;
+          return updateOrdemRemote(o.id, {status_os:'Concluída', concluida_em: hojeISO, ausente_desde: null});
+        }),
+        ...ordensParaMarcarAusente.map(o=>{
+          o.ausenteDesde = hojeISO;
+          return updateOrdemRemote(o.id, {ausente_desde: hojeISO});
+        }),
+        ...ordensParaLimparAusencia.map(o=>{
+          o.ausenteDesde = null;
+          return updateOrdemRemote(o.id, {ausente_desde: null});
         })
       ]).then(async ()=>{
         registrarAuditoria('Excel importado', `${novas} nova(s), ${atualizadas} já existente(s) mantida(s)${ordensParaConcluir.length > 0 ? `, ${ordensParaConcluir.length} concluída(s) automaticamente` : ''}${canceladasIgnoradas > 0 ? `, ${canceladasIgnoradas} cancelada(s) ignorada(s)` : ''}`);
         if(ordensParaConcluir.length > 0){
-          registrarAuditoria('Conclusão automática', `${ordensParaConcluir.length} ordem(ns) marcada(s) como Concluída automaticamente (não constavam na nova planilha)`);
+          registrarAuditoria('Conclusão automática', `${ordensParaConcluir.length} ordem(ns) marcada(s) como Concluída automaticamente (não constavam em duas planilhas seguidas)`);
+        }
+        if(ordensParaMarcarAusente.length > 0){
+          registrarAuditoria('Ordens ausentes na planilha', `${ordensParaMarcarAusente.length} ordem(ns) não vieram nesta planilha; aguardando confirmação na próxima importação antes de concluir`);
         }
 
         // ---- registra o histórico desta importação e compara com a anterior ----
@@ -3660,7 +3696,8 @@ function handleFile(file){
           `<b>${atualizadas}</b> ordem(ns) já existente(s) mantida(s) (tratamento preservado)<br>` +
           (tecnicosAlterados ? `<b>${tecnicosAlterados}</b> ordem(ns) com técnico atualizado conforme a planilha<br>` : '') +
           (canceladasIgnoradas ? `<b>${canceladasIgnoradas}</b> ordem(ns) Cancelada(s) ignorada(s) (não foram alteradas)<br>` : '') +
-          `<b>${ordensParaConcluir.length}</b> ordem(ns) marcada(s) como <b>Concluída</b> automaticamente (não vieram nesta planilha)` +
+          `<b>${ordensParaConcluir.length}</b> ordem(ns) marcada(s) como <b>Concluída</b> automaticamente (não vieram em duas planilhas seguidas)` +
+          (ordensParaMarcarAusente.length ? `<br><b>${ordensParaMarcarAusente.length}</b> ordem(ns) não vieram nesta planilha — aguardando confirmação na próxima importação antes de concluir` : '') +
           (ignoradas ? `<br><b>${ignoradas}</b> linha(s) ignorada(s) por data inválida` : '') +
           `<br><br>Base total agora: <b>${ORDENS.length}</b> ordens.` +
           htmlComparativo
@@ -5509,7 +5546,16 @@ async function imprimirOS(id){
   <div id="printOSSheet">${bodyHtml}</div>
   <script>
     window.onload = function(){
-      window.print();
+      // pequeno atraso garante que o layout (grid/fontes) termine de renderizar
+      // antes do diálogo de impressão abrir — sem isso, o "Salvar como PDF" do
+      // Chrome pode travar esperando um layout que ainda está sendo montado
+      setTimeout(function(){
+        window.focus();
+        window.print();
+      }, 150);
+    };
+    window.onafterprint = function(){
+      window.close();
     };
   <\/script>
 </body>
