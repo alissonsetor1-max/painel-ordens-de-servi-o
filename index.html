@@ -2079,7 +2079,7 @@ function localizarColunasRelatorio(rows){
   // os nomes das colunas que importam para o índice correto naquela planilha.
   // Isso evita quebrar a importação quando o relatório de origem muda a ordem/quantidade de colunas.
   const linhaCabecalho = rows.find(r => String(r[0]||'').trim() === 'Placa');
-  const defaults = { placa:0, tipo:3, instalador:4, cliente:5, telefone:6, abertura:8, endereco:19, cep:20, statusAgendamento:-1 };
+  const defaults = { placa:0, tipo:3, instalador:4, cliente:5, telefone:6, abertura:8, endereco:19, cep:20, statusAgendamento:-1, modelo:-1, bairro:-1, cidade:-1, estado:-1 };
   if(!linhaCabecalho) return defaults;
 
   const norm = s => String(s||'').trim().toLowerCase();
@@ -2095,6 +2095,10 @@ function localizarColunasRelatorio(rows){
     else if(v === 'endereço' || v === 'endereco') idx.endereco = i;
     else if(v === 'cep') idx.cep = i;
     else if(v === 'status' || v === 'situação' || v === 'situacao' || v === 'status do agendamento' || v === 'status agendamento') idx.statusAgendamento = i;
+    else if(v === 'modelo do veículo' || v === 'modelo do veiculo' || v === 'modelo') idx.modelo = i;
+    else if(v === 'bairro') idx.bairro = i;
+    else if(v === 'cidade') idx.cidade = i;
+    else if(v === 'estado') idx.estado = i;
   });
 
   return {
@@ -2106,7 +2110,11 @@ function localizarColunasRelatorio(rows){
     abertura: idx.abertura ?? defaults.abertura,
     endereco: idx.endereco ?? defaults.endereco,
     cep: idx.cep ?? defaults.cep,
-    statusAgendamento: idx.statusAgendamento ?? defaults.statusAgendamento
+    statusAgendamento: idx.statusAgendamento ?? defaults.statusAgendamento,
+    modelo: idx.modelo ?? defaults.modelo,
+    bairro: idx.bairro ?? defaults.bairro,
+    cidade: idx.cidade ?? defaults.cidade,
+    estado: idx.estado ?? defaults.estado
   };
 }
 
@@ -2200,7 +2208,8 @@ async function insertOrdens(novasOrdens){
     id:o.id, placa:o.placa, tecnico:o.tecnico, tipo:o.tipo,
     associado:o.associado, abertura_iso:o.aberturaISO, treat:o.treat, obs:o.obs, status_os: o.statusOs || 'Aberta',
     fila_acesso: o.filaAcesso || false,
-    telefone_cliente: o.telefoneCliente || null, endereco: o.endereco || null, cep: o.cep || null
+    telefone_cliente: o.telefoneCliente || null, endereco: o.endereco || null, cep: o.cep || null,
+    modelo: o.modelo || null, bairro: o.bairro || null, cidade: o.cidade || null, estado: o.estado || null
   }));
   const { error } = await sb.from('ordens_servico').insert(rows);
   if(error) console.error('Erro ao inserir ordens', error);
@@ -3509,6 +3518,10 @@ function handleFile(file){
           const telefoneCliente = String(row[colIdx.telefone]||'').trim();
           const endereco = String(row[colIdx.endereco]||'').trim();
           const cep = String(row[colIdx.cep]||'').trim();
+          const modelo = colIdx.modelo >= 0 ? String(row[colIdx.modelo]||'').trim() : '';
+          const bairro = colIdx.bairro >= 0 ? String(row[colIdx.bairro]||'').trim() : '';
+          const cidade = colIdx.cidade >= 0 ? String(row[colIdx.cidade]||'').trim() : '';
+          const estado = colIdx.estado >= 0 ? String(row[colIdx.estado]||'').trim() : '';
 
           const dt = parseDataBR(abertura);
           if(!dt) { ignoradas++; return; }
@@ -3543,6 +3556,10 @@ function handleFile(file){
             if(telefoneCliente) camposCliente.telefone_cliente = telefoneCliente;
             if(endereco) camposCliente.endereco = endereco;
             if(cep) camposCliente.cep = cep;
+            if(modelo) camposCliente.modelo = modelo;
+            if(bairro) camposCliente.bairro = bairro;
+            if(cidade) camposCliente.cidade = cidade;
+            if(estado) camposCliente.estado = estado;
             if(Object.keys(camposCliente).length > 0){
               updateOrdemRemote(existente.id, camposCliente);
             }
@@ -3562,7 +3579,11 @@ function handleFile(file){
             statusOs: 'Aberta',
             telefoneCliente: telefoneCliente,
             endereco: endereco,
-            cep: cep
+            cep: cep,
+            modelo: modelo,
+            bairro: bairro,
+            cidade: cidade,
+            estado: estado
           };
           ORDENS.push(novaOrdem);
           novasOrdens.push(novaOrdem);
@@ -5395,7 +5416,7 @@ async function imprimirOS(id){
   if(!o) return;
 
   const { data, error } = await sb.from('ordens_servico')
-    .select('telefone_cliente,endereco,cep')
+    .select('telefone_cliente,endereco,cep,modelo,bairro,cidade,estado')
     .eq('id', id).maybeSingle();
 
   if(error){
@@ -5408,6 +5429,7 @@ async function imprimirOS(id){
   const geradoEm = new Date();
   const geradoFmt = `${String(geradoEm.getDate()).padStart(2,'0')}/${String(geradoEm.getMonth()+1).padStart(2,'0')}/${geradoEm.getFullYear()} às ${String(geradoEm.getHours()).padStart(2,'0')}:${String(geradoEm.getMinutes()).padStart(2,'0')}`;
   const esc = s => String(s==null || s==='' ? '—' : s).replace(/</g,'&lt;');
+  const cidadeEstado = [data && data.cidade, data && data.estado].filter(Boolean).join(' / ');
 
   const bodyHtml = `
     <div class="os-print-head">
@@ -5434,15 +5456,19 @@ async function imprimirOS(id){
         <div class="os-print-section-title">Dados do Cliente</div>
         <div class="os-print-grid">
           <div class="os-print-field"><span class="lbl">Nome</span><span class="val">${esc(o.associado)}</span></div>
-          <div class="os-print-field"><span class="lbl">Telefone</span><span class="val">${esc(data && data.telefone_cliente)}</span></div>
+          <div class="os-print-field"><span class="lbl">Contato</span><span class="val">${esc(data && data.telefone_cliente)}</span></div>
           <div class="os-print-field full"><span class="lbl">Endereço</span><span class="val">${esc(data && data.endereco)}</span></div>
+          <div class="os-print-field"><span class="lbl">Bairro</span><span class="val">${esc(data && data.bairro)}</span></div>
+          <div class="os-print-field"><span class="lbl">Cidade / Estado</span><span class="val">${esc(cidadeEstado)}</span></div>
           <div class="os-print-field"><span class="lbl">CEP</span><span class="val">${esc(data && data.cep)}</span></div>
         </div>
       </div>
 
       <div class="os-print-section">
-        <div class="os-print-section-title">Dados do Serviço</div>
+        <div class="os-print-section-title">Dados do Veículo e Serviço</div>
         <div class="os-print-grid">
+          <div class="os-print-field"><span class="lbl">Placa</span><span class="val">${esc(o.placa)}</span></div>
+          <div class="os-print-field"><span class="lbl">Modelo do Veículo</span><span class="val">${esc(data && data.modelo)}</span></div>
           <div class="os-print-field"><span class="lbl">Tipo de Serviço</span><span class="val">${esc(o.tipo)}</span></div>
           <div class="os-print-field"><span class="lbl">Técnico Responsável</span><span class="val">${esc(o.tecnico)}</span></div>
         </div>
