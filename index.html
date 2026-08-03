@@ -2079,7 +2079,7 @@ function localizarColunasRelatorio(rows){
   // os nomes das colunas que importam para o índice correto naquela planilha.
   // Isso evita quebrar a importação quando o relatório de origem muda a ordem/quantidade de colunas.
   const linhaCabecalho = rows.find(r => String(r[0]||'').trim() === 'Placa');
-  const defaults = { placa:0, tipo:3, instalador:4, cliente:5, telefone:6, abertura:8, endereco:19, cep:20 };
+  const defaults = { placa:0, tipo:3, instalador:4, cliente:5, telefone:6, abertura:8, endereco:19, cep:20, statusAgendamento:-1 };
   if(!linhaCabecalho) return defaults;
 
   const norm = s => String(s||'').trim().toLowerCase();
@@ -2094,6 +2094,7 @@ function localizarColunasRelatorio(rows){
     else if(v === 'abertura') idx.abertura = i;
     else if(v === 'endereço' || v === 'endereco') idx.endereco = i;
     else if(v === 'cep') idx.cep = i;
+    else if(v === 'status' || v === 'situação' || v === 'situacao' || v === 'status do agendamento' || v === 'status agendamento') idx.statusAgendamento = i;
   });
 
   return {
@@ -2104,7 +2105,8 @@ function localizarColunasRelatorio(rows){
     telefone: idx.telefone ?? defaults.telefone,
     abertura: idx.abertura ?? defaults.abertura,
     endereco: idx.endereco ?? defaults.endereco,
-    cep: idx.cep ?? defaults.cep
+    cep: idx.cep ?? defaults.cep,
+    statusAgendamento: idx.statusAgendamento ?? defaults.statusAgendamento
   };
 }
 
@@ -3455,11 +3457,50 @@ function handleFile(file){
         const ws = wb.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''});
         const colIdx = localizarColunasRelatorio(rows);
+
+        // ---- pré-processamento: algumas planilhas trazem uma linha por AGENDAMENTO,
+        // não por OS — quando uma OS foi reatribuída (agendamento antigo cancelado e um
+        // novo criado para outro técnico), a mesma placa+data aparece 2x. Aqui agrupamos
+        // por chave e ficamos só com a linha ativa (ignorando as linhas Canceladas),
+        // pra não deixar a ordem das linhas na planilha decidir qual técnico "vence".
+        const linhasPorChave = new Map(); // key -> linha escolhida
         rows.forEach(row=>{
           const placa = row[colIdx.placa];
           if(!placa || String(placa).trim()==='' ) return;
           if(String(placa).trim().toLowerCase().startsWith('técnico')) return;
           if(String(placa).trim() === 'Placa') return; // linha de cabeçalho repetida
+
+          const abertura = row[colIdx.abertura];
+          const dt = parseDataBR(abertura);
+          if(!dt) return; // linhas com data inválida são contabilizadas depois, na passada final
+
+          const placaClean = String(placa).trim().toUpperCase();
+          const aberturaISO = paraISOLocal(dt);
+          const key = placaClean+'|'+aberturaISO;
+
+          const statusAgendamentoRaw = colIdx.statusAgendamento >= 0 ? String(row[colIdx.statusAgendamento]||'').trim().toLowerCase() : '';
+          const estaCancelada = statusAgendamentoRaw.startsWith('cancel');
+
+          const escolhidaAtual = linhasPorChave.get(key);
+          if(!escolhidaAtual){
+            linhasPorChave.set(key, row);
+          } else {
+            const statusEscolhidaRaw = colIdx.statusAgendamento >= 0 ? String(escolhidaAtual[colIdx.statusAgendamento]||'').trim().toLowerCase() : '';
+            const escolhidaEstaCancelada = statusEscolhidaRaw.startsWith('cancel');
+            // se a linha escolhida até agora está cancelada e esta nova não está, troca pra esta
+            if(escolhidaEstaCancelada && !estaCancelada){
+              linhasPorChave.set(key, row);
+            }
+            // se as duas são ativas (ou as duas canceladas), mantém a última encontrada
+            // (comportamento anterior, preservado para não quebrar planilhas sem essa coluna)
+            else if(escolhidaEstaCancelada === estaCancelada){
+              linhasPorChave.set(key, row);
+            }
+          }
+        });
+
+        [...linhasPorChave.values()].forEach(row=>{
+          const placa = row[colIdx.placa];
 
           const tipoServico = row[colIdx.tipo];
           const instalador = row[colIdx.instalador];
