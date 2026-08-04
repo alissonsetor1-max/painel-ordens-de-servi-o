@@ -1425,13 +1425,14 @@
             <tr>
               <th style="text-align:left;">Empresa</th>
               <th>Status</th>
+              <th>Usuários</th>
               <th>Licença até</th>
               <th>Criada em</th>
               <th>Ação</th>
             </tr>
           </thead>
           <tbody id="empresasBody">
-            <tr><td colspan="5" style="padding:12px 16px;"><div class="skel" style="height:14px; width:55%;"></div></td></tr>
+            <tr><td colspan="6" style="padding:12px 16px;"><div class="skel" style="height:14px; width:55%;"></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -1767,7 +1768,7 @@
 </div>
 
 <div class="modal-overlay" id="excluirEmpresaModal">
-  <div class="modal" style="max-width:380px;">
+  <div class="modal" style="max-width:400px;">
     <div class="modal-head">
       <div class="ic" style="background:var(--red-bg); border-color:var(--red-line);">🗑️</div>
       <div>
@@ -1777,11 +1778,16 @@
     </div>
     <div class="modal-body" style="padding:18px 20px;">
       <p id="excluirEmpresaNome" style="font-size:13px; color:var(--text-dim);"></p>
+      <div id="excluirEmpresaImpacto" style="font-size:12px; color:var(--text-dim); background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-top:10px;">Calculando o que será apagado...</div>
       <div style="font-size:11.5px; color:var(--red); margin-top:10px; font-weight:700;">Todas as ordens, usuários e histórico dessa empresa serão apagados permanentemente.</div>
+      <div style="margin-top:14px;">
+        <label class="form-label">Digite o nome exato da empresa para confirmar</label>
+        <input type="text" id="excluirEmpresaConfirmInput" style="width:100%; padding:10px 12px;" oninput="document.getElementById('btnConfirmarExclusaoEmpresa').disabled = (this.value !== EMPRESA_NOME_EXCLUIR)">
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="document.getElementById('excluirEmpresaModal').classList.remove('show')">Cancelar</button>
-      <button class="btn btn-primary" style="background:var(--red); border-color:var(--red);" onclick="executarExclusaoEmpresa()">Excluir definitivamente</button>
+      <button class="btn btn-primary" id="btnConfirmarExclusaoEmpresa" disabled style="background:var(--red); border-color:var(--red);" onclick="executarExclusaoEmpresa()">Excluir definitivamente</button>
     </div>
   </div>
 </div>
@@ -3612,9 +3618,16 @@ async function carregarEmpresas(){
 
   const { data, error } = await sb.from('empresas').select('*').order('criado_em', {ascending:false});
   if(error || !data || data.length === 0){
-    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhuma empresa encontrada.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhuma empresa encontrada.</td></tr>';
     return;
   }
+
+  // Conta quantos usuários (perfis_usuarios) cada empresa tem
+  const { data: todosPerfis } = await sb.from('perfis_usuarios').select('empresa_id');
+  const contagemPorEmpresa = {};
+  (todosPerfis||[]).forEach(p=>{
+    contagemPorEmpresa[p.empresa_id] = (contagemPorEmpresa[p.empresa_id]||0) + 1;
+  });
 
   EMPRESAS_CACHE = data;
   tbody.innerHTML = data.map(e=>{
@@ -3624,9 +3637,11 @@ async function carregarEmpresas(){
     const hoje = new Date();
     const licVencida = licDt && licDt < hoje;
     const licFmt = licDt ? licDt.toLocaleDateString('pt-BR') : '—';
+    const qtdUsuarios = contagemPorEmpresa[e.id] || 0;
     return `<tr>
       <td style="text-align:left;">${e.nome||'—'}</td>
       <td><span class="badge role-badge" style="${e.ativa ? 'background:var(--green-bg); color:var(--green); border-color:var(--green-line);' : 'background:var(--red-bg); color:var(--red); border-color:var(--red-line);'}">${e.ativa ? 'Ativa' : 'Inativa'}</span></td>
+      <td>${qtdUsuarios}</td>
       <td><span style="${licVencida ? 'color:var(--red); font-weight:700;' : ''}">${licFmt}${licVencida ? ' (vencida)' : ''}</span></td>
       <td>${dataFmt}</td>
       <td>
@@ -3688,11 +3703,21 @@ async function salvarEdicaoEmpresa(){
 
 let EMPRESA_ID_EXCLUIR = null;
 let EMPRESA_NOME_EXCLUIR = null;
-function confirmarExclusaoEmpresa(empresaId, nome){
+async function confirmarExclusaoEmpresa(empresaId, nome){
   EMPRESA_ID_EXCLUIR = empresaId;
   EMPRESA_NOME_EXCLUIR = nome;
   document.getElementById('excluirEmpresaNome').textContent = `Tem certeza que deseja excluir a empresa "${nome}"?`;
+  document.getElementById('excluirEmpresaConfirmInput').value = '';
+  document.getElementById('btnConfirmarExclusaoEmpresa').disabled = true;
+  document.getElementById('excluirEmpresaImpacto').textContent = 'Calculando o que será apagado...';
   document.getElementById('excluirEmpresaModal').classList.add('show');
+
+  const [{ count: qtdOrdens }, { count: qtdUsuarios }] = await Promise.all([
+    sb.from('ordens_servico').select('*', { count:'exact', head:true }).eq('empresa_id', empresaId),
+    sb.from('perfis_usuarios').select('*', { count:'exact', head:true }).eq('empresa_id', empresaId)
+  ]);
+  document.getElementById('excluirEmpresaImpacto').innerHTML =
+    `Isso vai apagar <b>${qtdOrdens||0}</b> ordem(ns) de serviço e <b>${qtdUsuarios||0}</b> usuário(s) vinculados a esta empresa.`;
 }
 
 async function executarExclusaoEmpresa(){
