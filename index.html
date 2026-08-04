@@ -831,6 +831,7 @@
     <div class="nav-item" data-view="usuarios" data-admin-only><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="nav-txt">Usuários</span></div>
     <div class="nav-item" data-view="configuracoes" data-admin-only><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-txt">Configurações</span></div>
     <div class="nav-item" data-view="auditoria" data-admin-only><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span><span class="nav-txt">Auditoria</span></div>
+    <div class="nav-item" data-view="empresas" data-super-admin-only style="display:none;"><span class="nav-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg></span><span class="nav-txt">Empresas</span></div>
 
     <div class="sidebar-foot-block">
       <div class="status-line">
@@ -1403,6 +1404,37 @@
       <div class="footnote">Ordens já existentes (mesma placa + data de abertura) mantêm o tratamento e a observação já preenchidos. Apenas novas ordens são adicionadas.</div>
     </section>
 
+    <!-- ============ EMPRESAS (SUPER ADMIN) ============ -->
+    <section class="view" id="view-empresas">
+      <div class="dash-header-banner">
+      <div class="topbar" style="margin-bottom:0;">
+        <div>
+          <h1>Empresas</h1>
+          <div class="meta"><span>Clientes cadastrados no sistema</span></div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('cadEmpresaErro').style.display='none'; document.getElementById('novaEmpresaModal').classList.add('show')">➕ Nova empresa</button>
+          <button class="btn btn-ghost btn-sm" onclick="carregarEmpresas()">🔄 Atualizar lista</button>
+        </div>
+      </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left;">Empresa</th>
+              <th>Status</th>
+              <th>Criada em</th>
+            </tr>
+          </thead>
+          <tbody id="empresasBody">
+            <tr><td colspan="3" style="padding:12px 16px;"><div class="skel" style="height:14px; width:55%;"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- ============ USUÁRIOS ============ -->
     <section class="view" id="view-usuarios">
       <div class="dash-header-banner">
@@ -1649,6 +1681,41 @@
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="document.getElementById('novoUsuarioModal').classList.remove('show')">Cancelar</button>
       <button class="btn btn-primary" onclick="criarConta()">Criar usuário</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="novaEmpresaModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <div class="ic" style="background:var(--violet-bg); border-color:var(--violet-line);">🏢</div>
+      <div>
+        <h3>Nova empresa</h3>
+        <p>Cadastrar um novo cliente e o admin dele</p>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:18px 20px;">
+      <div style="margin-bottom:12px;">
+        <label class="form-label">Nome da empresa</label>
+        <input type="text" id="empNome" placeholder="Ex: Rastreamento XYZ" style="width:100%; padding:10px 12px;">
+      </div>
+      <div style="margin-bottom:12px; padding-top:6px; border-top:1px solid var(--line);">
+        <label class="form-label">Nome do admin (primeiro usuário)</label>
+        <input type="text" id="empAdminNome" placeholder="Ex: João Silva" style="width:100%; padding:10px 12px;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">E-mail do admin</label>
+        <input type="email" id="empAdminEmail" placeholder="admin@cliente.com" style="width:100%; padding:10px 12px;">
+      </div>
+      <div>
+        <label class="form-label">Senha inicial</label>
+        <input type="password" id="empAdminSenha" placeholder="Mínimo 6 caracteres" style="width:100%; padding:10px 12px;" autocomplete="new-password" data-lpignore="true">
+      </div>
+      <div id="cadEmpresaErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700; margin-top:10px;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="document.getElementById('novaEmpresaModal').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-primary" onclick="criarEmpresa()">Criar empresa</button>
     </div>
   </div>
 </div>
@@ -2171,9 +2238,9 @@ async function carregarPerfilLogado(userId){
   USUARIO_ID_ATUAL = userId;
   const { data, error } = await sb.from('perfis_usuarios').select('*').eq('id', userId).single();
   if(error || !data){
-    USUARIO_ATUAL = { nome: 'Usuário', papel: 'Técnico', tecnicoVinculado: null, empresaId: null };
+    USUARIO_ATUAL = { nome: 'Usuário', papel: 'Técnico', tecnicoVinculado: null, empresaId: null, superAdmin: false };
   } else {
-    USUARIO_ATUAL = { nome: data.nome, papel: data.papel, tecnicoVinculado: data.tecnico_vinculado || null, empresaId: data.empresa_id };
+    USUARIO_ATUAL = { nome: data.nome, papel: data.papel, tecnicoVinculado: data.tecnico_vinculado || null, empresaId: data.empresa_id, superAdmin: !!data.super_admin };
   }
   atualizarBadgeUsuario();
   aplicarRestricoesDePapel();
@@ -2186,6 +2253,9 @@ function aplicarRestricoesDePapel(){
   const ehTecnico = USUARIO_ATUAL.papel === 'Técnico';
   document.querySelectorAll('[data-admin-only]').forEach(el=>{
     el.style.display = ehTecnico ? 'none' : '';
+  });
+  document.querySelectorAll('[data-super-admin-only]').forEach(el=>{
+    el.style.display = USUARIO_ATUAL.superAdmin ? '' : 'none';
   });
   document.body.classList.toggle('papel-tecnico', ehTecnico);
   redistribuirLarguraColunas(ehTecnico);
@@ -2883,6 +2953,9 @@ function goTo(view){
   if(view === 'usuarios'){
     carregarUsuarios();
   }
+  if(view === 'empresas'){
+    carregarEmpresas();
+  }
   if(view === 'acessos'){
     renderAcessos();
   }
@@ -3465,6 +3538,76 @@ async function carregarUsuarios(){
       </td>
     </tr>`;
   }).join('');
+}
+
+async function carregarEmpresas(){
+  const tbody = document.getElementById('empresasBody');
+  tbody.innerHTML = linhasSkeleton(3);
+
+  const { data, error } = await sb.from('empresas').select('*').order('criado_em', {ascending:false});
+  if(error || !data || data.length === 0){
+    tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhuma empresa encontrada.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(e=>{
+    const dt = e.criado_em ? new Date(e.criado_em) : null;
+    const dataFmt = dt ? dt.toLocaleDateString('pt-BR') : '—';
+    return `<tr>
+      <td style="text-align:left;">${e.nome||'—'}</td>
+      <td><span class="badge role-badge" style="${e.ativa ? 'background:var(--green-bg); color:var(--green); border-color:var(--green-line);' : 'background:var(--red-bg); color:var(--red); border-color:var(--red-line);'}">${e.ativa ? 'Ativa' : 'Inativa'}</span></td>
+      <td>${dataFmt}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function criarEmpresa(){
+  const nomeEmpresa = document.getElementById('empNome').value.trim();
+  const nomeAdmin = document.getElementById('empAdminNome').value.trim();
+  const email = document.getElementById('empAdminEmail').value.trim();
+  const senha = document.getElementById('empAdminSenha').value;
+  const erroBox = document.getElementById('cadEmpresaErro');
+  erroBox.style.display = 'none';
+
+  if(!nomeEmpresa || !nomeAdmin || !email || !senha){
+    erroBox.textContent = 'Preencha todos os campos.';
+    erroBox.style.display = 'block';
+    return;
+  }
+  if(senha.length < 6){
+    erroBox.textContent = 'A senha precisa ter no mínimo 6 caracteres.';
+    erroBox.style.display = 'block';
+    return;
+  }
+
+  try{
+    const { data: sessionData } = await sb.auth.getSession();
+    const accessToken = sessionData?.session?.access_token || '';
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/criar-empresa`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ nomeEmpresa, nomeAdmin, email, senha })
+    });
+    const result = await resp.json();
+    if(!resp.ok || result.error){
+      erroBox.textContent = result.error || 'Erro ao criar empresa.';
+      erroBox.style.display = 'block';
+      return;
+    }
+    document.getElementById('novaEmpresaModal').classList.remove('show');
+    document.getElementById('empNome').value = '';
+    document.getElementById('empAdminNome').value = '';
+    document.getElementById('empAdminEmail').value = '';
+    document.getElementById('empAdminSenha').value = '';
+    registrarAuditoria('Empresa criada', `Nova empresa cadastrada: ${nomeEmpresa} — admin: ${nomeAdmin} (${email})`);
+    carregarEmpresas();
+  }catch(e){
+    erroBox.textContent = 'Erro de conexão: ' + e.message;
+    erroBox.style.display = 'block';
+  }
 }
 
 let USUARIO_ID_ATUAL = null;
