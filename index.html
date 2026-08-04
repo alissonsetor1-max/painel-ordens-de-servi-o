@@ -493,6 +493,73 @@
 
   .footnote{ font-size:11px; color:var(--text-mute); margin-top:24px; }
 
+  /* ===== TELA DE LOGIN (split-screen, identidade PROSULSAT) ===== */
+  #loginModal{ padding:0; background:var(--bg); }
+  #loginModal .login-wrap{
+    width:100%; height:100%; max-width:1040px; max-height:660px;
+    background:var(--panel); border-radius:22px; overflow:hidden; display:flex;
+    box-shadow:0 30px 80px rgba(0,0,0,.45), 0 4px 18px rgba(0,0,0,.25);
+    border:1px solid var(--line);
+  }
+  #loginModal .login-brand{
+    flex:1 1 46%; position:relative; padding:44px 40px;
+    background:
+      radial-gradient(600px 320px at 15% 0%, rgba(212,163,78,.16), transparent 60%),
+      linear-gradient(165deg, #23262e 0%, #191b21 55%, #101114 100%);
+    display:flex; flex-direction:column; color:#fff; overflow:hidden;
+  }
+  #loginModal .login-brand::after{
+    content:''; position:absolute; right:-90px; bottom:-90px; width:280px; height:280px;
+    border-radius:50%; background:radial-gradient(circle, rgba(212,163,78,.14), transparent 70%);
+  }
+  #loginModal .login-brand-mark{
+    width:52px; height:52px; border-radius:14px;
+    background:linear-gradient(145deg, #d4a34e, #b8863a);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 6px 18px rgba(212,163,78,.35);
+    margin-bottom:22px;
+  }
+  #loginModal .login-brand-name{ font-size:22px; font-weight:800; letter-spacing:.02em; margin-bottom:6px; font-family:'Manrope','Inter',sans-serif; }
+  #loginModal .login-brand-tag{ font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:#d4a34e; margin-bottom:28px; }
+  #loginModal .login-brand-desc{ font-size:13px; line-height:1.65; color:rgba(255,255,255,.72); max-width:340px; margin-bottom:30px; }
+  #loginModal .login-feature{ display:flex; gap:12px; align-items:flex-start; margin-bottom:16px; position:relative; z-index:1; }
+  #loginModal .login-feature .ic{
+    width:30px; height:30px; border-radius:9px; flex-shrink:0; margin-top:1px;
+    background:rgba(212,163,78,.16); border:1px solid rgba(212,163,78,.3);
+    display:flex; align-items:center; justify-content:center; font-size:13.5px;
+  }
+  #loginModal .login-feature b{ font-size:12.5px; font-weight:700; display:block; color:#fff; margin-bottom:2px; }
+  #loginModal .login-feature span{ font-size:11.5px; color:rgba(255,255,255,.58); line-height:1.5; }
+  #loginModal .login-brand-foot{
+    margin-top:auto; padding-top:20px; border-top:1px solid rgba(255,255,255,.14);
+    font-size:10.5px; color:rgba(255,255,255,.45); position:relative; z-index:1;
+  }
+  #loginModal .login-form-side{
+    flex:1 1 54%; padding:52px 52px; display:flex; flex-direction:column; justify-content:center;
+    background:var(--panel);
+  }
+  #loginModal .login-form-inner{ width:100%; max-width:320px; margin:0 auto; }
+  #loginModal .login-form-title{ font-size:20px; font-weight:800; color:var(--text); margin-bottom:5px; }
+  #loginModal .login-form-sub{ font-size:12.5px; color:var(--text-dim); margin-bottom:26px; }
+  #loginModal .login-form-inner input{
+    width:100%; padding:11px 13px; border-radius:10px;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text); font-size:13px;
+  }
+  #loginModal .login-form-inner input:focus{ outline:none; border-color:#d4a34e; }
+  #loginModal .btn-login-gold{
+    width:100%; justify-content:center; margin-top:6px;
+    background:linear-gradient(155deg, #d4a34e, #b8863a); color:#1a1204; font-weight:800;
+    border:none; border-radius:10px; padding:12px; font-size:13.5px; cursor:pointer;
+    box-shadow:0 4px 14px rgba(212,163,78,.35); transition:transform .12s ease;
+  }
+  #loginModal .btn-login-gold:hover{ transform:translateY(-1px); }
+  @media (max-width:820px){
+    #loginModal .login-wrap{ flex-direction:column; max-width:440px; max-height:none; height:auto; }
+    #loginModal .login-brand{ padding:32px 28px; }
+    #loginModal .login-brand-desc, #loginModal .login-feature{ display:none; }
+    #loginModal .login-form-side{ padding:36px 30px; }
+  }
+
   /* ===== NOVO DASHBOARD ===== */
   .dash-kpis{ display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
   .dash-kpi{ flex:1; min-width:135px; background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:8px 12px; display:flex; align-items:center; gap:9px; box-shadow:var(--shadow-card); transition:transform .18s ease, box-shadow .18s ease; }
@@ -1487,35 +1554,67 @@
   </main>
 </div>
 
-<!-- ===== MODAL DE LOGIN ===== -->
+<!-- ===== TELA DE LOGIN ===== -->
 <div class="modal-overlay show" id="loginModal">
-  <div class="modal" style="max-width:380px;">
-    <div class="modal-head">
-      <div class="ic" style="background:var(--blue-bg); border-color:var(--blue-line);">🔒</div>
-      <div>
-        <h3>Entrar no sistema</h3>
-        <p>Use seu e-mail e senha</p>
+  <div class="login-wrap">
+
+    <!-- Painel de identidade PROSULSAT -->
+    <div class="login-brand">
+      <div class="login-brand-mark">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" fill="white" fill-opacity="0.16"/>
+          <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.25 7.3 11.97a1 1 0 0 0 1.4 0C13.5 21.25 20 15.25 20 10c0-4.42-3.58-8-8-8Z" stroke="white" stroke-width="1.4"/>
+          <circle cx="12" cy="10" r="3.1" fill="white"/>
+          <path d="M6.4 7.6a5.6 5.6 0 0 1 0 4.8M17.6 7.6a5.6 5.6 0 0 1 0 4.8" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity=".55"/>
+        </svg>
+      </div>
+      <div class="login-brand-name">PROSULSAT</div>
+      <div class="login-brand-tag">Rastreamento &amp; Operações de Campo</div>
+      <p class="login-brand-desc">
+        Plataforma interna de gestão de ordens de serviço da PROSULSAT — controle de técnicos,
+        prazos e atendimentos em um só lugar, com dados atualizados em tempo real.
+      </p>
+
+      <div class="login-feature">
+        <div class="ic">📋</div>
+        <div><b>Ordens de serviço centralizadas</b><span>Instalação, manutenção e retirada acompanhadas do início ao fim</span></div>
+      </div>
+      <div class="login-feature">
+        <div class="ic">⏱️</div>
+        <div><b>Prazos e SLA sob controle</b><span>Alertas automáticos de atraso e criticidade por ordem</span></div>
+      </div>
+      <div class="login-feature">
+        <div class="ic">🏆</div>
+        <div><b>Desempenho da equipe</b><span>Ranking de técnicos e indicadores de produtividade</span></div>
+      </div>
+
+      <div class="login-brand-foot">© 2026 PROSULSAT — Acesso restrito a usuários autorizados</div>
+    </div>
+
+    <!-- Formulário de login -->
+    <div class="login-form-side">
+      <div class="login-form-inner">
+        <div class="login-form-title">Entrar no sistema</div>
+        <div class="login-form-sub">Use seu e-mail e senha para acessar</div>
+
+        <div style="margin-bottom:12px;">
+          <label class="form-label">E-mail</label>
+          <input type="email" id="loginEmail" placeholder="seu@email.com">
+        </div>
+        <div>
+          <label class="form-label">Senha</label>
+          <input type="password" id="loginSenha" placeholder="••••••••" autocomplete="off" data-lpignore="true" onkeydown="if(event.key==='Enter'){ entrarComSenha(); }">
+        </div>
+        <div id="loginErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700; margin-top:10px;"></div>
+
+        <button class="btn-login-gold" id="btnLoginAcao" onclick="entrarComSenha()">Entrar</button>
+
+        <div style="margin-top:16px; text-align:center; font-size:11.5px; color:var(--text-mute);">
+          Não tem conta? Peça a um supervisor para te cadastrar em <b>Usuários</b>.
+        </div>
       </div>
     </div>
 
-    <div class="modal-body" style="padding:18px 20px;">
-      <div style="margin-bottom:12px;">
-        <label class="form-label">E-mail</label>
-        <input type="email" id="loginEmail" placeholder="seu@email.com" style="width:100%; padding:10px 12px;">
-      </div>
-      <div>
-        <label class="form-label">Senha</label>
-        <input type="password" id="loginSenha" placeholder="••••••••" style="width:100%; padding:10px 12px;" autocomplete="off" data-lpignore="true" onkeydown="if(event.key==='Enter'){ entrarComSenha(); }">
-      </div>
-      <div id="loginErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700; margin-top:10px;"></div>
-      <div style="margin-top:14px; text-align:center; font-size:11.5px; color:var(--text-mute);">
-        Não tem conta? Peça a um supervisor para te cadastrar em <b>Usuários</b>.
-      </div>
-    </div>
-
-    <div class="modal-foot">
-      <button class="btn btn-primary" id="btnLoginAcao" style="width:100%; justify-content:center;" onclick="entrarComSenha()">Entrar</button>
-    </div>
   </div>
 </div>
 
@@ -3617,7 +3716,10 @@ function handleFile(file){
       // (a planilha semanal só traz o que ainda está aberto no sistema de origem;
       //  se uma ordem não aparece mais, é porque foi concluída)
       //
-      // Conclui direto na primeira vez que a ordem sumir da planilha (comportamento original).
+      // Margem de segurança: uma ordem só é marcada Concluída se ela sumir da planilha
+      // em DUAS importações seguidas. Isso evita que uma exportação incompleta/parcial
+      // pontual (relatório cortado, filtro diferente etc.) conclua ordens que continuam
+      // abertas de verdade na plataforma.
       const ordensAindaAtivas = ORDENS.filter(o=>{
         const statusAtual = o.statusOs || 'Aberta';
         return (statusAtual === 'Aberta' || statusAtual === 'Em Andamento') && !o.id.startsWith('manual_');
@@ -3634,7 +3736,13 @@ function handleFile(file){
         if(presente){
           if(o.ausenteDesde) ordensParaLimparAusencia.push(o);
         } else {
-          ordensParaConcluir.push(o);
+          if(o.ausenteDesde){
+            // já estava ausente numa importação anterior -> agora sim conclui
+            ordensParaConcluir.push(o);
+          } else {
+            // primeira vez que some -> só marca como "ausente", não conclui ainda
+            ordensParaMarcarAusente.push(o);
+          }
         }
       });
 
@@ -3661,7 +3769,7 @@ function handleFile(file){
       ]).then(async ()=>{
         registrarAuditoria('Excel importado', `${novas} nova(s), ${atualizadas} já existente(s) mantida(s)${ordensParaConcluir.length > 0 ? `, ${ordensParaConcluir.length} concluída(s) automaticamente` : ''}${canceladasIgnoradas > 0 ? `, ${canceladasIgnoradas} cancelada(s) ignorada(s)` : ''}`);
         if(ordensParaConcluir.length > 0){
-          registrarAuditoria('Conclusão automática', `${ordensParaConcluir.length} ordem(ns) marcada(s) como Concluída automaticamente (não constavam mais na planilha)`);
+          registrarAuditoria('Conclusão automática', `${ordensParaConcluir.length} ordem(ns) marcada(s) como Concluída automaticamente (não constavam em duas planilhas seguidas)`);
         }
         if(ordensParaMarcarAusente.length > 0){
           registrarAuditoria('Ordens ausentes na planilha', `${ordensParaMarcarAusente.length} ordem(ns) não vieram nesta planilha; aguardando confirmação na próxima importação antes de concluir`);
