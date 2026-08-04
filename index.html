@@ -3804,10 +3804,7 @@ function handleFile(file){
       // (a planilha semanal só traz o que ainda está aberto no sistema de origem;
       //  se uma ordem não aparece mais, é porque foi concluída)
       //
-      // Margem de segurança: uma ordem só é marcada Concluída se ela sumir da planilha
-      // em DUAS importações seguidas. Isso evita que uma exportação incompleta/parcial
-      // pontual (relatório cortado, filtro diferente etc.) conclua ordens que continuam
-      // abertas de verdade na plataforma.
+      // Conclui direto na primeira vez que a ordem sumir da planilha.
       const ordensAindaAtivas = ORDENS.filter(o=>{
         const statusAtual = o.statusOs || 'Aberta';
         return (statusAtual === 'Aberta' || statusAtual === 'Em Andamento') && !o.id.startsWith('manual_');
@@ -3824,13 +3821,7 @@ function handleFile(file){
         if(presente){
           if(o.ausenteDesde) ordensParaLimparAusencia.push(o);
         } else {
-          if(o.ausenteDesde){
-            // já estava ausente numa importação anterior -> agora sim conclui
-            ordensParaConcluir.push(o);
-          } else {
-            // primeira vez que some -> só marca como "ausente", não conclui ainda
-            ordensParaMarcarAusente.push(o);
-          }
+          ordensParaConcluir.push(o);
         }
       });
 
@@ -3857,10 +3848,7 @@ function handleFile(file){
       ]).then(async ()=>{
         registrarAuditoria('Excel importado', `${novas} nova(s), ${atualizadas} já existente(s) mantida(s)${ordensParaConcluir.length > 0 ? `, ${ordensParaConcluir.length} concluída(s) automaticamente` : ''}${canceladasIgnoradas > 0 ? `, ${canceladasIgnoradas} cancelada(s) ignorada(s)` : ''}`);
         if(ordensParaConcluir.length > 0){
-          registrarAuditoria('Conclusão automática', `${ordensParaConcluir.length} ordem(ns) marcada(s) como Concluída automaticamente (não constavam em duas planilhas seguidas)`);
-        }
-        if(ordensParaMarcarAusente.length > 0){
-          registrarAuditoria('Ordens ausentes na planilha', `${ordensParaMarcarAusente.length} ordem(ns) não vieram nesta planilha; aguardando confirmação na próxima importação antes de concluir`);
+          registrarAuditoria('Conclusão automática', `${ordensParaConcluir.length} ordem(ns) marcada(s) como Concluída automaticamente (não constavam mais na planilha)`);
         }
 
         // ---- registra o histórico desta importação e compara com a anterior ----
@@ -3903,8 +3891,7 @@ function handleFile(file){
           `<b>${atualizadas}</b> ordem(ns) já existente(s) mantida(s) (tratamento preservado)<br>` +
           (tecnicosAlterados ? `<b>${tecnicosAlterados}</b> ordem(ns) com técnico atualizado conforme a planilha<br>` : '') +
           (canceladasIgnoradas ? `<b>${canceladasIgnoradas}</b> ordem(ns) Cancelada(s) ignorada(s) (não foram alteradas)<br>` : '') +
-          `<b>${ordensParaConcluir.length}</b> ordem(ns) marcada(s) como <b>Concluída</b> automaticamente (não vieram em duas planilhas seguidas)` +
-          (ordensParaMarcarAusente.length ? `<br><b>${ordensParaMarcarAusente.length}</b> ordem(ns) não vieram nesta planilha — aguardando confirmação na próxima importação antes de concluir` : '') +
+          `<b>${ordensParaConcluir.length}</b> ordem(ns) marcada(s) como <b>Concluída</b> automaticamente (não constavam mais na planilha)` +
           (ignoradas ? `<br><b>${ignoradas}</b> linha(s) ignorada(s) por data inválida` : '') +
           `<br><br>Base total agora: <b>${ORDENS.length}</b> ordens.` +
           htmlComparativo
