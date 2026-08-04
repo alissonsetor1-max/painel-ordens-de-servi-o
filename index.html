@@ -1425,11 +1425,13 @@
             <tr>
               <th style="text-align:left;">Empresa</th>
               <th>Status</th>
+              <th>Licença até</th>
               <th>Criada em</th>
+              <th>Ação</th>
             </tr>
           </thead>
           <tbody id="empresasBody">
-            <tr><td colspan="3" style="padding:12px 16px;"><div class="skel" style="height:14px; width:55%;"></div></td></tr>
+            <tr><td colspan="5" style="padding:12px 16px;"><div class="skel" style="height:14px; width:55%;"></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -1716,6 +1718,70 @@
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="document.getElementById('novaEmpresaModal').classList.remove('show')">Cancelar</button>
       <button class="btn btn-primary" onclick="criarEmpresa()">Criar empresa</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editarEmpresaModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <div class="ic" style="background:var(--violet-bg); border-color:var(--violet-line);">✏️</div>
+      <div>
+        <h3>Editar empresa</h3>
+        <p>Status, nome e licença</p>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:18px 20px;">
+      <input type="hidden" id="editEmpresaId">
+      <div style="margin-bottom:12px;">
+        <label class="form-label">Nome da empresa</label>
+        <input type="text" id="editEmpresaNome" style="width:100%; padding:10px 12px;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">Status</label>
+        <select id="editEmpresaAtiva" style="width:100%; padding:10px 12px;">
+          <option value="true">Ativa</option>
+          <option value="false">Inativa</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="form-label">Liberar licença por</label>
+        <select id="editEmpresaLicencaMeses" style="width:100%; padding:10px 12px;">
+          <option value="">Não alterar</option>
+          <option value="3">3 meses</option>
+          <option value="6">6 meses</option>
+          <option value="9">9 meses</option>
+          <option value="12">12 meses</option>
+          <option value="18">18 meses</option>
+          <option value="24">24 meses</option>
+        </select>
+        <div style="font-size:10.5px; color:var(--text-mute); margin-top:4px;">Conta a partir de hoje. Licença atual: <span id="editEmpresaLicencaAtual">—</span></div>
+      </div>
+      <div id="editEmpresaErro" style="display:none; color:var(--red); font-size:11.5px; font-weight:700; margin-top:10px;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="document.getElementById('editarEmpresaModal').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicaoEmpresa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="excluirEmpresaModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <div class="ic" style="background:var(--red-bg); border-color:var(--red-line);">🗑️</div>
+      <div>
+        <h3>Excluir empresa</h3>
+        <p>Essa ação não pode ser desfeita</p>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:18px 20px;">
+      <p id="excluirEmpresaNome" style="font-size:13px; color:var(--text-dim);"></p>
+      <div style="font-size:11.5px; color:var(--red); margin-top:10px; font-weight:700;">Todas as ordens, usuários e histórico dessa empresa serão apagados permanentemente.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="document.getElementById('excluirEmpresaModal').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-primary" style="background:var(--red); border-color:var(--red);" onclick="executarExclusaoEmpresa()">Excluir definitivamente</button>
     </div>
   </div>
 </div>
@@ -3546,19 +3612,112 @@ async function carregarEmpresas(){
 
   const { data, error } = await sb.from('empresas').select('*').order('criado_em', {ascending:false});
   if(error || !data || data.length === 0){
-    tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhuma empresa encontrada.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-mute); text-align:center; padding:20px;">Nenhuma empresa encontrada.</td></tr>';
     return;
   }
 
+  EMPRESAS_CACHE = data;
   tbody.innerHTML = data.map(e=>{
     const dt = e.criado_em ? new Date(e.criado_em) : null;
     const dataFmt = dt ? dt.toLocaleDateString('pt-BR') : '—';
+    const licDt = e.licenca_expira_em ? new Date(e.licenca_expira_em) : null;
+    const hoje = new Date();
+    const licVencida = licDt && licDt < hoje;
+    const licFmt = licDt ? licDt.toLocaleDateString('pt-BR') : '—';
     return `<tr>
       <td style="text-align:left;">${e.nome||'—'}</td>
       <td><span class="badge role-badge" style="${e.ativa ? 'background:var(--green-bg); color:var(--green); border-color:var(--green-line);' : 'background:var(--red-bg); color:var(--red); border-color:var(--red-line);'}">${e.ativa ? 'Ativa' : 'Inativa'}</span></td>
+      <td><span style="${licVencida ? 'color:var(--red); font-weight:700;' : ''}">${licFmt}${licVencida ? ' (vencida)' : ''}</span></td>
       <td>${dataFmt}</td>
+      <td>
+        <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="abrirEditarEmpresa('${e.id}')" title="Editar"><svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red); border-color:var(--red-line);" onclick="confirmarExclusaoEmpresa('${e.id}','${(e.nome||'').replace(/'/g,"\\'")}')" title="Excluir"><svg class="btn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+        </div>
+      </td>
     </tr>`;
   }).join('');
+}
+
+let EMPRESAS_CACHE = [];
+
+function abrirEditarEmpresa(empresaId){
+  const e = EMPRESAS_CACHE.find(x=>x.id===empresaId);
+  if(!e) return;
+  document.getElementById('editEmpresaId').value = e.id;
+  document.getElementById('editEmpresaNome').value = e.nome || '';
+  document.getElementById('editEmpresaAtiva').value = e.ativa ? 'true' : 'false';
+  document.getElementById('editEmpresaLicencaMeses').value = '';
+  document.getElementById('editEmpresaErro').style.display = 'none';
+  const licDt = e.licenca_expira_em ? new Date(e.licenca_expira_em) : null;
+  document.getElementById('editEmpresaLicencaAtual').textContent = licDt ? licDt.toLocaleDateString('pt-BR') : 'sem licença definida';
+  document.getElementById('editarEmpresaModal').classList.add('show');
+}
+
+async function salvarEdicaoEmpresa(){
+  const id = document.getElementById('editEmpresaId').value;
+  const nome = document.getElementById('editEmpresaNome').value.trim();
+  const ativa = document.getElementById('editEmpresaAtiva').value === 'true';
+  const meses = document.getElementById('editEmpresaLicencaMeses').value;
+  const erroBox = document.getElementById('editEmpresaErro');
+  erroBox.style.display = 'none';
+
+  if(!nome){
+    erroBox.textContent = 'Informe o nome da empresa.';
+    erroBox.style.display = 'block';
+    return;
+  }
+
+  const payload = { nome, ativa };
+  if(meses){
+    const novaData = new Date();
+    novaData.setMonth(novaData.getMonth() + parseInt(meses, 10));
+    payload.licenca_expira_em = novaData.toISOString();
+  }
+
+  const { error } = await sb.from('empresas').update(payload).eq('id', id);
+  if(error){
+    erroBox.textContent = 'Erro ao salvar: ' + error.message;
+    erroBox.style.display = 'block';
+    return;
+  }
+  document.getElementById('editarEmpresaModal').classList.remove('show');
+  registrarAuditoria('Empresa editada', `Empresa "${nome}" atualizada${meses ? ` — licença renovada por ${meses} meses` : ''}`);
+  carregarEmpresas();
+}
+
+let EMPRESA_ID_EXCLUIR = null;
+let EMPRESA_NOME_EXCLUIR = null;
+function confirmarExclusaoEmpresa(empresaId, nome){
+  EMPRESA_ID_EXCLUIR = empresaId;
+  EMPRESA_NOME_EXCLUIR = nome;
+  document.getElementById('excluirEmpresaNome').textContent = `Tem certeza que deseja excluir a empresa "${nome}"?`;
+  document.getElementById('excluirEmpresaModal').classList.add('show');
+}
+
+async function executarExclusaoEmpresa(){
+  try{
+    const { data: sessionData } = await sb.auth.getSession();
+    const accessToken = sessionData?.session?.access_token || '';
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/excluir-empresa`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ empresaId: EMPRESA_ID_EXCLUIR })
+    });
+    const result = await resp.json();
+    document.getElementById('excluirEmpresaModal').classList.remove('show');
+    if(!resp.ok || result.error){
+      alert('Erro ao excluir empresa: ' + (result.error || 'erro desconhecido'));
+      return;
+    }
+    registrarAuditoria('Empresa excluída', `Excluiu a empresa "${EMPRESA_NOME_EXCLUIR}" e todos os seus dados`);
+    carregarEmpresas();
+  }catch(e){
+    alert('Erro de conexão: ' + e.message);
+  }
 }
 
 async function criarEmpresa(){
