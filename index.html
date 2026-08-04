@@ -2137,10 +2137,15 @@ async function criarConta(){
   }
 
   try{
+    const { data: sessionData } = await sb.auth.getSession();
+    const accessToken = sessionData?.session?.access_token || '';
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/criar-usuario`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: senha, nome, papel, tecnicoVinculado })
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ email, password: senha, nome, papel, tecnicoVinculado, empresaId: USUARIO_ATUAL.empresaId })
     });
     const result = await resp.json();
     if(!resp.ok || result.error){
@@ -2166,9 +2171,9 @@ async function carregarPerfilLogado(userId){
   USUARIO_ID_ATUAL = userId;
   const { data, error } = await sb.from('perfis_usuarios').select('*').eq('id', userId).single();
   if(error || !data){
-    USUARIO_ATUAL = { nome: 'Usuário', papel: 'Técnico', tecnicoVinculado: null };
+    USUARIO_ATUAL = { nome: 'Usuário', papel: 'Técnico', tecnicoVinculado: null, empresaId: null };
   } else {
-    USUARIO_ATUAL = { nome: data.nome, papel: data.papel, tecnicoVinculado: data.tecnico_vinculado || null };
+    USUARIO_ATUAL = { nome: data.nome, papel: data.papel, tecnicoVinculado: data.tecnico_vinculado || null, empresaId: data.empresa_id };
   }
   atualizarBadgeUsuario();
   aplicarRestricoesDePapel();
