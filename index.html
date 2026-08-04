@@ -1155,22 +1155,11 @@
           <h1>🔑 Acesso Enviado</h1>
           <div class="meta"><span id="acessosMeta">Ordens executadas pelos técnicos, aguardando confirmação de envio de acesso</span></div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="document.getElementById('dropZoneAcessos').scrollIntoView({behavior:'smooth'})">⤒ Importar ordens concluídas</button>
       </div>
-      </div>
-
-      <div class="card" style="padding-bottom:20px; margin-bottom:16px;">
-        <div class="card-head"><h2>Importar ordens concluídas do dia</h2><span class="tag">.xlsx</span></div>
-        <div class="upload-zone" id="dropZoneAcessos">
-          <div class="icon">🔑</div>
-          <div class="main-txt">Arraste aqui o Excel das ordens já executadas pelos técnicos</div>
-          <div>Elas entram nesta fila separada, sem tratamento definido — você decide manualmente, uma por uma, se o acesso já foi enviado ao associado</div>
-          <input type="file" id="fileInputAcessos" accept=".xlsx,.xls" style="display:none;">
-        </div>
-        <div class="import-log" id="importLogAcessos"></div>
       </div>
 
       <div class="filters">
+        <input type="search" id="fSearchAcessos" autocomplete="off" placeholder="Buscar placa, técnico ou associado..." oninput="renderAcessos()" style="min-width:220px; flex:1;">
         <select id="fAcessoTratamento" onchange="renderAcessos()">
           <option value="">Tratamento (todos)</option>
           <option value="pendente">Ainda não enviado</option>
@@ -1186,7 +1175,7 @@
       <div id="acessosEmpty" class="empty">
         <div class="icon">🔑</div>
         <h3>Nenhuma ordem nesta fila ainda</h3>
-        <p>Importe o Excel das ordens executadas pelos técnicos acima para começar a controlar manualmente o envio de acesso.</p>
+        <p>Ordens marcadas para controle de acesso aparecem aqui automaticamente.</p>
       </div>
 
       <div class="table-wrap" id="acessosTableWrap" style="display:none; overflow-x:auto;">
@@ -3874,116 +3863,6 @@ function computeStats(){
   return list;
 }
 
-const dropZoneAcessos = document.getElementById('dropZoneAcessos');
-const fileInputAcessos = document.getElementById('fileInputAcessos');
-dropZoneAcessos.addEventListener('click', ()=> fileInputAcessos.click());
-dropZoneAcessos.addEventListener('dragover', e=>{ e.preventDefault(); dropZoneAcessos.classList.add('drag'); });
-dropZoneAcessos.addEventListener('dragleave', ()=> dropZoneAcessos.classList.remove('drag'));
-dropZoneAcessos.addEventListener('drop', e=>{
-  e.preventDefault(); dropZoneAcessos.classList.remove('drag');
-  if(e.dataTransfer.files.length) handleFileAcessos(e.dataTransfer.files[0]);
-});
-fileInputAcessos.addEventListener('change', e=>{
-  if(e.target.files.length) handleFileAcessos(e.target.files[0]);
-});
-
-function handleFileAcessos(file){
-  const reader = new FileReader();
-  reader.onload = (e)=>{
-    try{
-      const data = new Uint8Array(e.target.result);
-      const wb = XLSX.read(data, {type:'array'});
-      let novas = 0, jaExistiamMarcadas = 0, ignoradas = 0;
-      const existentesMap = new Map(ORDENS.map(o => [o.placa+'|'+o.aberturaISO, o]));
-      const novasOrdens = [];
-      const atualizacoesRemotas = [];
-
-      wb.SheetNames.forEach(sheetName=>{
-        const ws = wb.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''});
-        const colIdx = localizarColunasRelatorio(rows);
-        rows.forEach(row=>{
-          const placa = row[colIdx.placa];
-          if(!placa || String(placa).trim()==='' ) return;
-          if(String(placa).trim().toLowerCase().startsWith('técnico')) return;
-          if(String(placa).trim() === 'Placa') return;
-
-          const tipoServico = row[colIdx.tipo];
-          const instalador = row[colIdx.instalador];
-          const cliente = row[colIdx.cliente];
-          const abertura = row[colIdx.abertura];
-
-          const dt = parseDataBR(abertura);
-          if(!dt) { ignoradas++; return; }
-
-          const tecnico = padronizarNomeProprio((instalador||'').toString().trim());
-          const tipo = tipoNormalizado(tipoServico);
-          const associado = padronizarNomeProprio((cliente||'').toString().trim());
-          const placaClean = String(placa).trim().toUpperCase();
-          const aberturaISO = paraISOLocal(dt);
-          const key = placaClean+'|'+aberturaISO;
-
-          const existente = existentesMap.get(key);
-          if(existente){
-            if(existente.tecnico !== tecnico && tecnico){
-              existente.tecnico = tecnico;
-              updateOrdemRemote(existente.id, { tecnico: tecnico });
-            }
-            if(!existente.filaAcesso){
-              existente.filaAcesso = true;
-              atualizacoesRemotas.push(existente.id);
-              jaExistiamMarcadas++;
-            }
-            return;
-          }
-
-          const novaOrdem = {
-            id: key.replace(/[^a-zA-Z0-9]/g,'_'),
-            placa: placaClean,
-            tecnico: tecnico || 'Não informado',
-            tipo: tipo,
-            associado: associado || 'Não informado',
-            aberturaISO: aberturaISO,
-            treat: 'none',
-            obs: '',
-            statusOs: 'Aberta',
-            filaAcesso: true
-          };
-          ORDENS.push(novaOrdem);
-          novasOrdens.push(novaOrdem);
-          existentesMap.set(key, novaOrdem);
-          novas++;
-        });
-      });
-
-      const log = document.getElementById('importLogAcessos');
-      log.classList.add('show');
-      log.innerHTML = `Processando ${novas + jaExistiamMarcadas} ordens...`;
-
-      Promise.all([
-        insertOrdens(novasOrdens),
-        ...atualizacoesRemotas.map(id => updateOrdemRemote(id, {fila_acesso: true}))
-      ]).then(()=>{
-        log.innerHTML = `Importação concluída: <b>${novas}</b> ordens novas, <b>${jaExistiamMarcadas}</b> já existentes incluídas na fila.`;
-        renderAll();
-        renderAcessos();
-        mostrarResultadoImportacao(true,
-          `<b>${novas}</b> ordem(ns) nova(s) adicionada(s) à fila<br>` +
-          `<b>${jaExistiamMarcadas}</b> ordem(ns) já existente(s) foram incluídas na fila` +
-          (ignoradas ? `<br><b>${ignoradas}</b> linha(s) ignorada(s) por data inválida` : '')
-        );
-      });
-
-    }catch(err){
-      const log = document.getElementById('importLogAcessos');
-      log.classList.add('show');
-      log.innerHTML = `Não foi possível ler este arquivo. Verifique se é o Excel exportado no padrão do sistema. Detalhe técnico: ${err.message}`;
-      mostrarResultadoImportacao(false, `Não foi possível ler este arquivo. Verifique se é o Excel exportado no padrão do sistema.<br><br><span style="color:var(--text-mute); font-size:11.5px;">Detalhe técnico: ${err.message}</span>`);
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
 async function salvarSnapshotDoDia(){
   if(ORDENS.length === 0) return;
   const list = computeStats();
@@ -4284,6 +4163,9 @@ function abrirDetalheTecnico(nomeTecnico){
 function renderAcessos(){
   const list = computeStats();
   let fila = list.filter(o=>o.filaAcesso);
+
+  const search = (document.getElementById('fSearchAcessos') ? document.getElementById('fSearchAcessos').value : '').trim().toLowerCase();
+  if(search) fila = fila.filter(o=>correspondeBuscaMultipla(search, o));
 
   const filtroTratamento = document.getElementById('fAcessoTratamento') ? document.getElementById('fAcessoTratamento').value : '';
   if(filtroTratamento === 'pendente') fila = fila.filter(o=>o.treat !== 'acesso');
@@ -4647,7 +4529,7 @@ function interceptarColagemMultiplasPlacas(input){
     }
   });
 }
-['fSearch','fSearchConcluidas','fSearchRetiradasConcluidas'].forEach(id=>{
+['fSearch','fSearchConcluidas','fSearchRetiradasConcluidas','fSearchAcessos'].forEach(id=>{
   const el = document.getElementById(id);
   if(el) interceptarColagemMultiplasPlacas(el);
 });
