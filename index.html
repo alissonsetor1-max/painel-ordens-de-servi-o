@@ -2940,7 +2940,7 @@ async function salvarNovaLogo(){
     const { data: urlData } = sb.storage.from('anexos-ordens').getPublicUrl(nomeArquivo);
     const urlPublica = urlData.publicUrl + '?v=' + Date.now(); // evita cache antigo
 
-    await sb.from('configuracoes_gerais').upsert({ chave: 'logo_url', valor: urlPublica }, { onConflict: 'chave' });
+    await sb.from('configuracoes_gerais').upsert({ chave: 'logo_url', valor: urlPublica }, { onConflict: 'chave,empresa_id' });
 
     aplicarLogoNaSidebar(urlPublica);
     registrarAuditoria('Logo alterada', 'Trocou a logo do sistema exibida na barra lateral');
@@ -2956,7 +2956,7 @@ async function salvarNovaLogo(){
 
 async function restaurarLogoPadrao(){
   if(!confirm('Restaurar a logo padrão do sistema?')) return;
-  await sb.from('configuracoes_gerais').upsert({ chave: 'logo_url', valor: '' }, { onConflict: 'chave' });
+  await sb.from('configuracoes_gerais').upsert({ chave: 'logo_url', valor: '' }, { onConflict: 'chave,empresa_id' });
   aplicarLogoNaSidebar('');
   registrarAuditoria('Logo restaurada', 'Restaurou a logo padrão do sistema');
 
@@ -3016,7 +3016,7 @@ async function salvarNomeIA(){
     msg.textContent = 'Digite um nome para a integração.';
     return;
   }
-  await sb.from('configuracoes_gerais').upsert({ chave: 'ia_nome', valor: nome }, { onConflict: 'chave' });
+  await sb.from('configuracoes_gerais').upsert({ chave: 'ia_nome', valor: nome }, { onConflict: 'chave,empresa_id' });
   msg.style.display = 'block';
   msg.style.color = 'var(--green)';
   msg.textContent = `Nome salvo: "${nome}"`;
@@ -3961,7 +3961,7 @@ async function salvarSnapshotDoDia(){
   try{
     await sb.from('dashboard_snapshots').upsert({
       data: hoje, total, atrasadas, criticas, no_prazo: noPrazo, concluidas
-    }, { onConflict: 'data' });
+    }, { onConflict: 'data,empresa_id' });
   }catch(e){ console.error('Erro ao salvar snapshot', e); }
 }
 
