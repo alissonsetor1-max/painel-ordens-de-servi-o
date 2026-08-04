@@ -3617,10 +3617,7 @@ function handleFile(file){
       // (a planilha semanal só traz o que ainda está aberto no sistema de origem;
       //  se uma ordem não aparece mais, é porque foi concluída)
       //
-      // Margem de segurança: uma ordem só é marcada Concluída se ela sumir da planilha
-      // em DUAS importações seguidas. Isso evita que uma exportação incompleta/parcial
-      // pontual (relatório cortado, filtro diferente etc.) conclua ordens que continuam
-      // abertas de verdade na plataforma.
+      // Conclui direto na primeira vez que a ordem sumir da planilha (comportamento original).
       const ordensAindaAtivas = ORDENS.filter(o=>{
         const statusAtual = o.statusOs || 'Aberta';
         return (statusAtual === 'Aberta' || statusAtual === 'Em Andamento') && !o.id.startsWith('manual_');
@@ -3637,13 +3634,7 @@ function handleFile(file){
         if(presente){
           if(o.ausenteDesde) ordensParaLimparAusencia.push(o);
         } else {
-          if(o.ausenteDesde){
-            // já estava ausente numa importação anterior -> agora sim conclui
-            ordensParaConcluir.push(o);
-          } else {
-            // primeira vez que some -> só marca como "ausente", não conclui ainda
-            ordensParaMarcarAusente.push(o);
-          }
+          ordensParaConcluir.push(o);
         }
       });
 
@@ -3670,7 +3661,7 @@ function handleFile(file){
       ]).then(async ()=>{
         registrarAuditoria('Excel importado', `${novas} nova(s), ${atualizadas} já existente(s) mantida(s)${ordensParaConcluir.length > 0 ? `, ${ordensParaConcluir.length} concluída(s) automaticamente` : ''}${canceladasIgnoradas > 0 ? `, ${canceladasIgnoradas} cancelada(s) ignorada(s)` : ''}`);
         if(ordensParaConcluir.length > 0){
-          registrarAuditoria('Conclusão automática', `${ordensParaConcluir.length} ordem(ns) marcada(s) como Concluída automaticamente (não constavam em duas planilhas seguidas)`);
+          registrarAuditoria('Conclusão automática', `${ordensParaConcluir.length} ordem(ns) marcada(s) como Concluída automaticamente (não constavam mais na planilha)`);
         }
         if(ordensParaMarcarAusente.length > 0){
           registrarAuditoria('Ordens ausentes na planilha', `${ordensParaMarcarAusente.length} ordem(ns) não vieram nesta planilha; aguardando confirmação na próxima importação antes de concluir`);
