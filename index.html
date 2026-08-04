@@ -1989,11 +1989,78 @@ function carregarUsuario(){
   return false;
 }
 
+/* =========================================================
+   RATE LIMIT — LOGIN (proteção contra força bruta)
+========================================================= */
+const LOGIN_MAX_TENTATIVAS = 5;
+const LOGIN_JANELA_MS = 5 * 60 * 1000;   // conta tentativas dentro de 5 min
+const LOGIN_BLOQUEIO_MS = 2 * 60 * 1000; // bloqueia por 2 min ao estourar
+
+function lerEstadoLoginRateLimit(){
+  try{
+    return JSON.parse(localStorage.getItem('loginRateLimit')) || { tentativas: 0, primeiraTentativaEm: 0, bloqueadoAte: 0 };
+  }catch(e){
+    return { tentativas: 0, primeiraTentativaEm: 0, bloqueadoAte: 0 };
+  }
+}
+function salvarEstadoLoginRateLimit(estado){
+  localStorage.setItem('loginRateLimit', JSON.stringify(estado));
+}
+function registrarTentativaLoginFalhou(){
+  const agora = Date.now();
+  let estado = lerEstadoLoginRateLimit();
+  if(!estado.primeiraTentativaEm || (agora - estado.primeiraTentativaEm) > LOGIN_JANELA_MS){
+    estado = { tentativas: 0, primeiraTentativaEm: agora, bloqueadoAte: 0 };
+  }
+  estado.tentativas++;
+  if(estado.tentativas >= LOGIN_MAX_TENTATIVAS){
+    estado.bloqueadoAte = agora + LOGIN_BLOQUEIO_MS;
+  }
+  salvarEstadoLoginRateLimit(estado);
+  return estado;
+}
+function limparRateLimitLogin(){
+  localStorage.removeItem('loginRateLimit');
+}
+let intervalContagemLogin = null;
+function bloquearBotaoLogin(msRestante){
+  const btn = document.getElementById('btnLoginAcao');
+  const erroBox = document.getElementById('loginErro');
+  btn.disabled = true;
+  btn.style.opacity = '0.55';
+  btn.style.cursor = 'not-allowed';
+  clearInterval(intervalContagemLogin);
+  const fimEm = Date.now() + msRestante;
+  const tick = ()=>{
+    const restanteMs = fimEm - Date.now();
+    if(restanteMs <= 0){
+      clearInterval(intervalContagemLogin);
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.cursor = '';
+      erroBox.style.display = 'none';
+      return;
+    }
+    const min = Math.floor(restanteMs/60000);
+    const seg = Math.floor((restanteMs%60000)/1000).toString().padStart(2,'0');
+    erroBox.textContent = `Muitas tentativas incorretas. Tente novamente em ${min}:${seg}.`;
+    erroBox.style.display = 'block';
+  };
+  tick();
+  intervalContagemLogin = setInterval(tick, 1000);
+}
+
 async function entrarComSenha(){
   const email = document.getElementById('loginEmail').value.trim();
   const senha = document.getElementById('loginSenha').value;
   const erroBox = document.getElementById('loginErro');
   erroBox.style.display = 'none';
+
+  const estadoAtual = lerEstadoLoginRateLimit();
+  if(estadoAtual.bloqueadoAte && estadoAtual.bloqueadoAte > Date.now()){
+    bloquearBotaoLogin(estadoAtual.bloqueadoAte - Date.now());
+    return;
+  }
 
   if(!email || !senha){
     erroBox.textContent = 'Preencha e-mail e senha.';
@@ -2003,11 +2070,18 @@ async function entrarComSenha(){
 
   const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
   if(error){
-    erroBox.textContent = 'E-mail ou senha incorretos.';
-    erroBox.style.display = 'block';
+    const estado = registrarTentativaLoginFalhou();
+    if(estado.bloqueadoAte && estado.bloqueadoAte > Date.now()){
+      bloquearBotaoLogin(estado.bloqueadoAte - Date.now());
+    } else {
+      const restantes = LOGIN_MAX_TENTATIVAS - estado.tentativas;
+      erroBox.textContent = `E-mail ou senha incorretos. ${restantes > 0 ? `Restam ${restantes} tentativa(s).` : ''}`;
+      erroBox.style.display = 'block';
+    }
     return;
   }
 
+  limparRateLimitLogin();
   await carregarPerfilLogado(data.user.id);
   document.getElementById('loginModal').classList.remove('show');
   document.getElementById('appShell').style.display = 'flex';
@@ -3547,7 +3621,31 @@ function mostrarResultadoImportacao(sucesso, htmlTexto){
   document.getElementById('resultadoImportModal').classList.add('show');
 }
 
+/* =========================================================
+   RATE LIMIT — IMPORTAÇÃO DE EXCEL (evita reimportações em sequência)
+========================================================= */
+const IMPORT_COOLDOWN_MS = 15 * 1000; // 15s entre importações
+
+function podeImportarAgora(){
+  const ultima = Number(localStorage.getItem('ultimaImportacaoEm') || 0);
+  const restante = IMPORT_COOLDOWN_MS - (Date.now() - ultima);
+  return restante <= 0 ? { ok: true } : { ok: false, restanteMs: restante };
+}
+function registrarImportacaoAgora(){
+  localStorage.setItem('ultimaImportacaoEm', String(Date.now()));
+}
+
 function handleFile(file){
+  const check = podeImportarAgora();
+  if(!check.ok){
+    const seg = Math.ceil(check.restanteMs / 1000);
+    const log = document.getElementById('importLog');
+    log.classList.add('show');
+    log.innerHTML = `Aguarde ${seg} segundo(s) antes de importar novamente.`;
+    return;
+  }
+  registrarImportacaoAgora();
+
   const reader = new FileReader();
   reader.onload = (e)=>{
     try{
